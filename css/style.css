@@ -311,3 +311,8 @@ ul,ol{list-style:none;margin:0;padding:0}
 .form-status{min-height:1.4em;font-weight:600;font-size:15px}
 .form-status.ok{color:#7ee0a8}.form-status.err{color:#ff8d94}
 .form-note{font-size:13px;color:var(--dim)}
+
+/* ---------- Language switch ---------- */
+.nav-end{display:flex;align-items:center;gap:6px}
+.lang{display:grid;place-items:center;height:42px;min-width:42px;padding:0 12px;border-radius:999px;border:1px solid var(--line-2);font-family:var(--display);font-size:12px;font-weight:600;letter-spacing:.08em;text-decoration:none;color:var(--muted);transition:color .25s,border-color .25s,background .25s}
+.lang:hover{color:var(--text);border-color:rgba(255,255,255,.35);background:rgba(255,255,255,.06)}

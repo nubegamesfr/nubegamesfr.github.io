@@ -21,6 +21,16 @@ const SITE = {
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const fine = matchMedia('(hover: hover) and (pointer: fine)').matches;
+  const EN = doc.lang === 'en';
+  const T = EN ? {
+    missing: 'A card is missing: check the fields in red.', ok: 'Got it. Your seat is saved.', soon: 'The table opens very soon: come back in a few days.',
+    sending: 'Sending…', send: 'Send', done: 'Got it. Your seat is saved, we\'ll get back to you.', fail: 'The die fell off the table. Please try again in a moment.',
+    noMsg: '(no message)', play: 'Play', frame: 'Fields of Fire, online version'
+  } : {
+    missing: 'Il manque une carte : vérifiez les champs en rouge.', ok: 'C\'est reçu. Votre place est gardée.', soon: 'La table ouvre très bientôt : revenez dans quelques jours.',
+    sending: 'Envoi…', send: 'Envoyer', done: 'C\'est reçu. Votre place est gardée, on revient vers vous.', fail: 'Le dé est tombé de la table. Réessayez dans un instant.',
+    noMsg: '(pas de message)', play: 'Jouer', frame: 'Fields of Fire, version en ligne'
+  };
 
   /* ---------- Intro ---------- */
   const start = () => requestAnimationFrame(() => doc.classList.add('ready'));
@@ -42,28 +52,28 @@ const SITE = {
         f.classList.toggle('bad', bad); f.setAttribute('aria-invalid', bad ? 'true' : 'false');
         if (bad && ok) { f.focus(); ok = false; }
       });
-      if (!ok) return say('Il manque une carte : vérifiez les champs en rouge.', 'err');
-      if (form._honey.value) return say('C\'est reçu. Votre place est gardée.', 'ok');
-      if (!SITE.formId || SITE.formId === 'FORM_ID') return say('La table ouvre très bientôt : revenez dans quelques jours.', 'err');
+      if (!ok) return say(T.missing, 'err');
+      if (form._honey.value) return say(T.ok, 'ok');
+      if (!SITE.formId || SITE.formId === 'FORM_ID') return say(T.soon, 'err');
       const d = new FormData(form);
       const payload = {
-        _subject: `[nubegames.fr] ${d.get('motif')} · ${d.get('name')}`,
+        _subject: `[nubegames.fr${EN ? ' EN' : ''}] ${d.get('motif')} · ${d.get('name')}`,
         _template: 'table',
         _captcha: 'false',
-        Motif: d.get('motif'), name: d.get('name'), email: d.get('email'), message: d.get('message') || '(pas de message)'
+        Motif: d.get('motif'), name: d.get('name'), email: d.get('email'), message: d.get('message') || T.noMsg
       };
-      send.disabled = true; form.classList.add('rolling'); label.textContent = 'Envoi…'; say('');
+      send.disabled = true; form.classList.add('rolling'); label.textContent = T.sending; say('');
       try {
         const r = await fetch(`https://formsubmit.co/ajax/${SITE.formId}`, {
           method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify(payload)
         });
         const j = await r.json().catch(() => ({}));
         if (!r.ok || String(j.success) !== 'true') throw new Error(j.message || r.status);
-        form.reset(); say('C\'est reçu. Votre place est gardée, on revient vers vous.', 'ok');
+        form.reset(); say(T.done, 'ok');
       } catch (err) {
-        say('Le dé est tombé de la table. Réessayez dans un instant.', 'err');
+        say(T.fail, 'err');
       } finally {
-        send.disabled = false; form.classList.remove('rolling'); label.textContent = 'Envoyer';
+        send.disabled = false; form.classList.remove('rolling'); label.textContent = T.send;
       }
     });
   }
@@ -72,14 +82,14 @@ const SITE = {
   if (SITE.playUrl) {
     play.removeAttribute('aria-disabled'); play.removeAttribute('role');
     play.href = SITE.playUrl;
-    $('.play-label', play).textContent = 'Jouer';
+    $('.play-label', play).textContent = T.play;
     if (SITE.playEmbed) {
       const root = $('#game-root');
       play.addEventListener('click', e => {
         e.preventDefault();
         if (!root.firstChild) {
           const f = document.createElement('iframe');
-          f.src = SITE.playUrl; f.title = 'Fields of Fire, version en ligne'; f.allow = 'fullscreen';
+          f.src = SITE.playUrl; f.title = T.frame; f.allow = 'fullscreen';
           root.appendChild(f);
         }
         root.hidden = false; root.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'center' });
@@ -111,7 +121,7 @@ const SITE = {
   const secIO = new IntersectionObserver(es => es.forEach(e => {
     if (e.isIntersecting) links.forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#' + e.target.id));
   }), { rootMargin: '-45% 0px -50% 0px' });
-  ['fields-of-fire', 'projet', 'jouer', 'playtest'].forEach(id => { const s = document.getElementById(id); if (s) secIO.observe(s); });
+  ['fields-of-fire', 'projet', 'jouer', 'roadmap', 'play', 'playtest'].forEach(id => { const s = document.getElementById(id); if (s) secIO.observe(s); });
 
   /* ---------- Marquee: seamless loop, speeds up with scroll ---------- */
   const mq = $('#marquee');

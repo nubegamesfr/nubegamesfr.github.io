@@ -6,6 +6,9 @@
 <title>Fields of Fire · Nube Games, studio indépendant de jeux de société</title>
 <meta name="description" content="Nube Games est un studio indépendant de jeux de société. Son premier jeu, Fields of Fire, est en prototype : participez aux parties tests et jouez bientôt gratuitement en ligne.">
 <link rel="canonical" href="https://nubegames.fr/">
+<link rel="alternate" hreflang="fr" href="https://nubegames.fr/">
+<link rel="alternate" hreflang="en" href="https://nubegames.fr/en/">
+<link rel="alternate" hreflang="x-default" href="https://nubegames.fr/">
 <meta name="theme-color" content="#0b0712">
 <meta name="color-scheme" content="dark">
 <meta name="robots" content="index, follow, max-image-preview:large">
@@ -13,6 +16,7 @@
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Nube Games">
 <meta property="og:locale" content="fr_FR">
+<meta property="og:locale:alternate" content="en_GB">
 <meta property="og:url" content="https://nubegames.fr/">
 <meta property="og:title" content="Fields of Fire · Un jeu de société se prépare">
 <meta property="og:description" content="Le premier jeu de Nube Games est en prototype. Participez aux playtests, et jouez bientôt gratuitement en ligne.">
@@ -56,6 +60,7 @@
       "@id": "https://nubegames.fr/#fields-of-fire",
       "name": "Fields of Fire",
       "description": "Jeu de société physique de Nube Games, actuellement en prototype.",
+      "numberOfPlayers": { "@type": "QuantitativeValue", "minValue": 3, "maxValue": 6 },
       "url": "https://nubegames.fr/#fields-of-fire",
       "image": "https://nubegames.fr/assets/images/fields-of-fire-prototype-cover.webp",
       "creator": { "@id": "https://nubegames.fr/#org" },
@@ -79,7 +84,10 @@
       <li><a href="#jouer">Jouer</a></li>
     </ul>
   </nav>
-  <a class="btn btn-sm" href="#playtest">Playtests</a>
+  <div class="nav-end">
+    <a class="lang" href="en/" hreflang="en" lang="en" aria-label="English version">EN</a>
+    <a class="btn btn-sm" href="#playtest">Playtests</a>
+  </div>
 </header>
 
 <main id="contenu">
@@ -112,7 +120,6 @@
         <span class="line"><span><em>of</em> Fire</span></span>
       </h1>
       <p class="hero-tag">La partie se prépare.</p>
-      <p class="hero-sub">Un jeu de société. Un prototype. Il manque des joueurs.</p>
       <div class="hero-cta">
         <a class="btn magnetic" href="#fields-of-fire">Découvrir le jeu</a>
         <a class="btn btn-ghost magnetic" href="#contact">Rejoindre la table</a>
@@ -147,14 +154,13 @@
       <div class="game-text">
         <p class="kicker reveal"><span>01</span> La boîte</p>
         <h2 class="display reveal" id="game-title">Fields of Fire</h2>
-        <p class="lead reveal">Le premier jeu de Nube Games. Sur la table, en prototype. Les règles s'affinent partie après partie.</p>
+        <p class="lead reveal">Le premier jeu de Nube Games. Un prototype accessible en ligne gratuitement pour les joueurs.</p>
 
         <!-- À compléter quand les infos seront annoncées : remplacer « À annoncer » -->
         <dl class="facts reveal">
           <div><dt>Type</dt><dd>Jeu de société</dd></div>
           <div><dt>Statut</dt><dd><span class="tag tag-live">Prototype</span></dd></div>
-          <div><dt>Joueurs</dt><dd class="tba">Face cachée</dd></div>
-          <div><dt>Durée</dt><dd class="tba">Face cachée</dd></div>
+          <div><dt>Joueurs</dt><dd>3 à 6</dd></div>
         </dl>
       </div>
     </div>
@@ -162,9 +168,9 @@
     <!-- Galerie : remplacer chaque .locked par une vraie image quand les visuels seront prêts -->
     <div class="wrap">
       <ul class="reveal-grid" aria-label="Visuels à venir">
-        <li class="locked reveal"><span class="lock" aria-hidden="true"></span><strong>Le plateau</strong><small>Carte face cachée</small></li>
-        <li class="locked reveal"><span class="lock" aria-hidden="true"></span><strong>Le matériel</strong><small>Carte face cachée</small></li>
-        <li class="locked reveal"><span class="lock" aria-hidden="true"></span><strong>Les règles</strong><small>Carte face cachée</small></li>
+        <li class="locked reveal"><span class="lock" aria-hidden="true"></span><strong>Le plateau</strong><small>Bientôt dévoilé</small></li>
+        <li class="locked reveal"><span class="lock" aria-hidden="true"></span><strong>Le matériel</strong><small>Bientôt dévoilé</small></li>
+        <li class="locked reveal"><span class="lock" aria-hidden="true"></span><strong>Les règles</strong><small>Bientôt dévoilées</small></li>
       </ul>
     </div>
   </section>
@@ -179,7 +185,7 @@
         <li class="step">
           <span class="step-n">Tour 1</span>
           <h3>Prototype</h3>
-          <p>Le jeu est sur la table.</p>
+          <p>Confection du jeu et premier équilibrage en interne par nos équipes.</p>
           <span class="tag tag-live">En jeu</span>
         </li>
         <li class="step">
@@ -197,8 +203,8 @@
         <li class="step">
           <span class="step-n">Tour 4</span>
           <h3>???</h3>
-          <p>Carte encore dans la pioche.</p>
-          <span class="tag">Face cachée</span>
+          <p>???</p>
+          <span class="tag">À venir</span>
         </li>
       </ol>
     </div>
@@ -220,7 +226,7 @@
     <div class="wrap play-inner">
       <p class="kicker kicker-light reveal"><span>03</span> Partie en ligne</p>
       <h2 class="play-title reveal" id="play-title">Play<br>Fields of Fire</h2>
-      <p class="play-sub reveal">Bientôt jouable gratuitement, dans votre navigateur.</p>
+      <p class="play-sub reveal">Bientôt disponible gratuitement, dans votre navigateur.</p>
 
       <!-- Le bouton s'active tout seul quand SITE.playUrl est renseigné dans /js/main.js -->
       <div class="reveal">
@@ -243,7 +249,7 @@
         <p class="lead reveal">Le prototype cherche des joueurs. Vos retours font évoluer le jeu.</p>
         <ol class="pt-list">
           <li class="reveal"><span class="die d1" aria-hidden="true"><i></i></span><div><h3>Mise en place</h3><p>Vous prenez place.</p></div></li>
-          <li class="reveal"><span class="die d2" aria-hidden="true"><i></i><i></i></span><div><h3>Partie</h3><p>Vous jouez le prototype.</p></div></li>
+          <li class="reveal"><span class="die d2" aria-hidden="true"><i></i><i></i></span><div><h3>Partie</h3><p>Vous jouez au prototype.</p></div></li>
           <li class="reveal"><span class="die d3" aria-hidden="true"><i></i><i></i><i></i></span><div><h3>Débrief</h3><p>Vous nous dites tout. Les règles évoluent.</p></div></li>
         </ol>
       </div>

@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Fields of Fire · Nube Games, independent board game studio</title>
+<meta name="description" content="Nube Games is an independent board game studio. Its first game, Fields of Fire, is a prototype: join the playtests and soon play it free online.">
+<link rel="canonical" href="https://nubegames.fr/en/">
+<link rel="alternate" hreflang="fr" href="https://nubegames.fr/">
+<link rel="alternate" hreflang="en" href="https://nubegames.fr/en/">
+<link rel="alternate" hreflang="x-default" href="https://nubegames.fr/">
+<meta name="theme-color" content="#0b0712">
+<meta name="color-scheme" content="dark">
+<meta name="robots" content="index, follow, max-image-preview:large">
+
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Nube Games">
+<meta property="og:locale" content="en_GB">
+<meta property="og:locale:alternate" content="fr_FR">
+<meta property="og:url" content="https://nubegames.fr/en/">
+<meta property="og:title" content="Fields of Fire · A board game in the making">
+<meta property="og:description" content="The first Nube Games title is a prototype. Join the playtests, and soon play it free online.">
+<meta property="og:image" content="https://nubegames.fr/assets/images/og-image.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Fields of Fire, a board game by Nube Games, in prototype">
+<meta name="twitter:card" content="summary_large_image">
+
+<link rel="icon" href="../assets/icons/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="../assets/icons/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="../assets/icons/apple-touch-icon.png">
+<link rel="manifest" href="../site.webmanifest">
+
+<link rel="preload" href="../assets/fonts/cinzel-700.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="../assets/fonts/unbounded.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="../css/style.css">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": "https://nubegames.fr/#org",
+      "name": "Nube Games",
+      "url": "https://nubegames.fr/",
+      "logo": "https://nubegames.fr/assets/icons/icon-512.png",
+      "description": "Independent board game studio."
+    },
+    {
+      "@type": "WebSite",
+      "@id": "https://nubegames.fr/en/#website",
+      "url": "https://nubegames.fr/en/",
+      "name": "Nube Games",
+      "inLanguage": "en",
+      "publisher": { "@id": "https://nubegames.fr/#org" }
+    },
+    {
+      "@type": "Game",
+      "@id": "https://nubegames.fr/en/#fields-of-fire",
+      "name": "Fields of Fire",
+      "description": "Tabletop board game by Nube Games, currently in prototype.",
+      "numberOfPlayers": { "@type": "QuantitativeValue", "minValue": 3, "maxValue": 6 },
+      "url": "https://nubegames.fr/en/#fields-of-fire",
+      "image": "https://nubegames.fr/assets/images/fields-of-fire-prototype-cover.webp",
+      "creator": { "@id": "https://nubegames.fr/#org" },
+      "publisher": { "@id": "https://nubegames.fr/#org" }
+    }
+  ]
+}
+</script>
+</head>
+<body>
+<a class="skip" href="#content">Skip to content</a>
+
+<header class="nav" id="nav">
+  <a class="nav-brand" href="#top" aria-label="Nube Games, back to top">
+    <img src="../assets/images/nube-games-lockup.svg" alt="Nube Games" width="132" height="32">
+  </a>
+  <nav aria-label="Main navigation">
+    <ul class="nav-links">
+      <li><a href="#fields-of-fire">The game</a></li>
+      <li><a href="#roadmap">Roadmap</a></li>
+      <li><a href="#play">Play</a></li>
+    </ul>
+  </nav>
+  <div class="nav-end">
+    <a class="lang" href="../" hreflang="fr" lang="fr" aria-label="Version française">FR</a>
+    <a class="btn btn-sm" href="#playtest">Playtests</a>
+  </div>
+</header>
+
+<main id="content">
+  <section class="hero" id="top" aria-label="Home">
+    <div class="hero-bg" aria-hidden="true">
+      <div class="glow glow-a" data-depth="0.15"></div>
+      <div class="glow glow-b" data-depth="0.25"></div>
+      <div class="glow glow-c" data-depth="0.1"></div>
+      <svg class="cloud-line cl-1" data-depth="0.5" viewBox="0 0 200 110"><use href="#cloud"/></svg>
+      <svg class="cloud-line cl-2" data-depth="0.8" viewBox="0 0 200 110"><use href="#cloud"/></svg>
+      <svg class="cloud-line cl-3" data-depth="0.35" viewBox="0 0 200 110"><use href="#cloud"/></svg>
+      <svg class="cloud-line cl-4" data-depth="1.1" viewBox="0 0 200 110"><use href="#cloud"/></svg>
+      <canvas class="embers" id="embers"></canvas>
+      <div class="spot"></div>
+      <div class="grain"></div>
+    </div>
+
+    <div class="hero-inner">
+      <p class="status"><span class="dot"></span>Prototype · Setup</p>
+
+      <div class="hero-crown" data-depth="-0.6">
+        <img src="../assets/images/fields-of-fire-crown.webp" alt="" width="420" height="459" fetchpriority="high">
+      </div>
+
+      <p class="presents">Nube Games presents</p>
+      <h1 class="hero-title" id="hero-title">
+        <span class="line"><span>Fields</span></span>
+        <span class="line"><span><em>of</em> Fire</span></span>
+      </h1>
+      <p class="hero-tag">The game is being set up.</p>
+      <div class="hero-cta">
+        <a class="btn magnetic" href="#fields-of-fire">Discover the game</a>
+        <a class="btn btn-ghost magnetic" href="#contact">Join the table</a>
+      </div>
+    </div>
+
+    <a class="scroll-cue" href="#fields-of-fire" aria-label="Scroll to the game"><span></span></a>
+
+    <svg class="cloud-edge" viewBox="0 0 1440 120" preserveAspectRatio="none" aria-hidden="true">
+      <path d="M0 120V70c40 0 70-30 120-30s70 34 120 34 60-46 130-46 80 40 130 40 70-24 120-24 70 30 120 30 60-52 140-52 80 44 130 44 70-20 120-20 70 26 120 26 60-36 110-36 50 22 80 22H1440V120H0Z"/>
+    </svg>
+  </section>
+  <div class="marquee" aria-hidden="true">
+    <div class="marquee-track" id="marquee">
+      <span>Fields of Fire</span><i></i><span>Setup</span><i></i><span>Your turn</span><i></i><span>Next round</span><i></i><span>Nube Games</span><i></i>
+    </div>
+  </div>
+  <section class="section game" id="fields-of-fire" aria-labelledby="game-title">
+    <div class="wrap game-grid">
+      <figure class="cover reveal">
+        <div class="cover-card" id="cover-card">
+          <img src="../assets/images/fields-of-fire-prototype-cover.webp" width="620" height="846" loading="lazy" decoding="async" alt="Fields of Fire prototype cover: a white crown in an ornamental frame on a black background, marked Prototype.">
+          <span class="glare" aria-hidden="true"></span>
+        </div>
+        <figcaption>Prototype cover</figcaption>
+      </figure>
+
+      <div class="game-text">
+        <p class="kicker reveal"><span>01</span> The box</p>
+        <h2 class="display reveal" id="game-title">Fields of Fire</h2>
+        <p class="lead reveal">The first Nube Games title. A prototype players can access online for free.</p>
+        <dl class="facts reveal">
+          <div><dt>Type</dt><dd>Board game</dd></div>
+          <div><dt>Status</dt><dd><span class="tag tag-live">Prototype</span></dd></div>
+          <div><dt>Players</dt><dd>3 to 6</dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="wrap">
+      <ul class="reveal-grid" aria-label="Visuals coming soon">
+        <li class="locked reveal"><span class="lock" aria-hidden="true"></span><strong>The board</strong><small>Revealed soon</small></li>
+        <li class="locked reveal"><span class="lock" aria-hidden="true"></span><strong>The components</strong><small>Revealed soon</small></li>
+        <li class="locked reveal"><span class="lock" aria-hidden="true"></span><strong>The rules</strong><small>Revealed soon</small></li>
+      </ul>
+    </div>
+  </section>
+  <section class="section project" id="roadmap" aria-labelledby="project-title">
+    <div class="wrap">
+      <p class="kicker reveal"><span>02</span> Roadmap</p>
+      <h2 class="h2 reveal" id="project-title">Turn by turn.</h2>
+
+      <ol class="steps">
+        <li class="step">
+          <span class="step-n">Turn 1</span>
+          <h3>Prototype</h3>
+          <p>Game design and first balancing, done in-house by our team.</p>
+          <span class="tag tag-live">En jeu</span>
+        </li>
+        <li class="step">
+          <span class="step-n">Turn 2</span>
+          <h3>Playtests</h3>
+          <p>Your games shape the rules.</p>
+          <span class="tag tag-live">En jeu</span>
+        </li>
+        <li class="step">
+          <span class="step-n">Turn 3</span>
+          <h3>Online</h3>
+          <p>Free to play, in your browser.</p>
+          <span class="tag">Next turn</span>
+        </li>
+        <li class="step">
+          <span class="step-n">Turn 4</span>
+          <h3>???</h3>
+          <p>???</p>
+          <span class="tag">Coming soon</span>
+        </li>
+      </ol>
+    </div>
+  </section>
+  <section class="play" id="play" aria-labelledby="play-title">
+    <svg class="cloud-edge cloud-edge-top" viewBox="0 0 1440 120" preserveAspectRatio="none" aria-hidden="true">
+      <path d="M0 0v50c50 0 80 34 140 34s70-40 130-40 70 30 120 30 80-50 150-50 70 44 130 44 60-22 120-22 70 36 130 36 60-44 130-44 70 30 120 30 60-20 110-20 60 30 90 30H1440V0H0Z"/>
+    </svg>
+    <div class="play-bg" aria-hidden="true">
+      <svg class="dino" viewBox="0 0 600 300" data-scroll="0.1">
+        <path d="M0 250C80 232 150 172 230 160C300 146 372 146 412 158C448 132 470 84 498 50C514 30 546 26 562 38C574 47 571 59 556 61C540 63 528 63 520 71C500 102 482 168 472 212L474 300H444L440 246C400 256 332 256 302 246L300 300H270L264 240C200 247 100 258 0 252Z"/>
+      </svg>
+      <svg class="cloud-line pl-1" viewBox="0 0 200 110" data-scroll="-0.15"><use href="#cloud"/></svg>
+      <svg class="cloud-line pl-2" viewBox="0 0 200 110" data-scroll="0.1"><use href="#cloud"/></svg>
+    </div>
+
+    <div class="wrap play-inner">
+      <p class="kicker kicker-light reveal"><span>03</span> Online game</p>
+      <h2 class="play-title reveal" id="play-title">Play<br>Fields of Fire</h2>
+      <p class="play-sub reveal">Coming soon, free, in your browser.</p>
+      <div class="reveal">
+        <a class="play-btn" id="play-btn" role="link" aria-disabled="true">
+          <span class="play-ico" aria-hidden="true"></span>
+          <span class="play-label">Coming soon</span>
+        </a>
+      </div>
+      <div id="game-root" class="game-root" hidden></div>
+    </div>
+  </section>
+  <section class="section playtest" id="playtest" aria-labelledby="playtest-title">
+    <div class="wrap playtest-grid">
+      <div>
+        <p class="kicker reveal"><span>04</span> Playtests</p>
+        <h2 class="h2 reveal" id="playtest-title">Join<br>the <span class="grad-text">table</span></h2>
+        <p class="lead reveal">The prototype is looking for players. Your feedback shapes the game.</p>
+        <ol class="pt-list">
+          <li class="reveal"><span class="die d1" aria-hidden="true"><i></i></span><div><h3>Setup</h3><p>You take a seat.</p></div></li>
+          <li class="reveal"><span class="die d2" aria-hidden="true"><i></i><i></i></span><div><h3>Game</h3><p>You play the prototype.</p></div></li>
+          <li class="reveal"><span class="die d3" aria-hidden="true"><i></i><i></i><i></i></span><div><h3>Debrief</h3><p>You tell us everything. The rules evolve.</p></div></li>
+        </ol>
+      </div>
+
+      <form class="form reveal" id="contact" novalidate aria-labelledby="form-title">
+        <h3 class="form-title" id="form-title">Take a seat</h3>
+        <fieldset class="chips">
+          <legend>You want to…</legend>
+          <label><input type="radio" name="motif" value="Playtest" checked><span>Join a playtest</span></label>
+          <label><input type="radio" name="motif" value="Contact"><span>Write to us</span></label>
+        </fieldset>
+        <div class="field">
+          <label for="f-name">Name or nickname</label>
+          <input id="f-name" name="name" type="text" autocomplete="name" required maxlength="80">
+        </div>
+        <div class="field">
+          <label for="f-email">Email</label>
+          <input id="f-email" name="email" type="email" autocomplete="email" required maxlength="120">
+        </div>
+        <div class="field">
+          <label for="f-msg">Message <small>(optional)</small></label>
+          <textarea id="f-msg" name="message" rows="4" maxlength="2000"></textarea>
+        </div>
+        <input class="hp" type="text" name="_honey" tabindex="-1" autocomplete="off" aria-hidden="true">
+        <button class="btn form-send" type="submit"><span class="die die-sm" aria-hidden="true"><i></i><i></i><i></i></span><span class="send-label">Send</span></button>
+        <p class="form-status" id="form-status" role="status" aria-live="polite"></p>
+        <p class="form-note">Your details are only used to reply to you.</p>
+      </form>
+    </div>
+  </section>
+
+</main>
+
+<footer class="footer">
+  <div class="wrap footer-grid">
+    <img class="footer-logo" src="../assets/images/nube-games-logo-light.svg" alt="Nube Games" width="160" height="163" loading="lazy">
+    <ul class="footer-links">
+      <li><a href="#fields-of-fire">Fields of Fire</a></li>
+      <li><a href="#play">Play</a></li>
+      <li><a href="#playtest">Playtests</a></li>
+      <li><a href="#contact">Contact</a></li>
+      <li data-github hidden><a href="#" rel="noopener">GitHub</a></li>
+    </ul>
+    <p class="copy">© <span id="year">2026</span> Nube Games · Independent board games</p>
+  </div>
+</footer>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="cloud" viewBox="0 0 200 110">
+    <path d="M38 96C18 96 6 84 6 68 6 51 20 40 37 41 38 22 55 8 77 10 90 11 100 18 106 28 113 19 125 14 138 15 158 17 171 33 170 52 186 54 196 66 195 79 194 90 185 96 172 96Z"/>
+  </symbol>
+</svg>
+
+<script src="../js/main.js" defer></script>
+</body>
+</html>
