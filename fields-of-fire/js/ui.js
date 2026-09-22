@@ -402,7 +402,7 @@
     var p = FOF.cur(st), m = st.map, t = loc[0] === 't' ? m.terr[+loc.slice(1)] : null, h = [];
     h.push('<h4>' + esc(FOF.locName(st, loc)) + '</h4>');
     if (t) h.push('<div class="sub">' + FOF.BIOME_NAMES[t.biome] + (t.seas.length ? ' · côtier' : '') + ' · ' + (t.ctrl === null ? 'neutre' : '<b style="color:' + color(t.ctrl) + '">' + esc(st.players[t.ctrl].name) + '</b>' + (st.players[t.ctrl].capital === t.id ? ' (capitale)' : '')) + (t.ctrl !== null ? ' · défense +' + FOF.defBonus(st, st.players[t.ctrl], t) : '') + '</div>');
-    else h.push('<div class="sub">Zone de mer — on n’y combat pas (sauf Aliénor).</div>');
+    else h.push('<div class="sub">Zone de mer — on n’y combat pas.</div>');
     if (t && t.blds.length) h.push('<div class="blds-now">' + t.blds.map(function (b) { return '<span class="bchip" style="--bc:' + color(b.o) + '">' + bIcon(b.t) + FOF.BUILDINGS[b.t].name + (b.o !== t.ctrl ? ' · ' + esc(st.players[b.o].name) : '') + '</span>'; }).join('') + '</div>');
 
     if (st.phase === 'build' && t) {
@@ -670,7 +670,7 @@
   var GLOSS = [
     ['Case', 'Un territoire ou une zone de mer.'],
     ['Territoire', 'Une case de terre, d’un des quatre terrains : plaines, forêt, montagnes, marécage.'],
-    ['Zone de mer', 'Une étendue d’eau. On ne s’y bat pas (sauf Aliénor l’Amirale) et il faut partir d’un port pour y entrer.'],
+    ['Zone de mer', 'Une étendue d’eau. On ne s’y bat jamais, et il faut partir d’un port pour y entrer.'],
     ['Neutre', 'Territoire sans maître. Votre dirigeant le prend en restant dessus jusqu’à votre tour suivant, sans combat.'],
     ['Capitale', 'La case de départ de votre dirigeant : +2 en défense. La perdre, c’est perdre la partie.'],
     ['Dirigeant', 'Votre héros. Aucun entretien, ajoute son bonus au combat sur sa case, et seul lui peut conquérir un neutre.'],

@@ -60,3 +60,4 @@ Limites du prototype : pas de comptes, quiconque a le code d'un salon peut y éc
 - **Animations de la carte** : poissons qui sautent, papillons dans les prairies, lucioles dans les marécages, plus d'oiseaux, de vagues et de voiliers.
 - **Attaque à plusieurs unités** : déjà le fonctionnement du jeu ; toutes vos élites présentes sur la case attaquent ensemble, et le dirigeant s'y joint s'il est là.
 - **Équilibrage v1.6** : Aliénor l'Amirale gagnait 42 % des parties simulées à 4 joueurs (attendu 25 %). Ports à 2 or (au lieu de 1), modificateur de combat 1 (au lieu de 2) et suppression du +1 par élite contre un territoire côtier → 33 %. Hugues le Bâtisseur mesuré à 25 % : inchangé.
+- **v1.6 · combat en mer retiré** : plus aucun combat dans une zone de mer, pour personne (Aliénor comprise). Il ne lui reste que ses ports à 2 or, le +1 or par port et l'embarquement élargi ; mesurée à 32 % de victoires sur 1 200 parties simulées à 4 joueurs.

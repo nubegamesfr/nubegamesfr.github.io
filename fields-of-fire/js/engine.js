@@ -296,11 +296,7 @@
     var att = FOF.unitsAt(st, loc, p.id).filter(function (u) { return FOF.isElite(u.key) && !u.fought && !u.pacif; });
     var leadOk = p.lpos === loc && !p.lFought && !p.lConq;
     if (!att.length && !leadOk) return out;
-    if (loc[0] === 's') {
-      if (p.leader !== 'alienor' || !att.length) return out;
-      st.players.forEach(function (q) { if (q.id !== p.id && q.alive && FOF.unitsAt(st, loc, q.id).length) out.push({ target: q.id, kind: 'units' }); });
-      return out;
-    }
+    if (loc[0] === 's') return out;   // v1.6 : plus aucun combat en mer, même pour Aliénor
     var t = T(st, +loc.slice(1));
     if (t.ctrl !== null && t.ctrl !== p.id && st.players[t.ctrl].alive) out.push({ target: t.ctrl, kind: 'terr' });
     st.players.forEach(function (q) {
