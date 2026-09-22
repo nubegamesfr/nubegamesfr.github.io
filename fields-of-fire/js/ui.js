@@ -43,7 +43,7 @@
   function dispatch(a, keepPop) {
     if (!myTurn()) { err = 'Ce n’est pas à vous de jouer.'; return render(); }
     try { FOF.act(st, a); err = ''; }
-    catch (e) { err = e.message; }
+    catch (e) { err = e.message; if (FOF.sfx) FOF.sfx('error'); }
     if (!err) {
       FOF.statsTick(st);
       if (a.type === 'attack') combatSig = sig(st.lastCombat);
@@ -61,7 +61,9 @@
     if (!st) return;
     if (st.turnNo !== lastTurnShown && !st.winner && !modal) { lastTurnShown = st.turnNo; if (!net || net.seatIndex() === st.cur) modal = { kind: 'turn' }; }
     if (st.winner) modal = { kind: 'victory' };
+    var before = FOF.FX ? FOF.FX.before() : null;
     renderHeader(); renderOpponents(); renderBoard(); renderMat(); renderRight(); renderModal();
+    if (FOF.FX) FOF.FX.after(st, before, { color: color, myTurn: myTurn(), online: !!net, seat: net ? net.seatIndex() : null });
   }
 
   var PHASES = [['collect', 'Collecte'], ['recruit', 'Recrutement'], ['military', 'Militaire'], ['build', 'Construction']];
@@ -109,6 +111,12 @@
     st.players.forEach(function (q) { out.push('<clipPath id="cl' + q.id + '"><circle r="10.5"/></clipPath>'); });
     out.push('<clipPath id="clu"><circle r="8"/></clipPath></defs>');
     // noms, couronnes, aménagements
+    var BCH = { P: '#f3e2a4', F: '#c2dba0', M: '#d6cabc', Ma: '#b2d3c8' };
+    m.terr.forEach(function (t) {
+      FOF.Board.icons(t.id).forEach(function (q) {
+        out.push('<g class="bic" transform="translate(' + q.x + ' ' + q.y + ')"><circle r="7.2" fill="' + BCH[t.biome] + '" stroke="rgba(40,30,20,.45)" stroke-width=".7"/><image href="assets/icons/biome-' + t.biome + '.png" x="-5.2" y="-5.2" width="10.4" height="10.4"/></g>');
+      });
+    });
     m.terr.forEach(function (t) {
       var a = FOF.Board.anchor('t' + t.id); if (!a) return;
       var name = t.name, cap = t.ctrl !== null && st.players[t.ctrl].capital === t.id;
@@ -131,7 +139,7 @@
         var col = color(it.owner), mine = it.owner === p.id, piece = it.leader ? 'L' : it.uid;
         var movable = mine && st.phase === 'military' && !st.pending.length && (it.leader ? !(p.lConq || p.lFought || p.lMovesLeft <= 0) : !(it.fought || it.pacif || it.movesLeft <= 0));
         var selected = mode && mode.kind === 'move' && mode.piece === piece;
-        var g = '<g class="tk" data-tk="' + piece + '" data-tloc="' + loc + '" data-own="' + it.owner + '" transform="translate(' + x + ' ' + y + ')">';
+        var g = '<g class="tk' + (movable ? ' can' : '') + '" data-tk="' + piece + '" data-tloc="' + loc + '" data-own="' + it.owner + '" data-x="' + x + '" data-y="' + y + '" transform="translate(' + x + ' ' + y + ')"><g class="tki">';
         if (it.leader) {
           var art = FOF.heroArt(st.players[it.owner].leader);
           g += '<circle r="11.5" fill="' + col + '"/>' + (art ? '<image href="' + art + '" x="-10.5" y="-10.5" width="21" height="22" preserveAspectRatio="xMidYMin slice" clip-path="url(#cl' + it.owner + ')"/>' : '<text y="4" text-anchor="middle" font-size="12" fill="#fff">♛</text>') +
@@ -143,7 +151,7 @@
             (el ? '<circle class="ring" r="9" fill="none" stroke="' + (selected ? '#fff' : col) + '" stroke-width="' + (selected ? 3 : 2.2) + '"/>' : '<rect class="ring" x="-8.5" y="-8.5" width="17" height="17" rx="3" fill="none" stroke="' + (selected ? '#fff' : col) + '" stroke-width="2.2"/>');
         }
         if (movable) { var ml = it.leader ? p.lMovesLeft : it.movesLeft; g += '<circle cx="-8" cy="9" r="4.6" fill="#4aa43d" stroke="#1d3a17" stroke-width=".8"/><text x="-8" y="9.3" class="mvbadge" style="fill:#fff">' + ml + '</text>'; }
-        out.push(g + '<title>' + esc(it.leader ? FOF.LEADERS[st.players[it.owner].leader].name : FOF.unitDef(it.key).name) + ' — ' + esc(st.players[it.owner].name) + '</title></g>');
+        out.push(g + '<title>' + esc(it.leader ? FOF.LEADERS[st.players[it.owner].leader].name : FOF.unitDef(it.key).name) + ' — ' + esc(st.players[it.owner].name) + '</title></g></g>');
       });
       if (list.length > 5) out.push('<text class="tlabel" x="' + (a.x + 3 * gap) + '" y="' + (a.y + 6) + '">+' + (list.length - 5) + '</text>');
     });
@@ -309,7 +317,7 @@
       if (!k) { h.push('<div></div>'); return; }
       var why = FOF.canBuy(st, k), d = FOF.unitDef(k);
       var acts = '<div class="acts"><button class="btn buy" data-buy="' + i + '" ' + (why ? 'disabled' : '') + '>Acheter · ' + d.upkeep + ' or</button><button class="btn" data-discard="' + i + '" ' + (p.flags.discarded || p.flags.bought ? 'disabled' : '') + '>Défausser</button></div><div class="why">' + esc(why || '') + '</div>';
-      h.push('<div>' + FOF.cardHTML(k, { actions: acts }) + '</div>');
+      h.push('<div class="slot" data-slotkey="' + i + ':' + k + ':' + st.deck.length + '">' + FOF.cardHTML(k, { actions: acts }) + '</div>');
     });
     h.push('</div>');
     el.innerHTML = h.join(''); el.hidden = false;
@@ -330,7 +338,7 @@
     var p = FOF.cur(st), v = st.victory, army = FOF.army(st, p.id), inc = st.collect ? st.collect.inc : FOF.income(st, p);
     var h = ['<div class="me" style="--pc:' + color(p.id) + '">' + FOF.heroImg(p.leader) + '<div class="who"><div class="ribbon" style="background:' + color(p.id) + ';color:#fff;border-color:#1b1a1d">' + esc(p.name) + '</div>' +
       '<div class="line"><span class="star gold" style="width:24px;height:24px;font-size:13px">' + p.mod + '</span><span>' + esc(FOF.LEADERS[p.leader].name) + '</span>' + (p.tyran ? '<span class="pill tyran">Tyran</span>' : '') + (p.pact !== null ? '<span class="pill pact">Pacte avec ' + esc(st.players[p.pact].name) + '</span>' : '') + '</div>' +
-      '<div class="purse" title="Revenu : ' + inc.total + ' − entretien ' + inc.upkeep + '"><span class="coin"></span><b>' + p.gold + '</b><span class="muted" style="font-size:12.5px">or · revenu ' + (inc.total - inc.upkeep >= 0 ? '+' : '') + (inc.total - inc.upkeep) + '/tour</span></div></div></div>'];
+      '<div class="purse" data-gold="' + p.id + ':' + p.gold + '" title="Revenu : ' + inc.total + ' − entretien ' + inc.upkeep + '"><span class="coin"></span><b>' + p.gold + '</b><span class="muted" style="font-size:12.5px">or · revenu ' + (inc.total - inc.upkeep >= 0 ? '+' : '') + (inc.total - inc.upkeep) + '/tour</span></div></div></div>'];
     h.push('<div style="display:flex;gap:18px;align-items:center;min-width:0;flex-wrap:wrap"><div class="tracks" style="--pc:' + color(p.id) + '">' +
       track('Territoires', '<img class="icn" src="assets/icons/bld-C.png" alt="">', FOF.terrOf(st, p.id).length, v.mil) +
       track('Temples', '<img class="icn" src="assets/icons/bld-T.png" alt="">', FOF.countBld(st, p.id, 'T'), v.rel) +
@@ -366,7 +374,7 @@
     var el = $('modal'), pd = st.pending[0], h = null;
     if (st.winner) {
       var w = st.players[st.winner.pid], label = { mil: 'Victoire militaire', rel: 'Victoire religieuse', dip: 'Victoire diplomatique', survie: 'Dernier dirigeant debout' }[st.winner.type];
-      h = '<div class="modal" style="text-align:center"><div style="width:140px;margin:0 auto 10px">' + FOF.heroImg(w.leader) + '</div><h2 style="color:' + color(w.id) + ';font-size:30px">' + esc(w.name) + '</h2><p class="verdict">' + label + '</p><p class="muted">' + esc(FOF.LEADERS[w.leader].name) + ' · tour ' + st.round + '</p><div class="actions" style="justify-content:center"><button class="btn primary" data-act="newgame">Nouvelle partie</button></div></div>';
+      h = '<div class="modal victory" style="text-align:center"><div class="confetti" aria-hidden="true">' + new Array(40).join('<i></i>') + '</div><div class="vcrown" style="width:140px;margin:0 auto 10px">' + FOF.heroImg(w.leader) + '</div><h2 style="color:' + color(w.id) + ';font-size:30px">' + esc(w.name) + '</h2><p class="verdict">' + label + '</p><p class="muted">' + esc(FOF.LEADERS[w.leader].name) + ' · tour ' + st.round + '</p><div class="actions" style="justify-content:center"><button class="btn primary" data-act="newgame">Nouvelle partie</button></div></div>';
     } else if (modal && modal.kind === 'combat' && st.lastCombat) h = combatHTML(st.lastCombat);
     else if (pd && net && net.seatIndex() !== pd.pid && (pd.type === 'conquest' || pd.type === 'deficit')) h = '<div class="modal"><h2>En attente</h2><p><b>' + esc(st.players[pd.pid].name) + '</b> prend une décision…</p></div>';
     else if (pd && pd.type === 'conquest') {

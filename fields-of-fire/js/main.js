@@ -214,7 +214,9 @@
       FOF.startUI(FOF.newGame({ players: players }));
     });
     FOF.showSetup();
-    var q = new URLSearchParams(location.search).get('salon'), so = FOF.loadOnline();
-    if (q && so && so.code === FOF.normCode(q) && FOF.onlineEnabled()) FOF.resumeRoom(so.code, so.cid).then(enterRoom, function () {});
+    // reprise automatique seulement dans l'onglet qui était déjà assis dans ce salon (après un rechargement)
+    var q = new URLSearchParams(location.search).get('salon'), so = FOF.loadOnline(), mine = null;
+    try { mine = sessionStorage.getItem('fof-cid'); } catch (e) {}
+    if (q && so && so.code === FOF.normCode(q) && so.cid === mine && FOF.onlineEnabled()) FOF.resumeRoom(so.code, so.cid).then(enterRoom, function () {});
   });
 })(window.FOF = window.FOF || {});

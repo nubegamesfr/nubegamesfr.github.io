@@ -36,7 +36,7 @@
     if (!st.deck.length) { st.deck = st.discard; st.discard = []; FOF.shuffle(st, st.deck); }
     return st.deck.length ? st.deck.pop() : null;
   }
-  function log(st, msg, pid) { st.log.push({ t: st.turnNo, p: pid === undefined ? null : pid, m: msg }); if (st.log.length > 400) st.log.shift(); }
+  function log(st, msg, pid) { st.logN = (st.logN || st.log.length) + 1; st.log.push({ t: st.turnNo, p: pid === undefined ? null : pid, m: msg }); if (st.log.length > 400) st.log.shift(); }
   FOF.log = log;
 
   /* ---------- lecture ---------- */

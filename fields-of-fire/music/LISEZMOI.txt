@@ -1,0 +1,13 @@
+Musique de Fields of Fire (optionnel)
+======================================
+Le jeu lit ces morceaux directement depuis OpenGameArt. Pour qu'ils soient servis par nubegames.fr
+(plus rapide et plus fiable), téléchargez-les et déposez-les dans ce dossier avec EXACTEMENT ces noms :
+
+the-old-tower-inn.mp3  <- https://opengameart.org/sites/default/files/The_Old_Tower_Inn.mp3
+minstrel-dance.mp3     <- https://opengameart.org/sites/default/files/Minstrel_Dance_0.mp3
+kings-feast.mp3        <- https://opengameart.org/sites/default/files/Kings_Feast_0.mp3
+the-bards-tale.mp3     <- https://opengameart.org/sites/default/files/The_Bards_Tale.mp3
+market-day.mp3         <- https://opengameart.org/sites/default/files/Market_Day.mp3
+harvest-season.mp3     <- https://opengameart.org/sites/default/files/harvestseason_2.mp3
+
+Auteur : RandomMind (opengameart.org/users/randommind) — licence CC0 (domaine public).

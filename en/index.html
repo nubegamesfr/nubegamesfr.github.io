@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Fields of Fire · Nube Games, independent board game studio</title>
-<meta name="description" content="Nube Games is an independent board game studio. Its first game, Fields of Fire, is a prototype: join the playtests and soon play it free online.">
+<meta name="description" content="Nube Games is an independent board game studio. Its first game, Fields of Fire, is playable free online as a prototype: on one screen or remotely with a room code.">
 <link rel="canonical" href="https://nubegames.fr/en/">
 <link rel="alternate" hreflang="fr" href="https://nubegames.fr/">
 <link rel="alternate" hreflang="en" href="https://nubegames.fr/en/">
@@ -19,7 +19,7 @@
 <meta property="og:locale:alternate" content="fr_FR">
 <meta property="og:url" content="https://nubegames.fr/en/">
 <meta property="og:title" content="Fields of Fire · A board game in the making">
-<meta property="og:description" content="The first Nube Games title is a prototype. Join the playtests, and soon play it free online.">
+<meta property="og:description" content="The Fields of Fire prototype is free to play in your browser, 3 to 6 players, locally or online.">
 <meta property="og:image" content="https://nubegames.fr/assets/images/og-image.jpg">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -33,7 +33,7 @@
 
 <link rel="preload" href="../assets/fonts/cinzel-700.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="../assets/fonts/unbounded.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="../css/style.css">
+<link rel="stylesheet" href="../css/style.css?v=1.3">
 
 <script type="application/ld+json">
 {
@@ -59,7 +59,7 @@
       "@type": "Game",
       "@id": "https://nubegames.fr/en/#fields-of-fire",
       "name": "Fields of Fire",
-      "description": "Tabletop board game by Nube Games, currently in prototype.",
+      "description": "Board game by Nube Games, in prototype, free to play online in the browser (3 to 6 players).",
       "numberOfPlayers": { "@type": "QuantitativeValue", "minValue": 3, "maxValue": 6 },
       "url": "https://nubegames.fr/en/#fields-of-fire",
       "image": "https://nubegames.fr/assets/images/fields-of-fire-prototype-cover.webp",
@@ -82,11 +82,12 @@
       <li><a href="#fields-of-fire">The game</a></li>
       <li><a href="#roadmap">Roadmap</a></li>
       <li><a href="#play">Play</a></li>
+      <li><a href="#playtest">Playtests</a></li>
     </ul>
   </nav>
   <div class="nav-end">
     <a class="lang" href="../" hreflang="fr" lang="fr" aria-label="Version française">FR</a>
-    <a class="btn btn-sm" href="#playtest">Playtests</a>
+    <a class="btn btn-sm" href="/fields-of-fire/">Play</a>
   </div>
 </header>
 
@@ -106,7 +107,7 @@
     </div>
 
     <div class="hero-inner">
-      <p class="status"><span class="dot"></span>Prototype · Setup</p>
+      <p class="status"><span class="dot"></span>Prototype · Playable online</p>
 
       <div class="hero-crown" data-depth="-0.6">
         <img src="../assets/images/fields-of-fire-crown.webp" alt="" width="420" height="459" fetchpriority="high">
@@ -117,9 +118,10 @@
         <span class="line"><span>Fields</span></span>
         <span class="line"><span><em>of</em> Fire</span></span>
       </h1>
-      <p class="hero-tag">The game is being set up.</p>
+      <p class="hero-tag">The game is on. Your move.</p>
       <div class="hero-cta">
-        <a class="btn magnetic" href="#fields-of-fire">Discover the game</a>
+        <a class="btn magnetic" href="/fields-of-fire/">Play for free</a>
+        <a class="btn btn-ghost magnetic" href="#fields-of-fire">Discover the game</a>
         <a class="btn btn-ghost magnetic" href="#contact">Join the table</a>
       </div>
     </div>
@@ -148,11 +150,13 @@
       <div class="game-text">
         <p class="kicker reveal"><span>01</span> The box</p>
         <h2 class="display reveal" id="game-title">Fields of Fire</h2>
-        <p class="lead reveal">The first Nube Games title. A prototype players can access online for free.</p>
+        <p class="lead reveal">The first Nube Games title. Conquer, build, and choose your path: the sword, the faith or diplomacy. The prototype is free to play in your browser (currently in French).</p>
         <dl class="facts reveal">
           <div><dt>Type</dt><dd>Board game</dd></div>
           <div><dt>Status</dt><dd><span class="tag tag-live">Prototype</span></dd></div>
           <div><dt>Players</dt><dd>3 to 6</dd></div>
+          <div><dt>Online</dt><dd>Free, no sign-up</dd></div>
+          <div><dt>Modes</dt><dd>Same screen or remote</dd></div>
         </dl>
       </div>
     </div>
@@ -174,19 +178,19 @@
           <span class="step-n">Turn 1</span>
           <h3>Prototype</h3>
           <p>Game design and first balancing, done in-house by our team.</p>
-          <span class="tag tag-live">En jeu</span>
+          <span class="tag tag-live">In play</span>
         </li>
         <li class="step">
           <span class="step-n">Turn 2</span>
           <h3>Playtests</h3>
           <p>Your games shape the rules.</p>
-          <span class="tag tag-live">En jeu</span>
+          <span class="tag tag-live">In play</span>
         </li>
         <li class="step">
           <span class="step-n">Turn 3</span>
           <h3>Online</h3>
-          <p>Free to play, in your browser.</p>
-          <span class="tag">Next turn</span>
+          <p>Free to play in the browser, on one screen or remotely.</p>
+          <span class="tag tag-live">In play</span>
         </li>
         <li class="step">
           <span class="step-n">Turn 4</span>
@@ -212,11 +216,16 @@
     <div class="wrap play-inner">
       <p class="kicker kicker-light reveal"><span>03</span> Online game</p>
       <h2 class="play-title reveal" id="play-title">Play<br>Fields of Fire</h2>
-      <p class="play-sub reveal">Coming soon, free, in your browser.</p>
+      <p class="play-sub reveal">Free, in your browser, no sign-up. The game is currently in French.</p>
+      <ol class="play-how reveal">
+        <li><b>Create a room</b><span>or play together on one screen</span></li>
+        <li><b>Share the code</b><span>friends join from their own computer</span></li>
+        <li><b>Start the game</b><span>3 to 6 leaders</span></li>
+      </ol>
       <div class="reveal">
         <a class="play-btn" id="play-btn" role="link" aria-disabled="true">
           <span class="play-ico" aria-hidden="true"></span>
-          <span class="play-label">Coming soon</span>
+          <span class="play-label">Play</span>
         </a>
       </div>
       <div id="game-root" class="game-root" hidden></div>
@@ -275,6 +284,7 @@
       <li data-github hidden><a href="#" rel="noopener">GitHub</a></li>
     </ul>
     <p class="copy">© <span id="year">2026</span> Nube Games · Independent board games</p>
+    <p class="legal">The artwork shown in the Fields of Fire prototype is used for illustrative purposes only and does not belong to Nube Games in any way. In-game music: RandomMind, public domain (CC0).</p>
   </div>
 </footer>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">

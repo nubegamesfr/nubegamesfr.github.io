@@ -82,14 +82,25 @@
     return { key: st.seed + ':' + m.terr.length, minX: minX, minY: minY, gw: gw, gh: gh, kind: kind, id: id, dist: dist, anchorT: anchorT, anchorS: anchorS, w: gw * PX, h: gh * PX, seed: seed };
   }
 
-  var BIOME_LAND = { P: [233, 222, 170], F: [205, 214, 164], M: [224, 205, 176], Ma: [200, 214, 196] };
+  // couleurs de terrain bien distinctes (plaines blé, forêt verte, montagnes pierre, marécage vert d'eau)
+  var BIOME_LAND = { P: [236, 214, 138], F: [150, 186, 108], M: [184, 168, 150], Ma: [128, 170, 156] };
+  var BIOME_INK = { P: [196, 160, 70], F: [70, 118, 52], M: [112, 96, 82], Ma: [62, 110, 100] };
+  // motif propre à chaque terrain : épis, arbres, hachures, roseaux
+  function biomeMark(b, x, y) {
+    if (b === 'F') { var cx = (x >> 3), cy = (y >> 3), h = hash(cx, cy, 3); if (h < 0.55) return false; var ox = (cx << 3) + 4 + ((h * 10) | 0) % 3 - 1, oy = (cy << 3) + 4; var dx = x - ox, dy = y - oy; return dx * dx + dy * dy <= 3.2; }
+    if (b === 'M') { if (hash(x >> 4, y >> 4, 5) < 0.35) return false; var u = (x + y) % 9, v = (x - y + 900) % 9; return (u === 0 && (y % 9) < 5) || (v === 0 && (y % 9) >= 4 && (y % 9) < 7); }
+    if (b === 'Ma') return (y % 6 === 0) && ((x + ((y / 6) | 0) * 5) % 11 < 5) && hash(x >> 3, y >> 3, 9) > 0.25;
+    if (b === 'P') return (x % 7 === 0) && (y % 7 === 3 || y % 7 === 4) && hash(x >> 2, y >> 2, 13) > 0.55;
+    return false;
+  }
   function drawBase(st, rs, canvas) {
     var ctx = canvas.getContext('2d'), gw = rs.gw, gh = rs.gh;
     var img = ctx.createImageData(gw, gh), d = img.data, m = st.map;
     for (var i = 0; i < gw * gh; i++) {
       var k = rs.kind[i], x = i % gw, y = (i / gw) | 0, n = hash(x >> 1, y >> 1, 11) * 10 - 5, r, g, b;
       if (k === 1) {
-        var c = BIOME_LAND[m.terr[rs.id[i]].biome]; r = c[0] + n; g = c[1] + n; b = c[2] + n;
+        var bi = m.terr[rs.id[i]].biome, c = BIOME_LAND[bi]; r = c[0] + n; g = c[1] + n; b = c[2] + n;
+        if (rs.dist[i] > 2 && biomeMark(bi, x, y)) { var ik = BIOME_INK[bi]; r = ik[0]; g = ik[1]; b = ik[2]; }
         if (rs.dist[i] === 0) {
           // côte : trait épais ; frontière intérieure : trait fin
           var coast = isCoast(rs, i);
@@ -114,20 +125,19 @@
       var sx = rs.minX + (j % gw) * PX, sy = rs.minY + ((j / gw) | 0) * PX;
       ctx.beginPath(); ctx.moveTo(sx - 4, sy); ctx.quadraticCurveTo(sx - 2, sy - 2.5, sx, sy); ctx.quadraticCurveTo(sx + 2, sy + 2.5, sx + 4, sy); ctx.stroke();
     }
-    ctx.globalAlpha = 0.8;
+    rs.icons = {};
     m.terr.forEach(function (t) {
-      var ic = IMG['biome-' + t.biome]; if (!ic) return;
       var pts = [], tries = 0;
-      while (pts.length < 3 && tries < 400) {
+      while (pts.length < 2 && tries < 500) {
         tries++;
         var jj = Math.floor(hash(t.id * 97 + tries, 7, rs.seed) * gw * gh);
         if (rs.kind[jj] !== 1 || rs.id[jj] !== t.id || rs.dist[jj] < 6) continue;
         var px = rs.minX + (jj % gw) * PX, py = rs.minY + ((jj / gw) | 0) * PX, a = rs.anchorT[t.id];
-        if (Math.abs(px - a.x) < 16 && Math.abs(py - a.y) < 18) continue;
-        if (pts.some(function (p) { return Math.abs(p.x - px) < 11 && Math.abs(p.y - py) < 11; })) continue;
+        if (Math.abs(px - a.x) < 26 && Math.abs(py - a.y) < 24) continue;
+        if (pts.some(function (p) { return Math.abs(p.x - px) < 18 && Math.abs(p.y - py) < 18; })) continue;
         pts.push({ x: px, y: py });
       }
-      pts.forEach(function (p) { var s2 = 10 / Math.max(ic.width, ic.height); ctx.drawImage(ic, p.x - ic.width * s2 / 2, p.y - ic.height * s2 / 2, ic.width * s2, ic.height * s2); });
+      rs.icons[t.id] = pts.slice(0, 2);
     });
     ctx.restore();
   }
@@ -154,7 +164,7 @@
     for (var i = 0; i < gw * gh; i++) {
       var k = rs.kind[i]; if (k !== 1 && k !== 2) continue;
       var loc = (k === 1 ? 't' : 's') + rs.id[i], di = rs.dist[i], a = 0, c = null;
-      if (k === 1 && ownCol[rs.id[i]]) { c = ownCol[rs.id[i]]; a = di <= 2 ? 0.95 : di <= 5 ? 0.35 : 0.2; if (di === 0) a = 0; }
+      if (k === 1 && ownCol[rs.id[i]]) { c = ownCol[rs.id[i]]; a = di <= 2 ? 0.95 : di <= 4 ? 0.3 : 0.08; if (di === 0) a = 0; }
       if (reach[loc] !== undefined) { c = [255, 196, 64]; a = di <= 3 ? 0.95 : 0.42; }
       if (picks[loc]) { c = [70, 190, 110]; a = di <= 3 ? 0.95 : 0.4; }
       if (view.sel === loc && di <= 3 && di > 0) { c = [255, 255, 245]; a = 1; }
@@ -173,6 +183,7 @@
       var i = gy * rs.gw + gx; return rs.kind[i] === 1 ? 't' + rs.id[i] : rs.kind[i] === 2 ? 's' + rs.id[i] : null;
     },
     anchor: function (loc) { if (!cache) return { x: 0, y: 0 }; return loc[0] === 't' ? cache.anchorT[+loc.slice(1)] : cache.anchorS[+loc.slice(1)]; },
+    icons: function (tid) { return cache && cache.icons ? cache.icons[tid] || [] : []; },
     bounds: function () { return cache ? { x: cache.minX, y: cache.minY, w: cache.w, h: cache.h } : null; },
     prepare: function (st, baseCanvas, done) {
       var key = st.seed + ':' + st.map.terr.length;

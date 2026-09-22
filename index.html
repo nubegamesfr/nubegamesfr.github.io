@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Fields of Fire · Nube Games, studio indépendant de jeux de société</title>
-<meta name="description" content="Nube Games est un studio indépendant de jeux de société. Son premier jeu, Fields of Fire, est en prototype : participez aux parties tests et jouez bientôt gratuitement en ligne.">
+<meta name="description" content="Nube Games est un studio indépendant de jeux de société. Son premier jeu, Fields of Fire, est jouable gratuitement en ligne en version prototype : sur un même écran ou à distance avec un code de salon.">
 <link rel="canonical" href="https://nubegames.fr/">
 <link rel="alternate" hreflang="fr" href="https://nubegames.fr/">
 <link rel="alternate" hreflang="en" href="https://nubegames.fr/en/">
@@ -19,7 +19,7 @@
 <meta property="og:locale:alternate" content="en_GB">
 <meta property="og:url" content="https://nubegames.fr/">
 <meta property="og:title" content="Fields of Fire · Un jeu de société se prépare">
-<meta property="og:description" content="Le premier jeu de Nube Games est en prototype. Participez aux playtests, et jouez bientôt gratuitement en ligne.">
+<meta property="og:description" content="Le prototype de Fields of Fire est jouable gratuitement dans votre navigateur, de 3 à 6 joueurs, en local ou en ligne.">
 <meta property="og:image" content="https://nubegames.fr/assets/images/og-image.jpg">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -33,7 +33,7 @@
 
 <link rel="preload" href="assets/fonts/cinzel-700.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="assets/fonts/unbounded.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/style.css?v=1.3">
 
 <script type="application/ld+json">
 {
@@ -59,7 +59,7 @@
       "@type": "Game",
       "@id": "https://nubegames.fr/#fields-of-fire",
       "name": "Fields of Fire",
-      "description": "Jeu de société physique de Nube Games, actuellement en prototype.",
+      "description": "Jeu de société de Nube Games, en prototype, jouable gratuitement en ligne dans le navigateur (3 à 6 joueurs).",
       "numberOfPlayers": { "@type": "QuantitativeValue", "minValue": 3, "maxValue": 6 },
       "url": "https://nubegames.fr/#fields-of-fire",
       "image": "https://nubegames.fr/assets/images/fields-of-fire-prototype-cover.webp",
@@ -82,11 +82,12 @@
       <li><a href="#fields-of-fire">Le jeu</a></li>
       <li><a href="#projet">Déroulement</a></li>
       <li><a href="#jouer">Jouer</a></li>
+      <li><a href="#playtest">Playtests</a></li>
     </ul>
   </nav>
   <div class="nav-end">
     <a class="lang" href="en/" hreflang="en" lang="en" aria-label="English version">EN</a>
-    <a class="btn btn-sm" href="#playtest">Playtests</a>
+    <a class="btn btn-sm" href="/fields-of-fire/">Jouer</a>
   </div>
 </header>
 
@@ -108,7 +109,7 @@
     </div>
 
     <div class="hero-inner">
-      <p class="status"><span class="dot"></span>Prototype · Mise en place</p>
+      <p class="status"><span class="dot"></span>Prototype · Jouable en ligne</p>
 
       <div class="hero-crown" data-depth="-0.6">
         <img src="assets/images/fields-of-fire-crown.webp" alt="" width="420" height="459" fetchpriority="high">
@@ -119,10 +120,10 @@
         <span class="line"><span>Fields</span></span>
         <span class="line"><span><em>of</em> Fire</span></span>
       </h1>
-      <p class="hero-tag">La partie se prépare.</p>
+      <p class="hero-tag">La partie est lancée. À vous de jouer.</p>
       <div class="hero-cta">
-        <a class="btn magnetic" href="#fields-of-fire">Découvrir le jeu</a>
-        <a class="btn btn-ghost magnetic" href="#contact">Rejoindre la table</a>
+        <a class="btn magnetic" href="/fields-of-fire/">Jouer gratuitement</a>
+        <a class="btn btn-ghost magnetic" href="#fields-of-fire">Découvrir le jeu</a>
       </div>
     </div>
 
@@ -136,7 +137,7 @@
   <!-- ============ MARQUEE ============ -->
   <div class="marquee" aria-hidden="true">
     <div class="marquee-track" id="marquee">
-      <span>Fields of Fire</span><i></i><span>Mise en place</span><i></i><span>À vous de jouer</span><i></i><span>Tour suivant</span><i></i><span>Nube Games</span><i></i>
+      <span>Fields of Fire</span><i></i><span>Jouable en ligne</span><i></i><span>À vous de jouer</span><i></i><span>Tour suivant</span><i></i><span>Nube Games</span><i></i>
     </div>
   </div>
 
@@ -154,13 +155,15 @@
       <div class="game-text">
         <p class="kicker reveal"><span>01</span> La boîte</p>
         <h2 class="display reveal" id="game-title">Fields of Fire</h2>
-        <p class="lead reveal">Le premier jeu de Nube Games. Un prototype accessible en ligne gratuitement pour les joueurs.</p>
+        <p class="lead reveal">Le premier jeu de Nube Games. Conquérez, bâtissez, et choisissez votre voie : l’épée, la foi ou la diplomatie. Le prototype se joue gratuitement dans votre navigateur.</p>
 
         <!-- À compléter quand les infos seront annoncées : remplacer « À annoncer » -->
         <dl class="facts reveal">
           <div><dt>Type</dt><dd>Jeu de société</dd></div>
           <div><dt>Statut</dt><dd><span class="tag tag-live">Prototype</span></dd></div>
           <div><dt>Joueurs</dt><dd>3 à 6</dd></div>
+          <div><dt>En ligne</dt><dd>Gratuit, sans inscription</dd></div>
+          <div><dt>Modes</dt><dd>Même écran ou à distance</dd></div>
         </dl>
       </div>
     </div>
@@ -197,8 +200,8 @@
         <li class="step">
           <span class="step-n">Tour 3</span>
           <h3>En ligne</h3>
-          <p>Jouable gratuitement, dans le navigateur.</p>
-          <span class="tag">Prochain tour</span>
+          <p>Jouable gratuitement dans le navigateur, sur un même écran ou à distance.</p>
+          <span class="tag tag-live">En jeu</span>
         </li>
         <li class="step">
           <span class="step-n">Tour 4</span>
@@ -226,13 +229,18 @@
     <div class="wrap play-inner">
       <p class="kicker kicker-light reveal"><span>03</span> Partie en ligne</p>
       <h2 class="play-title reveal" id="play-title">Play<br>Fields of Fire</h2>
-      <p class="play-sub reveal">Bientôt disponible gratuitement, dans votre navigateur.</p>
+      <p class="play-sub reveal">Gratuit, dans votre navigateur, sans inscription.</p>
+      <ol class="play-how reveal">
+        <li><b>Créez un salon</b><span>ou jouez à plusieurs sur le même écran</span></li>
+        <li><b>Partagez le code</b><span>vos amis rejoignent depuis leur ordinateur</span></li>
+        <li><b>Lancez la partie</b><span>de 3 à 6 dirigeants</span></li>
+      </ol>
 
       <!-- Le bouton s'active tout seul quand SITE.playUrl est renseigné dans /js/main.js -->
       <div class="reveal">
         <a class="play-btn" id="play-btn" role="link" aria-disabled="true">
           <span class="play-ico" aria-hidden="true"></span>
-          <span class="play-label">Bientôt disponible</span>
+          <span class="play-label">Jouer</span>
         </a>
       </div>
       <!-- Emplacement réservé pour intégrer le jeu (iframe ou application) plus tard -->
@@ -294,6 +302,7 @@
       <li data-github hidden><a href="#" rel="noopener">GitHub</a></li>
     </ul>
     <p class="copy">© <span id="year">2026</span> Nube Games · Jeux de société indépendants</p>
+    <p class="legal">Les illustrations visibles sur le prototype de Fields of Fire sont utilisées à titre illustratif uniquement et n’appartiennent en aucun cas à Nube Games. Musiques du jeu : RandomMind, domaine public (CC0).</p>
   </div>
 </footer>
 
@@ -304,6 +313,6 @@
   </symbol>
 </svg>
 
-<script src="js/main.js" defer></script>
+<script src="js/main.js?v=1.3" defer></script>
 </body>
 </html>
