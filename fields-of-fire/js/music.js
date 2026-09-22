@@ -19,12 +19,12 @@
       { t: 'Battle', a: 'Wolfgang_', f: 'battle.mp3', u: OGA + 'Battle.mp3' }
     ]
   };
-  var prefs = { vol: 0.35, sfx: 0.8, muted: false };
+  var prefs = { vol: 0.35, sfx: 0.8, muted: false }, localOK = null; // localOK : les fichiers music/ existent-ils sur ce site ?
   try { var sv = JSON.parse(localStorage.getItem('fof-music')); if (sv) { if (typeof sv.vol === 'number') prefs.vol = sv.vol; if (typeof sv.sfx === 'number') prefs.sfx = sv.sfx; prefs.muted = !!sv.muted; } } catch (e) {}
   function savePrefs() { try { localStorage.setItem('fof-music', JSON.stringify(prefs)); } catch (e) {} }
 
   // une piste par ambiance, avec fondu enchaîné
-  function Deck(name) { this.name = name; this.order = []; this.pos = 0; this.audio = null; this.tried = false; this.fails = 0; this.level = 0; }
+  function Deck(name) { this.name = name; this.order = []; this.pos = 0; this.audio = null; this.tried = false; this.fails = 0; this.level = 0; this.lastT = 0; this.lastMove = 0; this.retries = 0; this.seekTo = 0; this.everPlayed = false; }
   Deck.prototype.list = function () { return LISTS[this.name]; };
   Deck.prototype.cur = function () { return this.list()[this.order[this.pos]]; };
   Deck.prototype.shuffle = function () { this.order = this.list().map(function (_, i) { return i; }).sort(function () { return Math.random() - 0.5; }); this.pos = 0; };
@@ -34,13 +34,27 @@
     if (!this.audio) {
       this.audio = new Audio(); this.audio.preload = 'auto';
       this.audio.addEventListener('ended', function () { self.next(); });
-      this.audio.addEventListener('playing', function () { self.fails = 0; ui(); });
+      this.audio.addEventListener('playing', function () { self.fails = 0; self.everPlayed = true; self.lastMove = Date.now(); if (!self.tried) localOK = true; ui(); });
+      this.audio.addEventListener('timeupdate', function () { var t = self.audio.currentTime; if (t > self.lastT + 0.05 || t < self.lastT - 1) { self.lastT = t; self.lastMove = Date.now(); if (t > 5) self.retries = 0; } });
+      this.audio.addEventListener('loadedmetadata', function () { if (self.seekTo > 0) { try { self.audio.currentTime = Math.min(self.seekTo, self.audio.duration - 1); } catch (e) {} self.seekTo = 0; } });
       this.audio.addEventListener('error', function () {
-        if (!self.tried) { self.tried = true; self.audio.src = self.cur().u; self.play(); }
+        // coupure réseau en pleine lecture : on reprend le même morceau là où il s'était arrêté
+        if (self.everPlayed && self.retries < 3) return self.recover();
+        if (!self.tried) { self.tried = true; if (!self.everPlayed) localOK = false; self.audio.src = self.cur().u; self.play(); }
         else if (++self.fails < self.list().length) setTimeout(function () { self.next(); }, 400);
       });
     }
-    this.tried = false; this.audio.src = 'music/' + this.cur().f; this.apply();
+    this.everPlayed = false; this.retries = 0; this.lastT = 0; this.seekTo = 0;
+    if (localOK === false) { this.tried = true; this.audio.src = this.cur().u; } else { this.tried = false; this.audio.src = 'music/' + this.cur().f; }
+    this.apply();
+  };
+  // relance le morceau courant à la dernière position connue (après une coupure ou un blocage du flux)
+  Deck.prototype.recover = function () {
+    if (!this.audio) return;
+    this.retries++; var t = this.lastT, src = this.audio.currentSrc || this.audio.src;
+    if (this.retries > 3) { this.retries = 0; return this.next(); }
+    this.seekTo = t; this.audio.src = src; this.lastMove = Date.now();
+    if (this.level > 0) this.play();
   };
   Deck.prototype.next = function () { this.pos++; if (this.pos >= this.order.length) this.shuffle(); this.load(); if (this.level > 0) this.play(); ui(); };
   Deck.prototype.play = function () { if (!this.audio) this.load(); if (started && !prefs.muted) this.audio.play().catch(function () {}); };
@@ -61,6 +75,12 @@
     ui();
   }
   FOF.musicMode = function (name) { if (LISTS[name]) fadeTo(name); };
+  // chien de garde : si la musique active ne progresse plus depuis 8 s alors qu'elle devrait jouer, on la relance
+  setInterval(function () {
+    var d = decks[active]; if (!started || prefs.muted || !d.audio || d.level <= 0 || !d.everPlayed) return;
+    if (d.audio.paused && !d.audio.ended && document.visibilityState === 'visible') { d.audio.play().catch(function () {}); return; }
+    if (!d.audio.paused && Date.now() - d.lastMove > 8000) d.recover();
+  }, 3000);
   function start() {
     if (started) return; started = true;
     decks[active].load(); decks[active].play(); ui();
@@ -71,7 +91,7 @@
     document.querySelectorAll('.music').forEach(function (el) {
       var off = prefs.muted || prefs.vol === 0, d = decks[active];
       var b = el.querySelector('[data-mute]'), r = el.querySelector('input[data-vol="music"]'), r2 = el.querySelector('input[data-vol="sfx"]'), n = el.querySelector('.mtitle');
-      if (b) { b.textContent = off ? '🔇' : '🎵'; b.setAttribute('aria-pressed', String(off)); b.title = off ? 'Activer la musique' : 'Couper la musique'; }
+      if (b) { b.textContent = off ? '🔇' : '🎵'; b.setAttribute('aria-pressed', String(off)); b.title = (off ? 'Activer la musique' : 'Couper la musique') + (d.audio ? ' — en cours : ' + d.cur().t + ' (' + d.cur().a + ')' : ''); }
       if (r && document.activeElement !== r) r.value = Math.round(prefs.vol * 100);
       if (r2 && document.activeElement !== r2) r2.value = Math.round(prefs.sfx * 100);
       var fx = el.querySelector('[data-msfx]'); if (fx) { fx.textContent = prefs.sfx > 0 ? '🔔' : '🔕'; fx.title = prefs.sfx > 0 ? 'Couper les bruitages' : 'Activer les bruitages'; }

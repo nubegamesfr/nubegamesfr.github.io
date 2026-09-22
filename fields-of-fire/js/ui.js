@@ -70,13 +70,21 @@
     if (FOF.FX) FOF.FX.after(st, before, { color: color, myTurn: myTurn(), online: !!net, seat: net ? net.seatIndex() : null });
     // musique épique pendant les combats
     if (FOF.musicMode) {
-      var battle = modal && (modal.kind === 'attack' || modal.kind === 'combat');
+      var battle = isBattle();
       if (battle) { clearTimeout(calmT); calmT = null; FOF.musicMode('battle'); }
-      else if (!calmT) calmT = setTimeout(function () { calmT = null; if (!(modal && (modal.kind === 'attack' || modal.kind === 'combat'))) FOF.musicMode('calm'); }, 5000);
+      else if (!calmT) calmT = setTimeout(function () { calmT = null; if (!isBattle()) FOF.musicMode('calm'); }, 15000);
     }
     scheduleBot();
   }
 
+  // musique de bataille : seulement quand un humain est concerné (pas pour les combats entre bots)
+  function isBattle() {
+    if (!modal || (modal.kind !== 'attack' && modal.kind !== 'combat')) return false;
+    if (modal.kind === 'attack') return true;
+    var c = st.lastCombat; if (!c) return false;
+    var hum = function (pid) { var q = st.players[pid]; return q && !q.bot && (!net || net.seatIndex() === pid); };
+    return hum(c.att) || hum(c.def);
+  }
   /* ---------- adversaires ordinateur : ils jouent une action à la fois, à un rythme lisible ---------- */
   var botT = null;
   function botActive() {
