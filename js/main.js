@@ -7,7 +7,7 @@ const SITE = {
   // Formulaire : identifiant FormSubmit (chaîne aléatoire, l'adresse e-mail n'apparaît jamais dans le code)
   formId: 'FORM_ID',
   // URL du jeu en ligne. Vide = bouton « Bientôt disponible ».
-  playUrl: '',
+  playUrl: '/fields-of-fire/',
   // Mettre true pour afficher le jeu directement dans la page (iframe) au lieu d'un lien.
   playEmbed: false,
   // Lien GitHub (affiché dans le footer seulement s'il est renseigné).

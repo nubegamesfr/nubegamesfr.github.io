@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Fields of Fire</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alegreya+Sans:wght@400;700;800&family=Cinzel:wght@500;700&family=Grenze:wght@600;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<section id="setup" hidden>
+  <div class="setup-inner">
+    <div class="cover" aria-hidden="true">
+      <h1>Fields<br>of Fire</h1>
+      <img src="assets/icons/crown.png" alt="">
+      <div class="proto">PROTOTYPE</div>
+    </div>
+    <div class="setup-form">
+      <div id="stepMode">
+        <h2>Jouer à Fields of Fire</h2>
+        <p class="lead">Trois à six dirigeants. Chacun part d’une capitale sur son propre continent : conquérez, bâtissez, et choisissez votre voie — l’épée, la foi ou la diplomatie.</p>
+        <div class="mode-grid">
+          <button class="mode-card" type="button" data-mode="local"><span class="mc-ico">🖥</span><b>Jeu local</b><span>Un seul écran pour tout le monde : on se passe la main à chaque tour.</span></button>
+          <div class="mode-card online-only"><span class="mc-ico">🌐</span><b>Jeu en ligne</b><span>Chacun sur son ordinateur. Créez un salon et partagez son code, ou rejoignez celui d’un ami.</span>
+            <label class="fld">Votre nom<input id="myName" maxlength="16" autocomplete="nickname" placeholder="ex. Aurèle"></label>
+            <button class="btn primary" type="button" data-mode="create">Créer un salon</button>
+            <div class="join-row"><input id="joinCode" maxlength="5" placeholder="CODE" aria-label="Code du salon" autocomplete="off"><button class="btn" type="button" id="joinBtn" data-mode="join">Rejoindre</button></div>
+          </div>
+        </div>
+        <p class="err" id="netErr" role="alert"></p>
+        <p class="note" id="onlineNote" hidden>Le jeu en ligne n’est pas encore activé sur ce site.</p>
+        <div class="setup-actions" id="resumeBox"></div>
+        <p class="note">Version 1.2 · prototype. Les parties sont enregistrées de façon anonyme (durée, tours, dirigeants, type de victoire…) pour équilibrer le jeu. Hugues le Bâtisseur et Aliénor l’Amirale sont à l’essai.</p>
+      </div>
+      <div id="stepLocal" hidden>
+        <button class="btn ghost small" type="button" data-back="1">← Retour</button>
+        <h2>Partie locale</h2>
+        <p class="lead">Tout le monde joue sur cet écran. Cliquez sur la fiche d’un dirigeant pour en choisir un autre.</p>
+        <div class="count-pick" id="countPick"></div>
+        <div id="rows"></div>
+        <p class="note" id="winInfo"></p>
+        <div class="setup-actions">
+          <button class="btn primary" id="startBtn" type="button">Lancer la partie</button>
+          <button class="btn" id="shuffleBtn" type="button">Tirer les dirigeants au hasard</button>
+        </div>
+      </div>
+      <div id="stepLobby" hidden>
+        <h2>Salon en ligne</h2>
+        <div id="lobby"></div>
+      </div>
+    </div>
+  </div>
+  <div id="heroPick" hidden></div>
+</section>
+
+<div id="game" hidden>
+  <header class="bar">
+    <div class="brand">Fields of Fire</div>
+    <span class="round-chip" id="roundChip"></span>
+    <div class="phases" id="phases"></div>
+    <button class="btn ghost" id="helpBtn" type="button">Règles</button>
+    <button class="btn ghost" id="newBtn" type="button">Nouvelle partie</button>
+  </header>
+  <aside class="left" id="players"></aside>
+  <main id="board">
+    <div class="banner" id="banner" hidden></div>
+    <div id="boardWrap"><canvas id="baseCv"></canvas><canvas id="ovCv"></canvas><svg id="tokens"></svg><div class="popover" id="popover" hidden></div></div>
+    <div class="legend"><span><img src="assets/icons/biome-P.png" alt="">Plaines</span><span><img src="assets/icons/biome-F.png" alt="">Forêt</span><span><img src="assets/icons/biome-M.png" alt="">Montagnes</span><span><img src="assets/icons/biome-Ma.png" alt="">Marécage</span></div>
+    <div class="board-tools"><button class="btn small" id="zoomOut" type="button" aria-label="Dézoomer">−</button><button class="btn small" id="zoomIn" type="button" aria-label="Zoomer">+</button></div>
+    <button class="btn" id="marketToggle" data-showmarket="1" type="button" hidden>Voir la zone de recrutement ▴</button>
+    <div class="market" id="market" hidden></div>
+  </main>
+  <aside class="right" id="right"></aside>
+  <section class="mat" id="mat"></section>
+</div>
+<div id="modal" hidden></div>
+
+<script src="js/config.js"></script>
+<script src="js/data.js"></script>
+<script src="js/map.js"></script>
+<script src="js/engine.js"></script>
+<script src="js/cards.js"></script>
+<script src="js/board.js"></script>
+<script src="js/net.js"></script>
+<script src="js/stats.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/main.js"></script>
+
+</body>
+</html>
