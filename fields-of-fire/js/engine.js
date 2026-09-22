@@ -14,20 +14,23 @@
         alive: true, capital: null, lpos: null, lArr: 0, lMoved: false, lConq: false, lFought: false, pact: null,
         attackedLast: false, attackedNow: false, flags: {} };
     });
-    // dirigeants : un par continent de départ, sur une case au hasard -> capitale
-    var conts = FOF.shuffle(st, range(st.map.startConts));
-    st.players.forEach(function (p, i) {
-      var cands = st.map.terr.filter(function (t) { return t.cont === conts[i]; });
-      var t = cands[FOF.ri(st, cands.length)];
-      t.ctrl = p.id; p.capital = t.id; p.lpos = 't' + t.id;
-    });
+    // v1.5 : dirigeants placés au hasard n'importe où, jamais sur deux cases voisines
+    // (on garde, parmi plusieurs tirages, celui qui les écarte le plus)
+    var TT = st.map.terr, W = st.map.W, best = null, bestD = -1;
+    for (var tr = 0; tr < 60; tr++) {
+      var pick = FOF.shuffle(st, range(TT.length)).slice(0, st.players.length), md = 99;
+      for (var i1 = 0; i1 < pick.length; i1++) for (var i2 = i1 + 1; i2 < pick.length; i2++) md = Math.min(md, FOF.hexDistance(TT[pick[i1]].hex, TT[pick[i2]].hex, W));
+      if (md >= 2 && md > bestD) { bestD = md; best = pick; }
+    }
+    if (!best) throw new Error('Placement des dirigeants impossible');
+    st.players.forEach(function (p, i) { var t = TT[best[i]]; t.ctrl = p.id; p.capital = t.id; p.lpos = 't' + t.id; });
     st.units = []; st.uid = 1;
     st.deck = []; Object.keys(FOF.ELITES).concat(Object.keys(FOF.SPECIALS)).forEach(function (k) { st.deck.push(k, k); });
     FOF.shuffle(st, st.deck); st.discard = [];
-    st.zone = [draw(st), draw(st), draw(st), draw(st)];
+    st.zone = [draw(st), draw(st), draw(st), draw(st), draw(st)];
     st.turnNo = 1; st.round = 1; st.cur = 0; st.phase = 'collect'; st.log = []; st.pending = []; st.winner = null;
     st.victory = { mil: 7 + st.n, rel: st.n === 3 ? 7 : 8, dip: 10 };
-    log(st, 'La partie commence. ' + st.players.length + ' dirigeants, ' + st.map.terr.length + ' territoires.');
+    log(st, 'Ainsi s’ouvre la chronique : ' + st.players.length + ' seigneurs se disputent ' + st.map.terr.length + ' terres.', undefined, 'start');
     startTurn(st);
     return st;
   };
@@ -36,7 +39,7 @@
     if (!st.deck.length) { st.deck = st.discard; st.discard = []; FOF.shuffle(st, st.deck); }
     return st.deck.length ? st.deck.pop() : null;
   }
-  function log(st, msg, pid) { st.logN = (st.logN || st.log.length) + 1; st.log.push({ t: st.turnNo, p: pid === undefined ? null : pid, m: msg }); if (st.log.length > 400) st.log.shift(); }
+  function log(st, msg, pid, k) { st.logN = (st.logN || st.log.length) + 1; st.log.push({ t: st.turnNo, p: pid === undefined ? null : pid, m: msg, k: k || '' }); if (st.log.length > 400) st.log.shift(); }
   FOF.log = log;
 
   /* ---------- lecture ---------- */
@@ -130,14 +133,14 @@
     if (p.dip - n < 0) {
       p.dip = 0; p.tyran = true; p.tyranStamp = st.turnNo;
       if (p.pact !== null) breakPactQuiet(st, p);
-      log(st, p.name + ' passe sous 0 de diplomatie et devient TYRAN.', p.id);
+      log(st, p.name + ' renie toute parole donnée : le voici TYRAN, honni de tous !', p.id, 'tyran');
     } else { p.dip -= n; }
-    if (why) log(st, p.name + ' perd ' + n + ' diplomatie (' + why + ').', p.id);
+    if (why) log(st, p.name + ' perd ' + n + ' de diplomatie (' + why + ') ; les cours voisines murmurent.', p.id, 'dip-');
   }
   function gainDip(st, p, n, why) {
     if (p.tyran || !p.alive || n <= 0) return;
     var g = Math.min(10, p.dip + n) - p.dip; p.dip += g;
-    if (g) log(st, p.name + ' gagne ' + g + ' diplomatie (' + why + ').', p.id);
+    if (g) log(st, p.name + ' gagne ' + g + ' de diplomatie (' + why + ') ; son nom s’élève dans les cours.', p.id, 'dip+');
   }
   function breakPactQuiet(st, p) {
     var q = st.players[p.pact]; if (!q) { p.pact = null; return; }
@@ -146,7 +149,7 @@
     q.pact = null; p.pact = null;
   }
   function breakPact(st, att, def) {
-    log(st, att.name + ' rompt son pacte avec ' + def.name + ' !', att.id);
+    log(st, att.name + ' trahit le pacte juré à ' + def.name + ' !', att.id, 'pactbreak');
     breakPactQuiet(st, att);
     loseDip(st, att, 2, 'rupture de pacte');
     gainDip(st, def, 1, 'trahi par un pacte');
@@ -175,9 +178,9 @@
     if (!p.tyran && !p.attackedLast && FOF.army(st, p.id).some(function (u) { return u.key === 'heraut'; })) gainDip(st, p, 1, 'Héraut');
     var net = inc.total - inc.upkeep;
     st.collect = { inc: inc, net: net, deficit: net < 0 ? -net : 0 };
-    if (net >= 0) { p.gold += net; log(st, p.name + ' collecte ' + inc.total + ' or, entretien ' + inc.upkeep + ' : +' + net + ' or.', p.id); }
+    if (net >= 0) { p.gold += net; log(st, p.name + ' lève l’impôt : ' + inc.total + ' écus récoltés, ' + inc.upkeep + ' pour la solde des troupes, +' + net + ' en coffre.', p.id, 'gold'); }
     else {
-      log(st, p.name + ' collecte ' + inc.total + ' or mais doit ' + inc.upkeep + ' d’entretien : déficit de ' + (-net) + '.', p.id);
+      log(st, p.name + ' lève l’impôt : ' + inc.total + ' écus, mais la solde en exige ' + inc.upkeep + ' ; il manque ' + (-net) + ' écus au trésor.', p.id, 'deficit');
       var reserve = FOF.army(st, p.id).reduce(function (a, u) { return a + u.gold; }, 0);
       if (reserve < -net) {
         // tout est perdu : toutes les unités sans assez de pièces sont défaussées
@@ -191,7 +194,7 @@
   }
   function settleDeficit(st, p) {
     FOF.army(st, p.id).slice().forEach(function (u) {
-      if (u.gold < FOF.unitDef(u.key).upkeep) { log(st, FOF.unitDef(u.key).name + ' de ' + p.name + ' est défaussé faute d’entretien.', p.id); discardUnit(st, u); }
+      if (u.gold < FOF.unitDef(u.key).upkeep) { log(st, 'Faute de solde, les ' + FOF.unitDef(u.key).name + ' de ' + p.name + ' désertent.', p.id, 'bad'); discardUnit(st, u); }
     });
     st.collect.deficit = 0;
   }
@@ -216,7 +219,7 @@
         if (FOF.terrOf(st, loser.id).filter(function (t) { return t.id !== loser.capital; }).length === 0) {
           st.pending.shift();
           var cap = T(st, loser.capital); cap.ctrl = pd.to;
-          log(st, loser.name + ' n’a plus que sa capitale : il la cède à ' + st.players[pd.to].name + '.', loser.id);
+          log(st, loser.name + ', acculé en sa dernière forteresse, remet sa capitale à ' + st.players[pd.to].name + '.', loser.id, 'capfall');
           eliminate(st, loser); continue;
         }
       }
@@ -237,7 +240,7 @@
       if (FOF.countBld(st, p.id, 'T') >= st.victory.rel) { st.winner = { pid: p.id, type: 'rel' }; break; }
       if (p.dip >= st.victory.dip) { st.winner = { pid: p.id, type: 'dip' }; break; }
     }
-    if (st.winner) log(st, '★ ' + st.players[st.winner.pid].name + ' remporte la partie !', st.winner.pid);
+    if (st.winner) log(st, '★ Gloire à ' + st.players[st.winner.pid].name + ', qui l’emporte ! Les ménestrels chanteront son nom.', st.winner.pid, 'win');
   }
   FOF.checkWin = checkWin;
   function eliminate(st, p) {
@@ -251,7 +254,7 @@
     FOF.army(st, p.id).slice().forEach(function (u) { discardUnit(st, u); });
     p.lpos = null;
     st.pending = st.pending.filter(function (x) { return x.pid !== p.id; });
-    log(st, p.name + ' est éliminé.', p.id);
+    log(st, 'La maison de ' + p.name + ' s’éteint : ses terres retournent à la friche.', p.id, 'elim');
     checkWin(st);
     if (!st.winner && st.cur === p.id) nextPlayer(st);
   }
@@ -265,7 +268,8 @@
   FOF.previewAttack = function (st, a) {
     var p = FOF.cur(st), loc = a.loc, t = loc[0] === 't' ? T(st, +loc.slice(1)) : null, d = st.players[a.target];
     var att = FOF.unitsAt(st, loc, p.id).filter(function (u) { return FOF.isElite(u.key) && !u.fought && !u.pacif; });
-    var lead = a.withLeader && p.lpos === loc && !p.lFought && !p.lConq;
+    // v1.5 : un dirigeant présent sur la case d'où part l'attaque s'engage de facto
+    var lead = p.lpos === loc && !p.lFought && !p.lConq;
     var du = FOF.unitsAt(st, loc, d.id), dl = d.lpos === loc;
     var A, D, detA = [], detD = [];
     if (t) {
@@ -333,7 +337,7 @@
       if (pv.A + ra !== pv.D + rd) break;
     }
     var win = pv.A + ra > pv.D + rd;
-    var res = { loc: loc, att: p.id, def: d.id, A: pv.A, D: pv.D, detA: pv.detA, detD: pv.detD, rolls: rolls, win: win, events: [] };
+    var res = { loc: loc, att: p.id, def: d.id, A: pv.A, D: pv.D, detA: pv.detA, detD: pv.detD, rolls: rolls, win: win, events: [], unitsA: pv.att.map(function (u) { return u.key; }), unitsD: pv.du.map(function (u) { return u.key; }), leadA: !!pv.lead, leadD: !!pv.dl, kind: a.kind };
     // Trébuchets : destruction, quel que soit le vainqueur
     if (treb && a.trebBld !== undefined && t) {
       var b = t.blds[a.trebBld];
@@ -358,7 +362,7 @@
       if (pv.lead) leaderDefeated(st, p, d, res);
     }
     st.lastCombat = res;
-    log(st, p.name + ' attaque ' + d.name + ' à ' + FOF.locName(st, loc) + ' : ' + (pv.A + ra) + ' contre ' + (pv.D + rd) + ' — ' + (win ? 'victoire' : 'défaite') + '.', p.id);
+    log(st, p.name + ' lance l’assaut contre ' + d.name + ' à ' + FOF.locName(st, loc) + ' : ' + (pv.A + ra) + ' contre ' + (pv.D + rd) + ' — ' + (win ? 'les assaillants l’emportent' : 'les défenseurs tiennent bon') + '.', p.id, win ? 'attackwin' : 'attacklose');
     checkWin(st);
   }
   function leaderDefeated(st, loser, winner, res) {
@@ -394,24 +398,24 @@
       case 'emissaire': gainDip(st, p, 2, name); discardUnit(st, u); break;
       case 'ambassadeur':
         var host = st.players.filter(function (q) { return q.capital === t.id; })[0];
-        p.pact = host.id; host.pact = p.id; log(st, p.name + ' et ' + host.name + ' concluent un pacte de non-agression.', p.id); break;
+        p.pact = host.id; host.pact = p.id; log(st, p.name + ' et ' + host.name + ' scellent un pacte de non-agression.', p.id, 'pact'); break;
       case 'pelerin':
         var tb = t.blds.filter(function (b) { return b.t === 'T' && b.o !== p.id; })[0];
         gainDip(st, p, 1, name); gainDip(st, st.players[tb.o], 1, 'pèlerinage reçu'); discardUnit(st, u); break;
       case 'colonie':
         t.ctrl = p.id; t.conqStamp = st.turnNo; if (t.blds.length < 2) t.blds.push({ t: 'C', o: p.id });
-        log(st, p.name + ' fonde une colonie à ' + t.name + '.', p.id); discardUnit(st, u); break;
+        log(st, 'Des colons de ' + p.name + ' fondent un établissement à ' + t.name + '.', p.id, 'land'); discardUnit(st, u); break;
       case 'exploratrice':
-        t.ctrl = p.id; t.conqStamp = st.turnNo; p.gold += 1; log(st, p.name + ' revendique ' + t.name + ' (+1 or).', p.id); discardUnit(st, u); break;
+        t.ctrl = p.id; t.conqStamp = st.turnNo; p.gold += 1; log(st, 'L’exploratrice de ' + p.name + ' plante sa bannière à ' + t.name + ' (+1 écu).', p.id, 'land'); discardUnit(st, u); break;
       case 'partisan':
         var cand = t.blds.map(function (b, i) { return i; }).filter(function (i) { return t.blds[i].o === t.ctrl && t.blds[i].t !== 'T'; });
         var idx = arg !== undefined && cand.indexOf(arg) >= 0 ? arg : cand[0];
-        t.blds[idx].o = p.id; log(st, 'Le Partisan de ' + p.name + ' retourne ' + B[t.blds[idx].t].name + ' à ' + t.name + '.', p.id); discardUnit(st, u); break;
+        t.blds[idx].o = p.id; log(st, 'Le Partisan de ' + p.name + ' soulève ' + B[t.blds[idx].t].name.toLowerCase() + ' de ' + t.name + ' en sa faveur.', p.id, 'convert'); discardUnit(st, u); break;
       case 'predicateur':
         var tp = t.blds.filter(function (b) { return b.t === 'T' && b.o !== p.id; })[0];
-        tp.o = p.id; log(st, 'Le Prédicateur de ' + p.name + ' convertit le temple de ' + t.name + '.', p.id); discardUnit(st, u); break;
+        tp.o = p.id; log(st, 'Le Prédicateur de ' + p.name + ' convertit les fidèles du temple de ' + t.name + '.', p.id, 'convert'); discardUnit(st, u); break;
       case 'gouverneur':
-        t.blds.forEach(function (b) { b.o = p.id; }); log(st, 'Le Gouverneur de ' + p.name + ' convertit les aménagements de ' + t.name + '.', p.id); discardUnit(st, u); break;
+        t.blds.forEach(function (b) { b.o = p.id; }); log(st, 'Le Gouverneur de ' + p.name + ' rallie les bâtisses de ' + t.name + '.', p.id, 'convert'); discardUnit(st, u); break;
     }
     checkWin(st);
   }
@@ -478,7 +482,7 @@
       case 'discardZone':
         if (st.phase !== 'recruit' || p.flags.discarded || p.flags.bought) throw new Error('Défausse impossible.');
         st.discard.push(st.zone[a.slot]); st.zone[a.slot] = draw(st); p.flags.discarded = true;
-        log(st, p.name + ' défausse une carte de la zone de recrutement.', p.id); break;
+        log(st, p.name + ' congédie un mercenaire du marché.', p.id, 'card'); break;
       case 'spy':
         if (st.phase !== 'recruit' || p.flags.spied || p.gold < 1 || !FOF.army(st, p.id).some(function (x) { return x.key === 'espion'; })) throw new Error('Espion indisponible.');
         if (!st.deck.length) { st.deck = st.discard; st.discard = []; FOF.shuffle(st, st.deck); }
@@ -492,12 +496,12 @@
         var nu = { uid: st.uid++, key: key, owner: p.id, pos: 't' + a.tid, gold: def.upkeep, arr: st.turnNo, moved: 0, fought: false, pacif: false };
         nu.movesLeft = FOF.unitMove(st, nu);
         st.units.push(nu); st.zone[a.slot] = draw(st); p.flags.bought = true;
-        log(st, p.name + ' recrute ' + def.name + ' à ' + T(st, a.tid).name + '.', p.id); break;
+        log(st, p.name + ' enrôle des ' + def.name + ' à ' + T(st, a.tid).name + '.', p.id, 'recruit'); break;
       }
       case 'release': {
         var ur = st.units.filter(function (x) { return x.uid === a.uid && x.owner === p.id; })[0];
         if (!ur || st.phase !== 'recruit' || p.flags.bought) throw new Error('Libération impossible.');
-        log(st, p.name + ' libère ' + FOF.unitDef(ur.key).name + '.', p.id);
+        log(st, p.name + ' libère ses ' + FOF.unitDef(ur.key).name + ' de leur serment.', p.id, 'card');
         discardUnit(st, ur); p.flags.released = true; break;
       }
       case 'move': {
@@ -520,7 +524,7 @@
         var lt = p.lpos && p.lpos[0] === 't' ? T(st, +p.lpos.slice(1)) : null;
         if (st.phase !== 'military' || !lt || lt.ctrl !== null || p.lArr >= st.turnNo || p.lMoved || p.lFought) throw new Error('Conquête impossible : le dirigeant doit être sur ce territoire neutre depuis votre tour précédent, sans bouger.');
         lt.ctrl = p.id; lt.conqStamp = st.turnNo; p.lConq = true; p.lMovesLeft = 0;
-        log(st, p.name + ' conquiert ' + lt.name + '.', p.id); checkWin(st); break;
+        log(st, p.name + ' plante sa bannière sur ' + lt.name + '.', p.id, 'conquer'); checkWin(st); break;
       }
       case 'attack': if (st.phase !== 'military') throw new Error('Attaques en phase militaire.'); doAttack(st, a); break;
       case 'pacify': {
@@ -528,7 +532,7 @@
         if (st.phase !== 'military' || pt.ctrl !== p.id || !(pt.conqStamp < st.turnNo) || !el2 || !FOF.isElite(el2.key) || el2.pos !== 't' + pt.id || el2.arr >= st.turnNo || el2.moved || el2.fought || !pt.blds.some(function (b) { return b.o !== p.id; }))
           throw new Error('Pacification impossible : une élite doit être en garnison ici depuis votre tour précédent.');
         pt.blds.forEach(function (b) { b.o = p.id; }); el2.pacif = true; el2.movesLeft = 0;
-        log(st, p.name + ' pacifie ' + pt.name + '.', p.id); checkWin(st); break;
+        log(st, p.name + ' pacifie ' + pt.name + ' : ses habitants se rallient.', p.id, 'convert'); checkWin(st); break;
       }
       case 'effect': {
         var eu = st.units.filter(function (x) { return x.uid === a.uid && x.owner === p.id; })[0];
@@ -539,7 +543,7 @@
       case 'build': {
         var e2 = FOF.canBuild(st, a.tid, a.btype); if (e2) throw new Error(e2);
         var c = FOF.bldCost(st, p, a.btype); p.gold -= c; T(st, a.tid).blds.push({ t: a.btype, o: p.id });
-        log(st, p.name + ' bâtit ' + B[a.btype].name + ' à ' + T(st, a.tid).name + ' (' + c + ' or).', p.id); checkWin(st); break;
+        log(st, p.name + ' fait élever ' + B[a.btype].name.toLowerCase() + ' à ' + T(st, a.tid).name + ' (' + c + ' écus).', p.id, 'build'); checkWin(st); break;
       }
       case 'replace': {
         var rt = T(st, a.tid), old = rt.blds[a.idx];
@@ -548,18 +552,18 @@
         if (a.btype === 'P' && !rt.seas.length) throw new Error('Un port doit être sur la côte.');
         var rc = FOF.bldCost(st, p, a.btype); if (p.gold < rc) throw new Error('Pas assez d’or.');
         p.gold -= rc; rt.blds[a.idx] = { t: a.btype, o: p.id };
-        log(st, p.name + ' remplace ' + B[old.t].name + ' par ' + B[a.btype].name + ' à ' + rt.name + '.', p.id); checkWin(st); break;
+        log(st, p.name + ' fait raser ' + B[old.t].name.toLowerCase() + ' de ' + rt.name + ' pour y élever ' + B[a.btype].name.toLowerCase() + '.', p.id, 'build'); checkWin(st); break;
       }
       case 'moveCapital': {
         var ct = T(st, a.tid);
         if (st.phase !== 'build' || ct.ctrl !== p.id || ct.id === p.capital || p.gold < 10) throw new Error('Déplacement de capitale impossible.');
-        p.gold -= 10; p.capital = ct.id; log(st, p.name + ' installe sa capitale à ' + ct.name + '.', p.id); break;
+        p.gold -= 10; p.capital = ct.id; log(st, p.name + ' transfère sa cour à ' + ct.name + '.', p.id, 'build'); break;
       }
       case 'cede': {
         var cdt = T(st, a.tid);
         if (st.phase !== 'build' || cdt.ctrl === null || cdt.ctrl === p.id || !cdt.blds.some(function (b) { return b.o === p.id; }) || p.tyran) throw new Error('Cession impossible.');
         cdt.blds.forEach(function (b) { if (b.o === p.id) b.o = cdt.ctrl; });
-        log(st, p.name + ' cède ses aménagements de ' + cdt.name + ' à ' + st.players[cdt.ctrl].name + '.', p.id);
+        log(st, p.name + ' remet ses bâtisses de ' + cdt.name + ' à ' + st.players[cdt.ctrl].name + ', en gage de paix.', p.id, 'cede');
         gainDip(st, p, 1, 'cession'); checkWin(st); break;
       }
       default: throw new Error('Action inconnue : ' + a.type);
@@ -577,26 +581,26 @@
         var temples = t.blds.filter(function (b) { return b.t === 'T' && b.o !== att.id; }).length;
         if (!def.tyran) { loseDip(st, att, 1, 'dévastation'); if (temples) loseDip(st, att, temples, 'temple détruit'); }
         t.ctrl = null; t.blds = [];
-        log(st, att.name + ' dévaste ' + t.name + '.', att.id);
+        log(st, att.name + ' met ' + t.name + ' à sac : il n’en reste que cendres.', att.id, 'devastate');
       } else {
         t.ctrl = att.id; t.conqStamp = st.turnNo;
-        log(st, att.name + ' conquiert ' + t.name + '.', att.id);
+        log(st, att.name + ' s’empare de ' + t.name + '.', att.id, 'conquer');
       }
-      if (def.alive && t.id === def.capital && a.choice !== 'keep') { log(st, 'La capitale de ' + def.name + ' est tombée !', def.id); eliminate(st, def); }
+      if (def.alive && t.id === def.capital && a.choice !== 'keep') { log(st, 'La capitale de ' + def.name + ' est tombée !', def.id, 'capfall'); eliminate(st, def); }
       checkWin(st);
     } else if (pend.type === 'cedeTerritory') {
       var loser = st.players[pend.pid], t2 = T(st, a.tid);
       if (t2.ctrl !== loser.id || t2.id === loser.capital) throw new Error('Choisissez un de vos territoires, hors capitale.');
       st.pending.shift();
       t2.ctrl = pend.to; t2.conqStamp = st.turnNo;
-      log(st, loser.name + ' cède ' + t2.name + ' à ' + st.players[pend.to].name + '.', loser.id);
+      log(st, 'Vaincu, ' + loser.name + ' abandonne ' + t2.name + ' à ' + st.players[pend.to].name + '.', loser.id, 'cedeterr');
       checkWin(st);
     } else if (pend.type === 'revolt') {
       var ty = st.players[pend.pid], t3 = T(st, a.tid);
       if (t3.ctrl !== ty.id || t3.id === ty.capital) throw new Error('Choisissez un territoire hors capitale.');
       st.pending.shift();
       t3.ctrl = null; t3.blds = [];
-      log(st, t3.name + ' se révolte contre le Tyran ' + ty.name + ' et redevient neutre.', ty.id);
+      log(st, 'Le peuple de ' + t3.name + ' se soulève contre le tyran ' + ty.name + ' et chasse ses baillis.', ty.id, 'revolt');
       nextPlayer(st);
     } else throw new Error('Décision inconnue.');
   }
@@ -605,7 +609,7 @@
     var p = FOF.cur(st);
     if (p.tyran && st.turnNo > p.tyranStamp) {
       var own = FOF.terrOf(st, p.id).filter(function (t) { return t.id !== p.capital; });
-      if (!own.length) { log(st, 'La capitale du Tyran ' + p.name + ' se révolte.', p.id); eliminate(st, p); return; }
+      if (!own.length) { log(st, 'La capitale du tyran ' + p.name + ' se soulève : son règne s’achève.', p.id, 'revolt'); eliminate(st, p); return; }
       st.pending.push({ type: 'revolt', pid: p.id });
       return;
     }

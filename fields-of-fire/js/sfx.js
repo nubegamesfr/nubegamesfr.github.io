@@ -1,10 +1,12 @@
 /* Fields of Fire — petits effets sonores synthétisés (Web Audio, aucun fichier, libres de droits) */
 (function (FOF) {
   'use strict';
-  var ctx = null, master = null, on = true;
-  try { var v = localStorage.getItem('fof-sfx'); if (v === '0') on = false; } catch (e) {}
+  var ctx = null, master = null, on = true, vol = 0.8;
+  try { var pv = JSON.parse(localStorage.getItem('fof-music')); if (pv && typeof pv.sfx === 'number') vol = pv.sfx; } catch (e) {}
+  on = vol > 0;
+  FOF.sfxVolume = function (v) { vol = v; on = v > 0; if (master) master.gain.value = v * 1.5; };
   function ac() {
-    if (!ctx) { var AC = window.AudioContext || window.webkitAudioContext; if (!AC) return null; ctx = new AC(); master = ctx.createGain(); master.gain.value = 0.5; master.connect(ctx.destination); }
+    if (!ctx) { var AC = window.AudioContext || window.webkitAudioContext; if (!AC) return null; ctx = new AC(); master = ctx.createGain(); master.gain.value = vol * 1.5; master.connect(ctx.destination); }
     if (ctx.state === 'suspended') ctx.resume();
     return ctx;
   }
@@ -53,10 +55,31 @@
     flag: function () { notes([392, 523, 659], 'triangle', 0.16, 0.08, 0.28); noise(0, 0.25, 900, 0.6, 0.08); },
     magic: function () { [1318, 1568, 1976, 2637].forEach(function (f, i) { tone(f, i * 0.06, 0.5, 'sine', 0.08); }); },
     draw: function () { noise(0, 0.28, 5200, 1.5, 0.22, 'bandpass'); tone(2900, 0.05, 0.4, 'sine', 0.04, 3300); },
+    // bataille : cri de guerre de la troupe + fracas d'épées
+    charge: function () {
+      var t0 = ctx.currentTime;
+      for (var v = 0; v < 7; v++) {
+        var o = ctx.createOscillator(), f = ctx.createBiquadFilter(), f2 = ctx.createBiquadFilter(), g = ctx.createGain(), lfo = ctx.createOscillator(), lg = ctx.createGain();
+        var base = 130 + Math.random() * 120, st2 = t0 + Math.random() * 0.12;
+        o.type = 'sawtooth'; o.frequency.setValueAtTime(base, st2); o.frequency.linearRampToValueAtTime(base * 1.35, st2 + 0.35); o.frequency.linearRampToValueAtTime(base * 1.2, st2 + 1.1);
+        lfo.frequency.value = 5 + Math.random() * 3; lg.gain.value = base * 0.03; lfo.connect(lg); lg.connect(o.frequency);
+        f.type = 'bandpass'; f.frequency.value = 700 + Math.random() * 200; f.Q.value = 1.4; f2.type = 'bandpass'; f2.frequency.value = 1150; f2.Q.value = 2;
+        g.gain.setValueAtTime(0.0001, st2); g.gain.exponentialRampToValueAtTime(0.09, st2 + 0.18); g.gain.setValueAtTime(0.09, st2 + 0.8); g.gain.exponentialRampToValueAtTime(0.0001, st2 + 1.3);
+        o.connect(f); f.connect(g); o.connect(f2); f2.connect(g); g.connect(master); o.start(st2); lfo.start(st2); o.stop(st2 + 1.4); lfo.stop(st2 + 1.4);
+      }
+      noise(0, 1.1, 900, 0.5, 0.12);
+      [0.35, 0.55, 0.72, 0.95, 1.12].forEach(function (t) { S.steel(t); });
+    },
+    steel: function (t) {
+      t = t || 0; [2130, 3190, 4420, 5870].forEach(function (f, i) { tone(f * (0.97 + Math.random() * 0.06), t, 0.35 - i * 0.05, 'sine', 0.07 - i * 0.012); });
+      noise(t, 0.08, 4000, 1, 0.3);
+    },
+    dice3d: function () { for (var i = 0; i < 12; i++) { var t = i * 0.09 + Math.random() * 0.04; noise(t, 0.035, 1800 + Math.random() * 2500, 4, 0.22 * (1 - i / 14)); tone(300 + Math.random() * 200, t, 0.03, 'triangle', 0.05); } noise(1.15, 0.05, 1200, 3, 0.25); },
+    tyran: function () { tone(73, 0, 2.2, 'sawtooth', 0.08); tone(110, 0.1, 2, 'sawtooth', 0.05); tone(98, 0.1, 2, 'triangle', 0.16); noise(0, 1.5, 200, 0.7, 0.2, 'lowpass'); [0, 0.5, 1].forEach(function (t) { tone(55, t, 0.5, 'sine', 0.35, 40); }); },
     error: function () { tone(140, 0, 0.16, 'square', 0.06); tone(110, 0.08, 0.18, 'square', 0.05); }
   };
   var last = {};
-  var UI = { click: 1, tap: 1, select: 1, march: 1, page: 1, bell: 1, coins: 1, card: 1, mallet: 1, flag: 1, magic: 1, draw: 1, dip: 1, spend: 1 };
+  var UI = { charge: 1, click: 1, tap: 1, select: 1, march: 1, page: 1, bell: 1, coins: 1, card: 1, mallet: 1, flag: 1, magic: 1, draw: 1, dip: 1, spend: 1 };
   FOF.sfxLast = 0;
   FOF.sfx = function (name) {
     if (UI[name]) FOF.sfxLast = Date.now();
@@ -65,6 +88,7 @@
     try { if (!ac()) return; S[name](); } catch (e) {}
   };
   FOF.sfxOn = function () { return on; };
+  FOF.sfxRaw = S;
   FOF.sfxToggle = function () { on = !on; try { localStorage.setItem('fof-sfx', on ? '1' : '0'); } catch (e) {} if (on) FOF.sfx('coin'); return on; };
   document.addEventListener('click', function () { if (on) ac(); }, { once: true, capture: true });
 })(window.FOF = window.FOF || {});

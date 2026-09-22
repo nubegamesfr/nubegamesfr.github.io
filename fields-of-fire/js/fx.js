@@ -40,27 +40,14 @@
     f.style.left = (r.left + r.width / 2) + 'px'; f.style.top = (r.top + 4) + 'px';
     document.body.appendChild(f); setTimeout(function () { f.remove(); }, 1500);
   }
-  var RULES = [
-    [/remporte la partie/, null],
-    [/capitale de .* est tombée/, 'pop', '🏰', 'bad'],
-    [/dévaste/, 'pop', '🔥', 'bad'],
-    [/conquiert/, 'pop', '🚩', 'good'],
-    [/devient TYRAN/, 'pop', '👑', 'bad'],
-    [/est éliminé/, 'pop', '☠', 'bad'],
-    [/concluent un pacte/, 'pop', '🤝', 'good'],
-    [/rompt son pacte/, 'pop', '💔', 'bad'],
-    [/attaque .*— victoire/, 'toast', '⚔', 'good'],
-    [/attaque/, 'toast', '🛡', 'bad'],
-    [/recrute/, 'toast', '📜', 'good'],
-    [/bâtit|remplace/, 'toast', '🏗', 'good'],
-    [/fonde une colonie|revendique/, 'toast', '🚩', 'good'],
-    [/collecte/, 'toast', '🪙', 'good'],
-    [/gagne .* diplomatie/, 'toast', '🤝', 'good'],
-    [/perd .* diplomatie|défaussé faute|se révolte|cède|déficit/, 'toast', '⚠', 'bad'],
-    [/pacifie|convertit|retourne/, 'toast', '✦', 'good'],
-    [/./, 'toast', '•', '']
-  ];
-  function classify(m) { for (var i = 0; i < RULES.length; i++) if (RULES[i][0].test(m)) return RULES[i]; return null; }
+  var KIND = {
+    capfall: ['pop', '🏰', 'bad'], devastate: ['pop', '🔥', 'bad'], conquer: ['pop', '🚩', 'good'], tyran: ['tyran', '👑', 'bad'],
+    elim: ['pop', '☠', 'bad'], pact: ['pop', '🤝', 'good'], pactbreak: ['pop', '💔', 'bad'], revolt: ['pop', '🔥', 'bad'],
+    attackwin: ['toast', '⚔', 'good'], attacklose: ['toast', '🛡', 'bad'], recruit: ['toast', '📜', 'good'], build: ['toast', '🔨', 'good'],
+    land: ['toast', '🚩', 'good'], gold: ['toast', '🪙', 'good'], deficit: ['toast', '⚠', 'bad'], 'dip+': ['toast', '🤝', 'good'], 'dip-': ['toast', '⚠', 'bad'],
+    bad: ['toast', '⚠', 'bad'], cede: ['toast', '🤝', 'good'], cedeterr: ['toast', '⚠', 'bad'], convert: ['toast', '✦', 'good'], card: ['toast', '🂠', ''], win: [null]
+  };
+  function classify(l) { var r = KIND[l.k]; return r ? [null].concat(r) : [null, 'toast', '•', '']; }
   function toast(text, icon, tone, col) {
     var el = fxLayer(), box = el.querySelector('.fx-toasts');
     if (!box) { box = document.createElement('div'); box.className = 'fx-toasts'; el.appendChild(box); }
@@ -76,6 +63,12 @@
     el.appendChild(p); setTimeout(function () { p.remove(); }, 2300);
   }
   FOF.FX_pop = pop;
+  function tyranPop(p) {
+    if (!p) return;
+    var el = document.createElement('div'); el.className = 'fx-tyran';
+    el.innerHTML = '<div class="ty-crown">👑</div><div class="ty-t">TYRAN</div><div class="ty-n">' + FOF.esc(p.name) + ' a renié toute parole donnée.</div><div class="ty-s">Tous peuvent désormais l’attaquer sans perdre de diplomatie, et ses terres se révolteront à chaque tour.</div>';
+    document.body.appendChild(el); setTimeout(function () { el.classList.add('out'); setTimeout(function () { el.remove(); }, 600); }, 4200);
+  }
   var pendingGold = 0;
   FOF.FX_flushGold = function () { if (pendingGold) { var n = pendingGold; pendingGold = 0; setTimeout(function () { goldPop(n); }, 120); } };
   function goldPop(n) {
@@ -103,8 +96,9 @@
     after: function (st, before, o) {
       var cur = snap(st);
       if (reduce || !prev || prev.seed !== cur.seed) { prev = cur; return; }
+      var anim = FOF.animOn !== false;
       // 1) les pions glissent vers leur nouvelle case
-      document.querySelectorAll('#tokens .tk').forEach(function (g) {
+      if (anim) document.querySelectorAll('#tokens .tk').forEach(function (g) {
         var k = g.dataset.tk + '|' + g.dataset.own, p0 = before.pos[k]; if (!p0) { g.classList.add('fx-in'); return; }
         var dx = p0[0] - +g.dataset.x, dy = p0[1] - +g.dataset.y; if (Math.abs(dx) + Math.abs(dy) < 0.5) return;
         var inner = g.querySelector('.tki'); if (!inner) return;
@@ -114,7 +108,7 @@
         g.classList.add('fx-moved');
       });
       // 2) nouveau tour / nouvelle phase
-      if (!cur.winner) {
+      if (!cur.winner && anim) {
         if (cur.turnNo !== prev.turnNo) {
           var p = st.players[st.cur];
           banner('<small>Tour ' + st.round + '</small><b>' + FOF.esc(p.name) + '</b><span>' + FOF.esc(FOF.LEADERS[p.leader].name) + '</span>', o.color(p.id));
@@ -123,7 +117,7 @@
         }
       }
       // 3) territoires qui changent de main
-      cur.ctrl.forEach(function (c, i) { if (c !== prev.ctrl[i]) svgRing('t' + i, c === null ? '#f1d488' : o.color(c)); });
+      if (anim) cur.ctrl.forEach(function (c, i) { if (c !== prev.ctrl[i]) svgRing('t' + i, c === null ? '#f1d488' : o.color(c)); });
       // 4) nouveaux aménagements
       cur.blds.forEach(function (b, i) {
         if (b === prev.blds[i]) return;
@@ -133,7 +127,7 @@
       // 4b) grand pop d'or à la collecte du joueur actif (et en ligne : seulement si c'est moi)
       if (cur.turnNo !== prev.turnNo && !cur.winner && (!o.online || o.seat === st.cur)) {
         var gd = cur.gold[st.cur] - prev.gold[st.cur];
-        if (gd !== 0) goldPop(gd);
+        /* la fenêtre de collecte affiche désormais le bilan détaillé */
       }
       // 5) or et diplomatie qui bougent
       cur.gold.forEach(function (g, i) {
@@ -150,17 +144,18 @@
       // 6) messages visuels (pop pour les grands événements, bulles pour le reste) + sons
       var snd = [], n = Math.min(4, cur.logN - prev.logN), popped = false;
       if (n > 0) st.log.slice(-n).forEach(function (l) {
-        var r = classify(l.m); if (!r || !r[1]) return;
+        var r = classify(l); if (!r || !r[1]) return;
         var col = l.p !== null && l.p !== undefined ? o.color(l.p) : null;
-        if (r[1] === 'pop' && !popped) { pop(l.m, r[2], r[3], col); popped = true; snd.push(r[3] === 'bad' ? 'bad' : /pacte/.test(l.m) ? 'dip' : 'conquer'); }
+        if (r[1] === 'tyran') { tyranPop(st.players[l.p]); snd.push('tyran'); popped = true; return; }
+        if (r[1] === 'pop' && !popped) { pop(l.m, r[2], r[3], col); popped = true; snd.push(r[3] === 'bad' ? 'bad' : l.k === 'pact' ? 'dip' : 'conquer'); }
         else toast(l.m, r[2], r[3], col);
-        if (/recrute/.test(l.m)) snd.push('recruit');
-        if (/bâtit|remplace/.test(l.m)) snd.push('build');
-        if (/gagne .* diplomatie/.test(l.m)) snd.push('dip');
+        if (l.k === 'recruit') snd.push('recruit');
+        if (l.k === 'build') snd.push('build');
+        if (l.k === 'dip+') snd.push('dip');
       });
       if (cur.combat && cur.combat !== prev.combat) {
         var c = st.lastCombat, mine = o.online ? (o.seat === c.att ? c.win : o.seat === c.def ? !c.win : null) : c.win;
-        FOF.sfx('dice'); setTimeout(function () { FOF.sfx(mine === null ? 'clash' : mine ? 'win' : 'loss'); }, 420);
+        FOF.sfx('dice3d'); setTimeout(function () { FOF.sfx(mine === null ? 'clash' : mine ? 'win' : 'loss'); }, 1350);
       } else if (cur.winner && !prev.winner) {
         FOF.sfx(!o.online || o.seat === st.winner.pid ? 'victory' : 'defeat');
       } else if (Date.now() - (FOF.sfxLast || 0) < 700) { /* le clic a déjà fait son bruit */ }

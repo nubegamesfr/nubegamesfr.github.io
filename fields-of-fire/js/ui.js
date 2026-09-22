@@ -1,7 +1,7 @@
 /* Fields of Fire — interface (hot-seat, 3 à 6 joueurs sur le même écran) */
 (function (FOF) {
   'use strict';
-  var st = null, sel = null, mode = null, pop = null, err = '', modal = null, lastTurnShown = 0, zoom = 1, marketOpen = true, net = null, combatSig = '';
+  var calmT = null, radial = null, st = null, sel = null, mode = null, pop = null, err = '', modal = null, lastTurnShown = 0, zoom = 1, marketOpen = true, net = null, combatSig = '';
   var SAVE = 'fof-save-v1';
   var $ = function (id) { return document.getElementById(id); };
   var esc = FOF.esc;
@@ -39,6 +39,9 @@
   function actor() { var pd = st.pending[0]; return pd ? pd.pid : st.cur; }
   function myTurn() { return !net || net.seatIndex() === actor(); }
   FOF.myTurn = function () { return !!st && myTurn(); };
+  FOF.currentNet = function () { return net; };
+  FOF.currentState = function () { return st; };
+  FOF.rerender = function () { if (st) render(); };
 
   function dispatch(a, keepPop) {
     if (!myTurn()) { err = 'Ce n’est pas à vous de jouer.'; return render(); }
@@ -64,12 +67,18 @@
     var before = FOF.FX ? FOF.FX.before() : null;
     renderHeader(); renderOpponents(); renderBoard(); renderMat(); renderRight(); renderModal();
     if (FOF.FX) FOF.FX.after(st, before, { color: color, myTurn: myTurn(), online: !!net, seat: net ? net.seatIndex() : null });
+    // musique épique pendant les combats
+    if (FOF.musicMode) {
+      var battle = modal && (modal.kind === 'attack' || modal.kind === 'combat');
+      if (battle) { clearTimeout(calmT); calmT = null; FOF.musicMode('battle'); }
+      else if (!calmT) calmT = setTimeout(function () { calmT = null; if (!(modal && (modal.kind === 'attack' || modal.kind === 'combat'))) FOF.musicMode('calm'); }, 5000);
+    }
   }
 
   var PHASES = [['collect', 'Collecte'], ['recruit', 'Recrutement'], ['military', 'Militaire'], ['build', 'Construction']];
   function renderHeader() {
     var pi = PHASES.map(function (x) { return x[0]; }).indexOf(st.phase);
-    $('phases').innerHTML = PHASES.map(function (x, i) { return '<span class="phase ' + (i === pi ? 'on' : i < pi ? 'done' : '') + '"><span class="n">' + (i + 1) + '</span><span class="t">' + x[1] + '</span></span>'; }).join('');
+    $('phases').innerHTML = PHASES.map(function (x, i) { if (x[0] === 'collect') return ''; return '<span class="phase ' + (i === pi ? 'on' : i < pi ? 'done' : '') + '"><span class="n">' + i + '</span><span class="t">' + x[1] + '</span></span>'; }).join('');
     $('roundChip').innerHTML = 'Tour ' + st.round + (net ? ' · <span class="room-code" title="Code du salon">' + net.code + '</span> · vous : <b style="color:' + color(net.seatIndex()) + '">' + esc(st.players[net.seatIndex()].name) + '</b>' : '');
   }
 
@@ -81,7 +90,7 @@
         '<div><div class="nm"><span>' + esc(p.name) + '</span>' + pills + '</div><div class="ld">' + esc(FOF.LEADERS[p.leader].name) + '</div>' +
         '<div class="st"><span title="Or"><span class="coin" style="width:11px;height:11px;vertical-align:-1px"></span> <b>' + p.gold + '</b></span>' +
         '<span title="Diplomatie">🤝 <b>' + (p.tyran ? '—' : p.dip) + '</b></span>' +
-        '<span title="Territoires"><img class="icn" src="assets/icons/bld-C.png" alt=""> <b>' + terr + '/' + st.victory.mil + '</b></span>' +
+        '<span title="Territoires"><img class="icn" src="assets/icons/terr.svg" alt=""> <b>' + terr + '/' + st.victory.mil + '</b></span>' +
         '<span title="Temples"><img class="icn" src="assets/icons/bld-T.png" alt=""> <b>' + tem + '/' + st.victory.rel + '</b></span></div></div></div>';
     }).join('');
   }
@@ -99,10 +108,15 @@
     wrap.dataset.scale = sc;
     var picks = pickTargets();
     FOF.Board.overlay(st, $('ovCv'), { sel: sel, picks: picks }, color);
-    FOF.Board.reach(st, $('rcCv'), mode && mode.kind === 'move' ? mode.reach : null);
+    FOF.Board.ambient(st, $('amCv'));
+    var blink = null;
+    if (mode && mode.kind === 'move') blink = mode.reach;
+    else if (mode && mode.kind === 'deploy') { blink = {}; mode.spots.forEach(function (tid) { blink['t' + tid] = 1; }); }
+    FOF.Board.reach(st, $('rcCv'), blink);
     $('tokens').setAttribute('viewBox', b.x + ' ' + b.y + ' ' + b.w + ' ' + b.h);
     $('tokens').innerHTML = tokensSVG();
     renderPopover(sc);
+    renderRadial(sc, b);
     var ban = banner();
     $('banner').hidden = !ban; if (ban) $('banner').innerHTML = '<span>' + ban + '</span>' + (mode ? '<button class="btn small" data-cancel="1">Annuler</button>' : '');
     renderMarket();
@@ -118,15 +132,15 @@
       var a = FOF.Board.anchor('t' + t.id); if (!a) return;
       if (t.ctrl !== null && st.players[t.ctrl].capital === t.id && st.players[t.ctrl].alive) {
         var fc = color(t.ctrl);
-        out.push('<g class="flag" transform="translate(' + (a.x - 17) + ' ' + (a.y - 12) + ')"><line x1="0" y1="0" x2="0" y2="-19" stroke="#2a2118" stroke-width="1.6" stroke-linecap="round"/><path class="flagcloth" d="M0.8 -18.5 C5 -20.5 8 -16 13 -17.5 L13 -9 C8 -7.5 5 -12 0.8 -10 Z" fill="' + fc + '" stroke="#1b1712" stroke-width=".7"/><circle cx="0" cy="-19.5" r="1.4" fill="#e2b448"/></g>');
+        out.push('<g class="flag" transform="translate(' + (a.x - Math.max(12, t.blds.length * 8.5 + 5)) + ' ' + (a.y - 2) + ')"><line x1="0" y1="0" x2="0" y2="-19" stroke="#2a2118" stroke-width="1.6" stroke-linecap="round"/><path class="flagcloth" d="M0.8 -18.5 C5 -20.5 8 -16 13 -17.5 L13 -9 C8 -7.5 5 -12 0.8 -10 Z" fill="' + fc + '" stroke="#1b1712" stroke-width=".7"/><circle cx="0" cy="-19.5" r="1.4" fill="#e2b448"/></g>');
       }
       var nb = t.blds.length;
       t.blds.forEach(function (bd, i) {
-        var bx = a.x - (nb * 16) / 2 + i * 16, by = a.y + 19;
+        var bx = a.x - (nb * 17) / 2 + i * 17, by = a.y - 16;
         out.push('<rect x="' + bx + '" y="' + by + '" width="15" height="15" rx="3" fill="#f7efd9" stroke="' + color(bd.o) + '" stroke-width="2"/><image href="assets/icons/bld-' + bd.t + '.png" x="' + (bx + 2) + '" y="' + (by + 2) + '" width="11" height="11"/>');
       });
       if (canBuildHere && ['C', 'F', 'P', 'Ci', 'T'].some(function (ty) { return !FOF.canBuild(st, t.id, ty); })) {
-        mallets.push('<g class="mallet" data-tloc="t' + t.id + '" transform="translate(' + (a.x + 24) + ' ' + (a.y - 22) + ')"><g class="bob"><circle r="9" fill="#f7efd9" stroke="#8a5a2b" stroke-width="1.4"/><g transform="rotate(-35)"><rect x="-1.2" y="-2" width="2.4" height="10" rx="1" fill="#9a6a3a" stroke="#4a2f16" stroke-width=".6"/><rect x="-5.5" y="-6.5" width="11" height="5.5" rx="1.4" fill="#c08a52" stroke="#4a2f16" stroke-width=".7"/><line x1="-2.5" y1="-6.3" x2="-2.5" y2="-1.2" stroke="#4a2f16" stroke-width=".5"/><line x1="2.5" y1="-6.3" x2="2.5" y2="-1.2" stroke="#4a2f16" stroke-width=".5"/></g><title>Construire ici</title></g></g>');
+        mallets.push('<g class="mallet" data-tloc="t' + t.id + '" transform="translate(' + (a.x + (t.blds.length ? t.blds.length * 8.5 + 11 : 0)) + ' ' + (a.y - 8.5) + ')"><g class="bob"><circle r="9" fill="#f7efd9" stroke="#8a5a2b" stroke-width="1.4"/><g transform="rotate(-35)"><rect x="-1.2" y="-2" width="2.4" height="10" rx="1" fill="#9a6a3a" stroke="#4a2f16" stroke-width=".6"/><rect x="-5.5" y="-6.5" width="11" height="5.5" rx="1.4" fill="#c08a52" stroke="#4a2f16" stroke-width=".7"/><line x1="-2.5" y1="-6.3" x2="-2.5" y2="-1.2" stroke="#4a2f16" stroke-width=".5"/><line x1="2.5" y1="-6.3" x2="2.5" y2="-1.2" stroke="#4a2f16" stroke-width=".5"/></g><title>Construire ici</title></g></g>');
       }
     });
     // pions
@@ -137,7 +151,7 @@
       var a = FOF.Board.anchor(loc); if (!a) return;
       var list = byLoc[loc], n = Math.min(list.length, 5), gap = 24;
       list.slice(0, 5).forEach(function (it, i) {
-        var x = a.x + (i - (n - 1) / 2) * gap, y = a.y + 3;
+        var x = a.x + (i - (n - 1) / 2) * gap, y = a.y + 15;
         var col = color(it.owner), mine = it.owner === p.id, piece = it.leader ? 'L' : it.uid;
         var movable = mine && st.phase === 'military' && !st.pending.length && (it.leader ? !(p.lConq || p.lFought || p.lMovesLeft <= 0) : !(it.fought || it.pacif || it.movesLeft <= 0));
         var selected = mine && mode && mode.kind === 'move' && mode.piece === piece;
@@ -162,14 +176,14 @@
   function pickTargets() {
     var pd = st.pending[0];
     if (pd && (pd.type === 'cedeTerritory' || pd.type === 'revolt')) { var pl = st.players[pd.pid]; return FOF.terrOf(st, pl.id).filter(function (t) { return t.id !== pl.capital; }).map(function (t) { return t.id; }); }
-    if (mode && mode.kind === 'deploy') return mode.spots;
+    if (mode && mode.kind === 'deploy') return null;
     return null;
   }
   function banner() {
     var pd = st.pending[0];
     if (pd && pd.type === 'cedeTerritory') return '<b>' + esc(st.players[pd.pid].name) + '</b> doit céder un territoire à ' + esc(st.players[pd.to].name) + ' : cliquez un territoire vert.';
     if (pd && pd.type === 'revolt') return 'Tyrannie : <b>' + esc(st.players[pd.pid].name) + '</b> choisit le territoire qui se révolte (en vert).';
-    if (mode && mode.kind === 'deploy') return 'Où déployer <b>' + esc(FOF.unitDef(st.zone[mode.slot]).name) + '</b> ? Cliquez un territoire vert.';
+    if (mode && mode.kind === 'deploy') return 'Où déployer <b>' + esc(FOF.unitDef(st.zone[mode.slot]).name) + '</b> ? Cliquez un territoire qui clignote en blanc (l’achat se fait au déploiement).';
     if (mode && mode.kind === 'move') return 'Déplacer <b>' + esc(mode.label) + '</b> : cliquez une case qui clignote en blanc (' + mode.left + ' case' + (mode.left > 1 ? 's' : '') + ' max).';
     return '';
   }
@@ -206,15 +220,18 @@
     var cap = owner && owner.capital === t.id;
     var h = '<b>' + (cap ? '⚑ ' : '') + esc(t.name) + '</b><small><img src="assets/icons/biome-' + t.biome + '.png" alt=""> ' + FOF.BIOME_NAMES[t.biome] + (t.seas.length ? ' · côtier' : '') + '</small>';
     h += '<small>' + (owner ? '<i class="dot" style="background:' + color(owner.id) + '"></i>' + esc(owner.name) + (cap ? ' · capitale' : '') : 'Neutre') + '</small>';
+    if (owner) h += '<small>🛡 Défense : <b>+' + FOF.defBonus(st, owner, t) + '</b>' + (cap ? ' (dont +2 de capitale)' : '') + ' + dé</small>';
+    else h += '<small>🛡 Neutre : se conquiert sans combat</small>';
     if (t.blds.length) h += '<small>' + t.blds.map(function (b) { return '<img src="assets/icons/bld-' + b.t + '.png" alt=""> ' + FOF.BUILDINGS[b.t].name + (b.o !== t.ctrl ? ' (' + esc(st.players[b.o].name) + ')' : ''); }).join(' · ') + '</small>';
     return h;
   }
   function onHover() {
     hoverRaf = 0; var e = hoverEv, tip = $('hoverTip'); if (!st || !e || !tip) return;
+    if (radial || pop || (e.target.closest && e.target.closest('#radial,#popover'))) { tip.hidden = true; return; }
     var wrap = $('boardWrap'), rect = wrap.getBoundingClientRect(), b = FOF.Board.bounds();
     var tk = e.target.closest && e.target.closest('.tk');
     var loc = tk ? tk.dataset.tloc : b ? FOF.Board.locAt(st, b.x + (e.clientX - rect.left) / rect.width * b.w, b.y + (e.clientY - rect.top) / rect.height * b.h) : null;
-    if (!loc || e.target.closest('#popover')) { tip.hidden = true; return; }
+    if (!loc || e.target.closest('#popover') || e.target.closest('#radial')) { tip.hidden = true; return; }
     if (tip.dataset.loc !== loc) { tip.innerHTML = hoverInfo(loc); tip.dataset.loc = loc; }
     tip.hidden = false;
     var x = e.clientX + 16, y = e.clientY + 18;
@@ -227,6 +244,18 @@
     hoverEv = e; if (!hoverRaf) hoverRaf = requestAnimationFrame(onHover);
   });
 
+  /* ---------- survol d'une de mes unités : la carte en grand ---------- */
+  document.addEventListener('mouseover', function (e) {
+    var ct = $('cardTip'); if (!ct || !e.target.closest) return;
+    var m = e.target.closest('[data-key]');
+    if (!m || !FOF.unitDef(m.dataset.key)) { if (!ct.hidden) ct.hidden = true; return; }
+    if (ct.dataset.key !== m.dataset.key) { ct.innerHTML = FOF.cardHTML(m.dataset.key); ct.dataset.key = m.dataset.key; }
+    ct.hidden = false;
+    var r = m.getBoundingClientRect(), w = ct.offsetWidth, hh = ct.offsetHeight;
+    ct.style.left = Math.max(8, Math.min(window.innerWidth - w - 8, r.left + r.width / 2 - w / 2)) + 'px';
+    ct.style.top = Math.max(8, r.top - hh - 10) + 'px';
+  });
+
   /* ---------- clics sur la carte ---------- */
   function boardClick(e) {
     if (!st) return;
@@ -235,10 +264,11 @@
     var px = e.clientX - rect.left, py = e.clientY - rect.top;
     var loc = tk ? tk.dataset.tloc : ml ? ml.dataset.tloc : FOF.Board.locAt(st, b.x + px / rect.width * b.w, b.y + py / rect.height * b.h);
     if (FOF.sfx) FOF.sfx(mode && mode.kind === 'move' && loc && mode.reach[loc] !== undefined ? 'march' : tk && +tk.dataset.own === st.cur ? 'select' : 'tap');
-    if (!loc) { pop = null; mode = null; render(); return; }
+    if (!loc) { pop = null; if (mode && mode.kind === 'deploy') err = 'Cliquez un territoire qui clignote en blanc pour déployer votre unité (ou « Annuler »).'; else mode = null; render(); return; }
     // clic sur un de mes pions en phase militaire : on part directement en déplacement
     if (tk && !mode && !st.pending.length && st.phase === 'military' && +tk.dataset.own === st.cur && myTurn()) {
       var piece = tk.dataset.tk === 'L' ? 'L' : +tk.dataset.tk;
+      if (piece === 'L') { radial = { loc: loc, x: +tk.dataset.x, y: +tk.dataset.y }; sel = loc; pop = null; render(); return; }
       if (startMove(piece)) { sel = loc; pop = null; render(); return; }
     }
     onCase(loc, px, py);
@@ -257,7 +287,7 @@
     if (pd && (pd.type === 'cedeTerritory' || pd.type === 'revolt')) { if (loc[0] === 't' && myTurn()) dispatch({ type: 'resolve', tid: +loc.slice(1) }); return; }
     if (mode && mode.kind === 'deploy') {
       if (loc[0] === 't' && mode.spots.indexOf(+loc.slice(1)) >= 0) { var slot = mode.slot; mode = null; sel = loc; dispatch({ type: 'buy', slot: slot, tid: +loc.slice(1) }); return; }
-      mode = null;
+      err = 'Impossible de déployer ici : cliquez un territoire qui clignote en blanc (ou « Annuler »).'; pop = null; render(); return;
     }
     if (mode && mode.kind === 'move') {
       if (mode.reach[loc] !== undefined) { var piece = mode.piece; mode = null; sel = loc; dispatch({ type: 'move', piece: piece, to: loc }); if (!err) openPopAfterMove(loc); return; }
@@ -272,6 +302,25 @@
     var a = FOF.Board.anchor(loc), b = FOF.Board.bounds(), sc = +$('boardWrap').dataset.scale;
     var hasAction = FOF.attackTargets(st, loc).length || FOF.unitsAt(st, loc, st.cur).some(function (u) { return FOF.effectAvailable(st, u); });
     if (hasAction) { pop = { loc: loc, x: (a.x - b.x) * sc, y: (a.y - b.y) * sc }; render(); }
+  }
+
+  /* ---------- menu circulaire autour du dirigeant (phase militaire) ---------- */
+  function renderRadial(sc, b) {
+    var el = $('radial');
+    if (!radial || !st || st.phase !== 'military' || !myTurn() || st.pending.length || modal) { el.hidden = true; return; }
+    var p = FOF.cur(st), t = radial.loc[0] === 't' ? st.map.terr[+radial.loc.slice(1)] : null, items = [];
+    var canMove = !(p.lConq || p.lFought || p.lMovesLeft <= 0);
+    items.push('<button class="rbtn move" data-move="L" ' + (canMove ? '' : 'disabled') + '><b>🏃</b><span>Se déplacer</span></button>');
+    if (t && t.ctrl === null) {
+      var ok = p.lArr < st.turnNo && !p.lMoved && !p.lFought && !p.lConq;
+      items.push('<button class="rbtn conquer" data-conquer="1" ' + (ok ? '' : 'disabled title="Il doit être ici depuis votre tour précédent, sans avoir bougé"') + '><b>🚩</b><span>Conquérir</span></button>');
+    }
+    if (FOF.attackTargets(st, radial.loc).length) items.push('<button class="rbtn attack" data-attack="' + radial.loc + '"><b>⚔</b><span>Attaquer</span></button>');
+    items.push('<button class="rbtn close" data-closeradial="1"><b>✕</b><span>Fermer</span></button>');
+    var n = items.length, R = 78;
+    el.innerHTML = items.map(function (h, i) { var ang = -Math.PI / 2 + i * 2 * Math.PI / n; return h.replace('class="rbtn', 'style="left:' + Math.round(Math.cos(ang) * R) + 'px;top:' + Math.round(Math.sin(ang) * R) + 'px" class="rbtn'); }).join('') + '<div class="rhint">' + esc(FOF.LEADERS[p.leader].name) + '</div>';
+    el.style.left = ((radial.x - b.x) * sc) + 'px'; el.style.top = ((radial.y - b.y) * sc) + 'px';
+    el.hidden = false;
   }
 
   /* ---------- popover contextuel ---------- */
@@ -309,7 +358,7 @@
       FOF.unitsAt(st, loc, q.id).forEach(function (u) { var a = FOF.unitArt(u.key); rows.push('<div class="pc-row" style="--pc:' + color(q.id) + '">' + (a ? '<img src="' + a + '" alt="">' : '') + '<div class="t">' + esc(FOF.unitDef(u.key).name) + '<small>' + esc(q.name) + '</small></div></div>'); });
     });
     h.push(rows.join(''));
-    if (st.phase === 'military' && FOF.attackTargets(st, loc).length) h.push('<div style="margin-top:8px"><button class="btn primary" data-attack="' + loc + '" style="width:100%">⚔ Attaquer…</button></div>');
+    if (st.phase === 'military' && FOF.attackTargets(st, loc).length) h.push('<div style="margin-top:10px"><button class="btn attack-cta" data-attack="' + loc + '">⚔ Attaquer</button></div>');
     if (h.length <= 2 && !(t && t.blds.length)) return h.join('') + '<p class="muted" style="margin:0">Rien à faire ici pour l’instant.</p>';
     return h.join('');
   }
@@ -337,14 +386,17 @@
       }
     }
     var eff = FOF.effectAvailable(st, u);
-    if (eff && (st.phase === 'military' || (u.key === 'exploratrice' && st.phase === 'collect'))) acts.push('<button class="btn small primary" data-effect="' + u.uid + '">' + esc(eff) + '</button>');
+    if (eff && u.key === 'partisan' && st.phase === 'military' && t) {
+      // le joueur choisit l'aménagement à retourner
+      t.blds.forEach(function (b, i) { if (b.o === t.ctrl && b.t !== 'T') acts.push('<button class="btn small primary" data-effect="' + u.uid + '" data-arg="' + i + '">Retourner : ' + esc(FOF.BUILDINGS[b.t].name) + '</button>'); });
+    } else if (eff && (st.phase === 'military' || (u.key === 'exploratrice' && st.phase === 'collect'))) acts.push('<button class="btn small primary" data-effect="' + u.uid + '">' + esc(eff) + '</button>');
     return '<div class="pc-row" style="--pc:' + color(p.id) + '">' + (a ? '<img src="' + a + '" alt="">' : '') + '<div class="t"><b>' + esc(d.name) + '</b><small>' + info + '</small></div>' + acts.join('') + '</div>';
   }
   function buildPanel(p, t) {
     var h = ['<div class="section-title" style="margin-top:4px">Bâtir ici · ' + p.gold + ' or</div><div class="bgrid">'];
     FOF.BUILDING_ORDER.forEach(function (b) {
       var e = FOF.canBuild(st, t.id, b), B = FOF.BUILDINGS[b];
-      var eff = { C: '+1 déf.', F: '+3 déf.', P: '+1 déf., mer', Ci: '+1 or/tour', T: 'victoire' }[b];
+      var eff = { C: '+1 déf.', F: '+3 déf.', P: '+1 déf., mer', Ci: '+1 or/tour', T: 'victoire religieuse' }[b];
       h.push('<button class="bbtn parch" data-build="' + b + '" data-tid="' + t.id + '" ' + (e ? 'disabled title="' + esc(e) + '"' : 'title="' + B.name + ' : ' + eff + '"') + '>' + bIcon(b) + '<span>' + B.name + '</span><span class="price">' + FOF.bldCost(st, p, b) + '<span class="coin"></span></span><small>' + eff + '</small></button>');
     });
     h.push('</div>');
@@ -373,7 +425,7 @@
       if (!k) { h.push('<div></div>'); return; }
       var why = FOF.canBuy(st, k), d = FOF.unitDef(k);
       var acts = '<div class="acts"><button class="btn buy" data-buy="' + i + '" ' + (why ? 'disabled' : '') + '>Acheter · ' + d.upkeep + ' or</button><button class="btn" data-discard="' + i + '" ' + (p.flags.discarded || p.flags.bought ? 'disabled' : '') + '>Défausser</button></div><div class="why">' + esc(why || '') + '</div>';
-      h.push('<div class="slot" data-slotkey="' + i + ':' + k + ':' + st.deck.length + '">' + FOF.cardHTML(k, { actions: acts }) + '</div>');
+      h.push('<div class="slot' + (why || !myTurn() ? '' : ' can-buy') + '" data-slotkey="' + i + ':' + k + ':' + st.deck.length + '">' + FOF.cardHTML(k, { actions: acts }) + '</div>');
     });
     h.push('</div>');
     el.innerHTML = h.join(''); el.hidden = false;
@@ -392,22 +444,25 @@
   };
   function renderMat() {
     var p = FOF.cur(st), v = st.victory, army = FOF.army(st, p.id), inc = st.collect ? st.collect.inc : FOF.income(st, p);
-    var h = ['<div class="me" style="--pc:' + color(p.id) + '">' + FOF.heroImg(p.leader) + '<div class="who"><div class="ribbon" style="background:' + color(p.id) + ';color:#fff;border-color:#1b1a1d">' + esc(p.name) + '</div>' +
+    var h = ['<div class="me" style="--pc:' + color(p.id) + '"><div class="pwrap">' + FOF.heroImg(p.leader) + '<div class="flames" aria-hidden="true">' + '<i></i>'.repeat(14) + '</div></div>' + '<div class="who"><div class="ribbon" style="background:' + color(p.id) + ';color:#fff;border-color:#1b1a1d">' + esc(p.name) + '</div>' +
       '<div class="line"><span class="star gold" style="width:24px;height:24px;font-size:13px">' + p.mod + '</span><span>' + esc(FOF.LEADERS[p.leader].name) + '</span>' + (p.tyran ? '<span class="pill tyran">Tyran</span>' : '') + (p.pact !== null ? '<span class="pill pact">Pacte avec ' + esc(st.players[p.pact].name) + '</span>' : '') + '</div>' +
       '<div class="purse" data-gold="' + p.id + ':' + p.gold + '" title="Revenu : ' + inc.total + ' − entretien ' + inc.upkeep + '"><span class="coin"></span><b>' + p.gold + '</b><span class="muted" style="font-size:12.5px">or · revenu ' + (inc.total - inc.upkeep >= 0 ? '+' : '') + (inc.total - inc.upkeep) + '/tour</span></div></div></div>'];
     h[0] = h[0].replace('<div class="me"', '<div class="me" data-heroinfo="1" title="Voir la fiche du dirigeant"');
     h.push('<div style="display:flex;gap:18px;align-items:center;min-width:0;flex-wrap:wrap"><div class="tracks" style="--pc:' + color(p.id) + '">' +
-      track('Territoires', '<img class="icn" src="assets/icons/bld-C.png" alt="">', FOF.terrOf(st, p.id).length, v.mil) +
+      track('Territoires', '<img class="icn" src="assets/icons/terr.svg" alt="">', FOF.terrOf(st, p.id).length, v.mil) +
       track('Temples', '<img class="icn" src="assets/icons/bld-T.png" alt="">', FOF.countBld(st, p.id, 'T'), v.rel) +
       (p.tyran ? '<div class="track"><span class="lbl">🤝 Diplomatie</span><span class="pill tyran">Tyran : plus de diplomatie</span></div>' : track('Diplomatie', '🤝 ', p.dip, v.dip)) + '</div>' +
       '<div class="army">' + (army.length ? army.map(function (u) {
         var a = FOF.unitArt(u.key), done = u.fought || u.pacif || u.movesLeft <= 0;
-        return '<div class="mini ' + (FOF.isElite(u.key) ? 'elite ' : '') + (st.phase === 'military' && done ? 'done' : '') + '" data-mini="' + u.uid + '" title="' + esc(FOF.unitDef(u.key).name) + ' — cliquer pour la trouver">' + (a ? '<img src="' + a + '" alt="">' : '<img src="assets/cardback.jpg" alt="">') +
+        return '<div class="mini ' + (FOF.isElite(u.key) ? 'elite ' : '') + (st.phase === 'military' && done ? 'done' : '') + '" data-mini="' + u.uid + '" data-key="' + u.key + '">' + (a ? '<img src="' + a + '" alt="">' : '<img src="assets/cardback.jpg" alt="">') +
           (st.phase === 'military' && !done ? '<span class="mv">' + u.movesLeft + '</span>' : '') + '<div class="mn">' + esc(FOF.unitDef(u.key).name) + '</div><div class="ms">' + esc(FOF.locName(st, u.pos)) + ' · réserve ' + u.gold + '</div></div>';
       }).join('') : '<span class="muted" style="font-size:13px">Aucune unité. Recrutez-en pendant la phase de recrutement.</span>') + '</div></div>');
     var hint = HINTS[st.phase];
     if (!myTurn()) { var ap = st.players[actor()]; hint = ['Les autres joueurs voient la partie en direct. Vous pouvez consulter la carte.', 'Tour de ' + esc(ap.name) + '…']; }
-    h.push('<div class="cta"><div class="hint">' + hint[0] + '</div><button class="btn primary go" data-next="1" ' + (st.pending.length || st.winner || !myTurn() ? 'disabled' : '') + '>' + hint[1] + '</button>' +
+    var blocked = mode && mode.kind === 'deploy';
+    if (blocked) hint = ['Déployez d’abord votre unité (territoire qui clignote) ou annulez l’achat.', hint[1]];
+    h.push('<div class="cta"><div class="hint">' + hint[0] + '</div><button class="btn primary go" data-next="1" ' + (st.pending.length || st.winner || !myTurn() || blocked ? 'disabled' : '') + '>' + hint[1] + '</button>' +
+      (st.phase === 'recruit' && myTurn() && !marketOpen ? '<button class="btn small" data-showmarket="1">🛒 Ouvrir le marché</button>' : '') +
       (p.leader === 'edouard' && st.phase === 'collect' ? '<button class="btn small" data-act="edouard" ' + (p.flags.edouard || p.dip > 3 || p.gold < 3 || p.tyran ? 'disabled' : '') + '>Edouard : 3 or → +1 diplomatie</button>' : '') + '</div>');
     $('mat').innerHTML = h.join('');
   }
@@ -443,45 +498,81 @@
       h = '<div class="modal">' + passHTML(pd.pid) + '<h2>Entretien impayé</h2><p>Il manque <b class="num">' + pd.left + '</b> or. Reprenez des pièces posées sur vos unités. Une unité à qui il manque une pièce sera défaussée.</p>' +
         FOF.army(st, p.id).map(function (u) { var a = FOF.unitArt(u.key); return '<div class="pc-row" style="--pc:' + color(p.id) + '">' + (a ? '<img src="' + a + '" alt="">' : '') + '<div class="t"><b>' + esc(FOF.unitDef(u.key).name) + '</b><small>réserve ' + u.gold + ' / entretien ' + FOF.unitDef(u.key).upkeep + '</small></div><button class="btn small" data-take="' + u.uid + '" ' + (u.gold <= 0 ? 'disabled' : '') + '>Reprendre 1 or</button></div>'; }).join('') + '</div>';
     } else if (modal && modal.kind === 'attack') h = attackHTML(modal);
-    else if (modal && modal.kind === 'turn') {
-      var cp = FOF.cur(st), c = st.collect;
-      h = '<div class="modal"><div class="pass" style="background:' + color(cp.id) + '33;border:1px solid ' + color(cp.id) + '">' + (net ? 'À vous de jouer, <b>' + esc(cp.name) + '</b> !' : 'Passez l’écran à <b>' + esc(cp.name) + '</b>') + '</div>' + FOF.heroHTML(cp.leader) +
-        (c ? '<p style="margin-top:14px">Collecte du tour ' + st.round + ' : <b class="num">' + c.inc.total + '</b> or de revenu, entretien <b class="num">' + c.inc.upkeep + '</b> → <b class="num">' + (c.net >= 0 ? '+' : '') + c.net + ' or</b>. Trésor : <b class="num">' + cp.gold + '</b> or.</p>' : '') +
-        (cp.tyran ? '<p style="color:#f2a79c">Vous êtes Tyran : un de vos territoires se révoltera à la fin du tour.</p>' : '') +
-        '<div class="actions"><button class="btn primary" data-close="1">Commencer mon tour</button></div></div>';
-    } else if (modal && modal.kind === 'help') h = helpHTML();
+    else if (modal && modal.kind === 'turn') h = collectHTML();
+    else if (modal && modal.kind === 'help') h = helpHTML();
     else if (modal && modal.kind === 'hero') { var hp = FOF.cur(st); h = '<div class="modal"><h2>' + esc(hp.name) + '</h2>' + FOF.heroHTML(hp.leader) + '<div class="actions"><button class="btn primary" data-close="1">Fermer</button></div></div>'; }
     else if (modal && modal.kind === 'confirmNew') h = '<div class="modal"><h2>' + (net ? 'Quitter la partie en ligne ?' : 'Nouvelle partie ?') + '</h2><p>' + (net ? 'Vous pourrez la rejoindre à nouveau avec le code <b>' + net.code + '</b>.' : 'La partie en cours sera perdue.') + '</p><div class="actions"><button class="btn" data-close="1">Annuler</button><button class="btn danger" data-act="newgame">' + (net ? 'Quitter' : 'Recommencer') + '</button></div></div>';
     el.hidden = !h; el.innerHTML = h ? '<div class="modal-bg">' + h + '</div>' : '';
   }
   function passHTML(pid) { return pid !== st.cur ? '<div class="pass" style="background:' + color(pid) + '33;border:1px solid ' + color(pid) + '">Décision de <b>' + esc(st.players[pid].name) + '</b></div>' : ''; }
   function winProb(delta) { var w = 0, l = 0; for (var a = 1; a <= 6; a++) for (var b = 1; b <= 6; b++) { if (a + delta > b) w++; else if (a + delta < b) l++; } return w + l ? w / (w + l) : 0.5; }
-  function sideHTML(q, det, tot, die) {
-    return '<div class="side" style="--sc:' + color(q.id) + '">' + FOF.heroImg(q.leader) + '<h4>' + esc(q.name) + '</h4>' + det.map(function (x) { return '<div class="kv"><span>' + esc(x[0]) + '</span><b class="num">+' + x[1] + '</b></div>'; }).join('') +
-      (die ? '<div class="die roll">' + die + '</div><div class="total num">' + tot + '</div>' : '<div class="total num">' + tot + ' + 🎲</div>') + '</div>';
+  /* ---------- début de tour = collecte : bilan détaillé de l'or ---------- */
+  function collectHTML() {
+    var cp = FOF.cur(st), c = st.collect, inc = c ? c.inc : FOF.income(st, cp), rows = [];
+    function row(lbl, v, cls) { rows.push('<div class="lg ' + (cls || '') + '"><span>' + lbl + '</span><b>' + (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v) + '</b></div>'); }
+    row('<img class="icn" src="assets/icons/terr.svg" alt=""> Territoires × ' + inc.terr, inc.terr, 'plus');
+    if (inc.cities) row('<img class="icn" src="assets/icons/bld-Ci.png" alt=""> Cités × ' + inc.cities, inc.cities, 'plus');
+    if (inc.ports) row('<img class="icn" src="assets/icons/bld-P.png" alt=""> Ports d’Aliénor × ' + inc.ports, inc.ports, 'plus');
+    FOF.army(st, cp.id).forEach(function (u) {
+      if ((u.key === 'caboteur' || u.key === 'caravanier') && u.pos[0] === 't') {
+        var typ = u.key === 'caboteur' ? 'P' : 'Ci', tt = st.map.terr[+u.pos.slice(1)];
+        if (tt.blds.some(function (b) { return b.t === typ && b.o !== cp.id; })) row('Commerce : ' + esc(FOF.unitDef(u.key).name) + ' à ' + esc(tt.name), 2, 'plus');
+      }
+    });
+    FOF.army(st, cp.id).forEach(function (u) { row('Solde : ' + esc(FOF.unitDef(u.key).name), -FOF.unitDef(u.key).upkeep, 'minus'); });
+    var net = c ? c.net : inc.total - inc.upkeep;
+    var acts = [];
+    if (cp.leader === 'edouard') acts.push('<button class="btn" data-act="edouard" ' + (cp.flags.edouard || cp.dip > 3 || cp.gold < 3 || cp.tyran ? 'disabled' : '') + '>Edouard : 3 or → +1 diplomatie</button>');
+    FOF.army(st, cp.id).forEach(function (u) { if (u.key === 'exploratrice') { var eff = FOF.effectAvailable(st, u); acts.push('<button class="btn" data-effect="' + u.uid + '" ' + (eff ? '' : 'disabled title="Elle doit être sur un territoire neutre d’un autre continent"') + '>Exploratrice : ' + (eff ? 'revendiquer ' + esc(FOF.locName(st, u.pos)) : 'rien à revendiquer ici') + '</button>'); } });
+    return '<div class="modal collect"><div class="pass" style="background:' + color(cp.id) + '33;border:1px solid ' + color(cp.id) + '">' + (net ? 'À vous de jouer, <b>' + esc(cp.name) + '</b> !' : 'Passez l’écran à <b>' + esc(cp.name) + '</b>') + '</div>' +
+      '<div class="collect-top">' + FOF.heroImg(cp.leader) + '<div><div class="ribbon" style="background:' + color(cp.id) + ';color:#fff">' + esc(cp.name) + '</div><div class="muted">' + esc(FOF.LEADERS[cp.leader].name) + ' · tour ' + st.round + '</div></div></div>' +
+      '<div class="gold-big ' + (net < 0 ? 'neg' : '') + '"><i class="coin"></i><span>' + (net >= 0 ? '+' : '−') + Math.abs(net) + '</span><small>écus ce tour</small></div>' +
+      '<div class="ledger">' + rows.join('') + '<div class="lg tot"><span>Trésor</span><b>' + cp.gold + ' <i class="coin"></i></b></div></div>' +
+      (c && c.deficit ? '<p class="warn-line">Il manquait ' + c.deficit + ' écus : des pièces ont été reprises sur vos unités.</p>' : '') +
+      (cp.tyran ? '<p class="warn-line">Vous êtes Tyran : un de vos territoires se révoltera à la fin du tour.</p>' : '') +
+      (acts.length ? '<div class="collect-acts">' + acts.join('') + '</div>' : '') +
+      '<div class="actions"><button class="btn primary go" data-collectgo="1">Passer au recrutement →</button></div></div>';
+  }
+  var FACE = { 1: 'rotateX(0deg) rotateY(0deg)', 2: 'rotateY(-90deg)', 3: 'rotateX(-90deg)', 4: 'rotateX(90deg)', 5: 'rotateY(90deg)', 6: 'rotateY(180deg)' };
+  var PIPS = { 1: [5], 2: [1, 9], 3: [1, 5, 9], 4: [1, 3, 7, 9], 5: [1, 3, 5, 7, 9], 6: [1, 3, 4, 6, 7, 9] };
+  function dieHTML(v, col) {
+    var faces = [[1, 'f1'], [2, 'f2'], [3, 'f3'], [4, 'f4'], [5, 'f5'], [6, 'f6']].map(function (f) {
+      var pips = ''; for (var k = 1; k <= 9; k++) pips += '<i' + (PIPS[f[0]].indexOf(k) >= 0 ? ' class="on"' : '') + '></i>';
+      return '<div class="face ' + f[1] + '">' + pips + '</div>';
+    }).join('');
+    return '<div class="die3d" style="--dc:' + col + '"><div class="cube" style="--final:' + FACE[v] + '">' + faces + '</div></div>';
+  }
+  // un camp du combat : les unités qui s'affrontent (et le dirigeant seulement s'il est engagé)
+  function sideHTML(q, det, tot, die, units, lead, delay) {
+    units = units || [];
+    var troops = units.map(function (k) { var a = FOF.unitArt(k); return '<div class="trp' + (FOF.isElite(k) ? ' el' : '') + '">' + (a ? '<img src="' + a + '" alt="">' : '<div class="noart">' + esc(FOF.unitDef(k).name.slice(0, 2)) + '</div>') + '<span>' + esc(FOF.unitDef(k).name) + '</span></div>'; });
+    if (lead) troops.unshift('<div class="trp lead">' + FOF.heroImg(q.leader, '') + '<span>' + esc(FOF.LEADERS[q.leader].name) + '</span></div>');
+    if (!troops.length) troops.push('<div class="trp none"><img src="assets/icons/terr.svg" alt=""><span>Garnison (aménagements)</span></div>');
+    return '<div class="side" style="--sc:' + color(q.id) + '"><h4>' + esc(q.name) + '</h4><div class="troops">' + troops.join('') + '</div>' + det.map(function (x) { return '<div class="kv"><span>' + esc(x[0]) + '</span><b class="num">+' + x[1] + '</b></div>'; }).join('') +
+      (die ? dieHTML(die, color(q.id)) + '<div class="total num reveal">' + tot + '</div>' : '<div class="total num">' + tot + ' + 🎲</div>') + '</div>';
   }
   function attackHTML(m) {
     var tg = FOF.attackTargets(st, m.loc), p = FOF.cur(st);
     if (!tg.length) { modal = null; return null; }
     if (m.target === undefined) { m.target = tg[0].target; m.kind = tg[0].kind; }
     var treb = FOF.trebuchetFor(st, m.loc), t = m.loc[0] === 't' ? st.map.terr[+m.loc.slice(1)] : null;
-    var pv = FOF.previewAttack(st, { loc: m.loc, target: m.target, withLeader: m.withLeader });
+    var pv = FOF.previewAttack(st, { loc: m.loc, target: m.target });
     var d = st.players[m.target], prob = Math.round(winProb(pv.A - pv.D) * 100);
-    var h = ['<div class="modal"><h2>⚔ Attaque — ' + esc(FOF.locName(st, m.loc)) + '</h2>'];
+    var h = ['<div class="modal attack"><h2>⚔ Déclarer la guerre — ' + esc(FOF.locName(st, m.loc)) + '</h2>'];
     h.push('<div class="section-title">Cible</div><div style="display:flex;gap:6px;flex-wrap:wrap">' + tg.map(function (x) { var q = st.players[x.target]; return '<button class="btn small ' + (x.target === m.target && x.kind === m.kind ? 'primary' : '') + '" data-tsel="' + x.target + '|' + x.kind + '">' + (x.kind === 'terr' ? 'Territoire de ' : 'Unités de ') + esc(q.name) + '</button>'; }).join('') + '</div>');
-    if (p.lpos === m.loc && !p.lFought && !p.lConq) h.push('<label style="display:flex;gap:8px;margin-top:10px;align-items:center"><input type="checkbox" id="withLeader" ' + (m.withLeader ? 'checked' : '') + '> Engager votre dirigeant (+' + p.mod + (p.leader === 'odon' ? ', +1 par élite' : '') + '). S’il perd, vous cédez un territoire.</label>');
+    if (pv.lead) h.push('<div class="lead-warn">⚠ <b>' + esc(FOF.LEADERS[p.leader].name) + '</b> mène l’assaut en personne (+' + p.mod + (p.leader === 'odon' ? ', +1 par élite' : '') + '). En cas de défaite, vous céderez un territoire au vainqueur et votre dirigeant reviendra à votre capitale.</div>');
     if (treb && t) {
       var bl = t.blds.map(function (b, i) { return [b, i]; }).filter(function (x) { return x[0].o === m.target; });
       if (bl.length) h.push('<div class="section-title" style="margin-top:10px">Trébuchets</div><div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn small ' + (m.trebBld === undefined ? 'primary' : '') + '" data-treb="-1">Ne pas tirer</button>' + bl.map(function (x) { return '<button class="btn small ' + (m.trebBld === x[1] ? 'primary' : '') + '" data-treb="' + x[1] + '">Détruire ' + FOF.BUILDINGS[x[0].t].name + '</button>'; }).join('') + '</div>');
     }
-    h.push('<div class="duel">' + sideHTML(p, pv.detA, pv.A) + '<div class="vs">contre</div>' + sideHTML(d, pv.detD, pv.D) + '</div>');
+    h.push('<div class="duel">' + sideHTML(p, pv.detA, pv.A, 0, pv.att.map(function (u) { return u.key; }), pv.lead) + '<div class="vs">⚔</div>' + sideHTML(d, pv.detD, pv.D, 0, pv.du.map(function (u) { return u.key; }), pv.dl) + '</div>');
     h.push('<p>Chances de victoire : <b class="num">' + prob + ' %</b> · Coût : <b class="num">' + (pv.cost ? '−' + pv.cost + ' diplomatie' + (p.pact === d.id ? ' (rupture du pacte !)' : '') : 'aucun (cible Tyran)') + '</b></p>');
-    h.push('<p class="muted">Si vous perdez, toutes vos unités engagées sont défaussées.</p><div class="actions"><button class="btn" data-close="1">Annuler</button><button class="btn primary" data-go="1">🎲 Lancer les dés</button></div></div>');
+    h.push('<p class="muted">Si vous perdez, toutes vos unités engagées sont défaussées.</p><div class="actions"><button class="btn" data-close="1">Annuler</button><button class="btn attack-go" data-go="1">⚔ Lancer l’assaut 🎲</button></div></div>');
     return h.join('');
   }
   function combatHTML(c) {
     var a = st.players[c.att], d = st.players[c.def], last = c.rolls[c.rolls.length - 1];
-    return '<div class="modal"><h2>Bataille de ' + esc(FOF.locName(st, c.loc)) + '</h2><div class="duel">' + sideHTML(a, c.detA, c.A + last.a, last.a) + '<div class="vs">contre</div>' + sideHTML(d, c.detD, c.D + last.d, last.d) + '</div>' +
+    return '<div class="modal battle ' + (c.win ? 'awin' : 'dwin') + '"><h2>Bataille de ' + esc(FOF.locName(st, c.loc)) + '</h2><div class="duel">' + sideHTML(a, c.detA, c.A + last.a, last.a, c.unitsA, c.leadA) + '<div class="vs">⚔</div>' + sideHTML(d, c.detD, c.D + last.d, last.d, c.unitsD, c.leadD) + '</div>' +
       (c.rolls.length > 1 ? '<p class="muted">Égalité : relancé ' + (c.rolls.length - 1) + ' fois.</p>' : '') +
       c.rolls.map(function (r) { return r.notes.map(function (n) { return '<p class="muted">' + esc(n) + '</p>'; }).join(''); }).join('') +
       '<div class="verdict">' + (c.win ? 'Victoire de ' + esc(a.name) : esc(d.name) + ' tient bon') + '</div><div>' + c.events.map(function (e) { return '<p>' + esc(e) + '</p>'; }).join('') + '</div>' +
@@ -501,20 +592,24 @@
   /* ================= événements ================= */
   document.addEventListener('click', function (e) {
     if (!st) return;
-    if (e.target.closest('#boardWrap') && !e.target.closest('#popover')) { if (!dragMoved) boardClick(e); return; }
-    var el = e.target.closest('[data-act],[data-buy],[data-discard],[data-move],[data-conquer],[data-pacify],[data-effect],[data-build],[data-replace],[data-capital],[data-cede],[data-attack],[data-close],[data-resolve],[data-take],[data-tsel],[data-treb],[data-go],[data-next],[data-closepop],[data-cancel],[data-mini],[data-hidemarket],[data-showmarket],[data-heroinfo]');
+    if (radial && !e.target.closest('#radial')) radial = null;
+    if (e.target.closest('#boardWrap') && !e.target.closest('#popover') && !e.target.closest('#radial')) { if (!dragMoved) boardClick(e); return; }
+    var el = e.target.closest('[data-closeradial],[data-act],[data-buy],[data-discard],[data-move],[data-conquer],[data-pacify],[data-effect],[data-build],[data-replace],[data-capital],[data-cede],[data-attack],[data-close],[data-resolve],[data-take],[data-tsel],[data-treb],[data-go],[data-next],[data-closepop],[data-cancel],[data-mini],[data-hidemarket],[data-showmarket],[data-heroinfo],[data-collectgo]');
     if (!el) return;
     var ds = el.dataset, p = FOF.cur(st);
-    var VIEW = ds.closepop || ds.cancel || ds.hidemarket || ds.showmarket || ds.close || ds.heroinfo || ds.act === 'newgame';
+    var VIEW = ds.closeradial || ds.closepop || ds.cancel || ds.hidemarket || ds.showmarket || ds.close || ds.heroinfo || ds.act === 'newgame';
     if (FOF.sfx) FOF.sfx(clickSound(ds));
     if (ds.heroinfo) { modal = { kind: 'hero' }; return render(); }
+    if (ds.closeradial) { radial = null; return render(); }
+    if (radial && (ds.move || ds.conquer || ds.attack)) radial = null;
+    if (ds.collectgo) { modal = null; if (st.phase === 'collect' && !st.pending.length) return dispatch({ type: 'nextPhase' }); return render(); }
     if (!VIEW && !myTurn()) { err = 'Ce n’est pas à vous de jouer.'; pop = null; return render(); }
-    if (ds.next) { mode = null; pop = null; return dispatch({ type: 'nextPhase' }); }
+    if (ds.next) { if (mode && mode.kind === 'deploy') { err = 'Déployez votre unité ou annulez l’achat.'; return render(); } mode = null; pop = null; return dispatch({ type: 'nextPhase' }); }
     if (ds.act === 'edouard') return dispatch({ type: 'edouard' });
     if (ds.act === 'spy') return dispatch({ type: 'spy' });
     if (ds.act === 'newgame') { if (net) { net.stop(); net = null; FOF.clearOnline(); } else { FOF.statsAbandon(st); FOF.clearSaved(); } document.body.classList.remove('online'); st = null; modal = null; $('modal').hidden = true; $('game').hidden = true; FOF.showSetup(); return; }
     if (ds.closepop) { pop = null; err = ''; return render(); }
-    if (ds.cancel) { mode = null; return render(); }
+    if (ds.cancel) { var wasDeploy = mode && mode.kind === 'deploy'; mode = null; if (wasDeploy) marketOpen = true; return render(); }
     if (ds.hidemarket) { marketOpen = false; return render(); }
     if (ds.showmarket) { marketOpen = true; return render(); }
     if (ds.buy !== undefined) {
@@ -532,7 +627,7 @@
     if (ds.move) { if (startMove(ds.move === 'L' ? 'L' : +ds.move)) pop = null; return render(); }
     if (ds.conquer) return dispatch({ type: 'conquer' });
     if (ds.pacify) return dispatch({ type: 'pacify', uid: +ds.pacify, tid: +sel.slice(1) }, true);
-    if (ds.effect) return dispatch({ type: 'effect', uid: +ds.effect }, true);
+    if (ds.effect) return dispatch({ type: 'effect', uid: +ds.effect, arg: ds.arg !== undefined ? +ds.arg : undefined }, true);
     if (ds.build) return dispatch({ type: 'build', tid: +ds.tid, btype: ds.build }, true);
     if (ds.replace) return dispatch({ type: 'replace', tid: +ds.tid, idx: +ds.idx, btype: ds.replace }, true);
     if (ds.capital) return dispatch({ type: 'moveCapital', tid: +ds.capital });
@@ -547,6 +642,7 @@
   });
   function clickSound(ds) {
     if (ds.next) return st.phase === 'build' ? 'bell' : 'page';
+    if (ds.collectgo) return 'page';
     if (ds.buy !== undefined) return 'coins';
     if (ds.discard !== undefined) return 'card';
     if (ds.build || ds.replace || ds.capital) return 'mallet';
@@ -554,18 +650,19 @@
     if (ds.move || ds.mini) return 'select';
     if (ds.conquer) return 'flag';
     if (ds.effect) return 'magic';
-    if (ds.attack || ds.tsel || ds.treb || ds.go) return 'draw';
+    if (ds.go) return 'charge';
+    if (ds.attack || ds.tsel || ds.treb) return 'draw';
     if (ds.take) return 'spend';
     if (ds.act === 'spy') return 'card';
     return 'click';
   }
   document.addEventListener('change', function (e) { if (e.target.id === 'withLeader' && modal) { modal.withLeader = e.target.checked; render(); } });
-  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && st) { if (mode) mode = null; else if (pop) pop = null; else if (modal && (modal.kind === 'attack' || modal.kind === 'help')) modal = null; render(); } });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && st) { if (mode) { if (mode.kind === 'deploy') marketOpen = true; mode = null; } else if (pop) pop = null; else if (modal && (modal.kind === 'attack' || modal.kind === 'help')) modal = null; render(); } });
   window.addEventListener('resize', function () { if (st) render(); });
   FOF.bindBar = function () {
-    var g = $('game'), lb = $('logBtn'), open = window.innerWidth >= 1700;
-    try { var sv = localStorage.getItem('fof-log'); if (sv !== null) open = sv === '1'; } catch (e) {}
-    function setLog(o) { g.classList.toggle('no-right', !o); lb.setAttribute('aria-pressed', String(o)); try { localStorage.setItem('fof-log', o ? '1' : '0'); } catch (e) {} if (st) render(); }
+    var g = $('game'), lb = $('logBtn'), open = window.innerWidth >= 1500;
+    try { var sv = localStorage.getItem('fof-log2'); if (sv !== null) open = sv === '1'; } catch (e) {}
+    function setLog(o) { g.classList.toggle('no-right', !o); lb.setAttribute('aria-pressed', String(o)); try { localStorage.setItem('fof-log2', o ? '1' : '0'); } catch (e) {} if (st) render(); }
     setLog(open);
     lb.addEventListener('click', function () { setLog(g.classList.contains('no-right')); });
     $('helpBtn').addEventListener('click', function () { if (!st) return; modal = { kind: 'help' }; render(); });

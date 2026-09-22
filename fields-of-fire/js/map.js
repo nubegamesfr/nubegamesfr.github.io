@@ -13,6 +13,7 @@
   function ri(s, n) { return Math.floor(FOF.rng(s) * n); }
   function shuffle(s, a) { for (var i = a.length - 1; i > 0; i--) { var j = ri(s, i + 1); var x = a[i]; a[i] = a[j]; a[j] = x; } return a; }
   FOF.shuffle = shuffle; FOF.ri = ri;
+  FOF.hexDistance = function (a, b, W) { return hexDist(a, b, W); };
 
   // Grille « odd-r » (hexagones pointe en haut)
   function nbrs(c, r, W, H) {
@@ -37,15 +38,21 @@
     return Math.max(Math.abs(A[0]-B[0]), Math.abs(A[1]-B[1]), Math.abs(A[2]-B[2]));
   }
 
+  // v1.5 : continents libres (nombre et tailles au hasard), total = 7 × joueurs
   function continentSizes(s, n) {
-    var extra = FOF.rng(s) < 0.5 ? 3 : 0;
-    for (var tries = 0; tries < 200; tries++) {
-      var sizes = [];
-      for (var i = 0; i < n; i++) sizes.push(6 + ri(s, 3));
-      var sum = sizes.reduce(function (a, b) { return a + b; }, 0);
-      if (sum + extra === 7 * n) return { sizes: sizes, extra: extra };
+    var total = 7 * n;
+    for (var tries = 0; tries < 400; tries++) {
+      var k = Math.max(2, Math.min(n + 1, n - 1 + ri(s, 3)));
+      var sizes = [], left = total;
+      for (var i = 0; i < k; i++) {
+        var rest = k - i - 1, lo = Math.max(4, left - rest * 12), hi = Math.min(12, left - rest * 4);
+        if (lo > hi) break;
+        var v = i === k - 1 ? left : lo + ri(s, hi - lo + 1);
+        sizes.push(v); left -= v;
+      }
+      if (sizes.length === k && left === 0 && sizes.every(function (v) { return v >= 4 && v <= 12; })) return { sizes: sizes, extra: 0 };
     }
-    var base = []; for (var k = 0; k < n; k++) base.push(7);
+    var base = []; for (var q = 0; q < n; q++) base.push(7);
     return { sizes: base, extra: 0 };
   }
 
@@ -119,12 +126,16 @@
       for (var q = 0; q < terr.length && !near; q++) if (hexDist(i, terr[q].hex, W) <= 2) near = true;
       if (near) water.push(i);
     }
-    var nz = n + 2, zseeds = [water[ri(s, water.length)]];
+    // v1.5 : deux fois plus de zones de mer ; chaque graine touche une côte, donc aucune zone isolée
+    var shoreW = water.filter(function (w) { return nbrs(w % W, Math.floor(w / W), W, H).some(function (j) { return owner[j] !== -1; }); });
+    var nz = Math.min(2 * n + 4, shoreW.length), zseeds = [shoreW[ri(s, shoreW.length)]];
     while (zseeds.length < nz) {
       var far = -1, fd = -1;
-      water.forEach(function (w) { var d = Math.min.apply(null, zseeds.map(function (z) { return hexDist(z, w, W); })); if (d > fd) { fd = d; far = w; } });
+      shoreW.forEach(function (w) { if (zseeds.indexOf(w) >= 0) return; var d = Math.min.apply(null, zseeds.map(function (z) { return hexDist(z, w, W); })); if (d > fd) { fd = d; far = w; } });
+      if (far < 0) break;
       zseeds.push(far);
     }
+    nz = zseeds.length;
     var zoneOf = {}, queue = [];
     zseeds.forEach(function (z, k) { zoneOf[z] = k; queue.push(z); });
     var waterSet = {}; water.forEach(function (w) { waterSet[w] = true; });
@@ -152,6 +163,7 @@
     terr.forEach(function (t) { t.seas.forEach(function (zi) { if (seas[zi].adjT.indexOf(t.id) < 0) seas[zi].adjT.push(t.id); }); });
     // chaque continent doit toucher la mer, et toutes les zones être reliées
     for (c = 0; c < targets.length; c++) if (!terr.some(function (t) { return t.cont === c && t.seas.length; })) return null;
+    if (seas.some(function (z) { return !z.adjT.length; })) return null;
     var seen = { 0: true }, st = [0];
     while (st.length) { var a = st.pop(); seas[a].adjS.forEach(function (b2) { if (!seen[b2]) { seen[b2] = true; st.push(b2); } }); }
     if (Object.keys(seen).length !== nz) return null;
@@ -162,7 +174,7 @@
       z.anchor = bestA;
     });
     names(s, terr);
-    return { W: W, H: H, terr: terr, seas: seas, zoneOf: zoneOf, nCont: targets.length, startConts: cs.sizes.length };
+    return { W: W, H: H, terr: terr, seas: seas, zoneOf: zoneOf, nCont: targets.length };
   }
 
   var NAMES = ['Aubelande','Brumeval','Cendrelac','Dorvanne','Éperonde','Fauxmont','Givrecœur','Hautelys','Isarde','Joncval','Karnhelm','Lorvanne','Mortebrise','Noirsable','Orgemont','Pierrelune','Quellrive','Rochebrune','Sombrelac','Taillefer','Ulmecombe','Valbrise','Wyrmelande','Ysembre','Zéphirelle','Argenfeu','Boisroux','Corvelle','Dunemar','Estival','Ferhaven','Grisecôte','Harfleur','Ivrelande','Jaspemont','Lancerive','Merlefond','Nordelys','Oriflamme','Pâlemarche','Roncevaux','Sélune','Tourmaline','Vermeil','Vieilleroche','Aiguemorte','Bellegarde','Clairefont'];
