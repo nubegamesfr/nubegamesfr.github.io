@@ -4,6 +4,7 @@
   var $ = function (id) { return document.getElementById(id); };
   var esc = function (s) { return FOF.esc(s); };
   var count = 4, rows = [], picking = null, room = null, step = 'mode';
+  var tutoWanted = true; try { tutoWanted = localStorage.getItem('fof-tuto') !== '0'; } catch (e) {}
   var DEFAULT_NAMES = ['Aurèle', 'Bérénice', 'Corentin', 'Daphné', 'Élouan', 'Faustine'];
   var LEAD_KEYS = Object.keys(FOF.LEADERS);
   var TRIAL = ['hugues', 'alienor'];
@@ -36,15 +37,17 @@
     for (var i = 0; i < 6; i++) rows.push({ name: DEFAULT_NAMES[i], color: FOF.PLAYER_COLORS[i].id, leader: ls[i] });
   }
   function renderLocal() {
-    $('countPick').innerHTML = '<span class="muted" style="margin-right:6px">Joueurs</span>' + [3, 4, 5, 6].map(function (n) { return '<button type="button" aria-pressed="' + (n === count) + '" data-count="' + n + '">' + n + '</button>'; }).join('') + '<button type="button" class="allbots" data-allbots="1" title="Vous contre l’ordinateur">🤖 Jouer contre des bots</button>';
+    $('countPick').innerHTML = '<span class="muted" style="margin-right:6px">Joueurs</span>' + [3, 4, 5, 6].map(function (n) { return '<button type="button" aria-pressed="' + (n === count) + '" data-count="' + n + '">' + n + '</button>'; }).join('') + '<button type="button" class="allbots" data-allbots="1" title="Vous contre l’ordinateur">' + FOF.ic('helm', 15) + ' Jouer contre des bots</button>';
     $('rows').innerHTML = rows.slice(0, count).map(function (r, i) {
       var hex = colorHex(r.color);
       return '<div class="prow" style="border-left:4px solid ' + hex + '"><button type="button" class="swatch" data-swatch="' + i + '" style="background:' + hex + '" aria-label="Changer de couleur"></button>' +
         '<div class="pname-box"><input id="pname' + i + '" data-name="' + i + '" value="' + esc(r.name) + '" maxlength="16" aria-label="Nom du joueur ' + (i + 1) + '">' +
-        '<button type="button" class="btn small bot-toggle' + (r.bot ? ' on' : '') + '" data-bot="' + i + '" aria-pressed="' + !!r.bot + '" title="Joueur humain ou ordinateur">' + (r.bot ? '🤖 Ordinateur' : '👤 Humain') + '</button></div>' +
+        '<button type="button" class="btn small bot-toggle' + (r.bot ? ' on' : '') + '" data-bot="' + i + '" aria-pressed="' + !!r.bot + '" title="Joueur humain ou ordinateur">' + (r.bot ? FOF.ic('helm', 14) + ' Ordinateur' : FOF.ic('person', 14) + ' Humain') + '</button></div>' +
         FOF.heroHTML(r.leader, { button: true, attrs: 'type="button" data-pickhero="' + i + '" title="Changer de dirigeant"', note: TRIAL.indexOf(r.leader) >= 0 ? 'à l’essai · changer ▾' : 'changer ▾' }) + '</div>';
     }).join('');
     $('winInfo').textContent = winText(count);
+    var tw = document.getElementById('tutoOpt');
+    if (tw) tw.innerHTML = '<label class="tuto-check"><input type="checkbox" id="tutoChk"' + (tutoWanted ? ' checked' : '') + '> ' + FOF.ic('book', 15) + ' Didacticiel (3 tours, on peut l’arrêter à tout moment)</label>';
   }
 
   /* ---------- salon en ligne ---------- */
@@ -59,12 +62,12 @@
       var mine = i === me, hex = colorHex(s.color);
       h.push('<div class="prow seat' + (mine ? ' mine' : '') + '" style="border-left:4px solid ' + hex + '">' +
         (mine ? '<button type="button" class="swatch" data-oswatch="1" style="background:' + hex + '" aria-label="Changer de couleur"></button>' : '<span class="swatch" style="background:' + hex + '"></span>') +
-        (mine ? '<input id="seatName" value="' + esc(s.name) + '" maxlength="16" aria-label="Votre nom">' : '<div class="seat-name"><b>' + esc(s.name) + '</b>' + (s.cid === row.host_id ? '<small>hôte</small>' : s.bot ? '<small>🤖 ordinateur' + (host ? ' · <button type="button" class="linkbtn" data-rmbot="' + esc(s.cid) + '">retirer</button>' : '') + '</small>' : '') + '</div>') +
+        (mine ? '<input id="seatName" value="' + esc(s.name) + '" maxlength="16" aria-label="Votre nom">' : '<div class="seat-name"><b>' + esc(s.name) + '</b>' + (s.cid === row.host_id ? '<small>hôte</small>' : s.bot ? '<small>' + FOF.ic('helm', 12) + ' ordinateur' + (host ? ' · <button type="button" class="linkbtn" data-rmbot="' + esc(s.cid) + '">retirer</button>' : '') + '</small>' : '') + '</div>') +
         (mine ? FOF.heroHTML(s.leader, { button: true, attrs: 'type="button" data-opick="1" title="Changer de dirigeant"', note: 'vous · changer ▾' }) : FOF.heroHTML(s.leader, { note: 'joueur ' + (i + 1) })) + '</div>');
     });
     for (var k = n; k < 6; k++) h.push('<div class="prow seat empty"><span class="swatch"></span><div class="seat-name muted">Place libre' + (k < 3 ? ' · minimum 3 joueurs' : '') + '</div></div>');
     h.push('</div><p class="note">' + winText(Math.max(3, n)) + '</p><div class="setup-actions">');
-    if (host && n < 6) h.push('<button class="btn" type="button" data-addbot="1">🤖 Ajouter un bot</button>');
+    if (host && n < 6) h.push('<button class="btn" type="button" data-addbot="1">' + FOF.ic('helm', 15) + ' Ajouter un bot</button>');
     if (host) h.push('<button class="btn primary" type="button" data-ostart="1" ' + (n < 3 ? 'disabled' : '') + '>' + (n < 3 ? 'En attente de joueurs (' + n + '/3 minimum)' : 'Lancer la partie à ' + n + ' joueurs') + '</button>');
     else h.push('<span class="waiting">En attente du lancement par l’hôte…</span>');
     h.push('<button class="btn" type="button" data-oleave="1">Quitter le salon</button></div>');
@@ -228,7 +231,11 @@
     $('shuffleBtn').addEventListener('click', function () { var ls = shuffled(); rows.forEach(function (r, i) { r.leader = ls[i]; }); renderLocal(); });
     $('startBtn').addEventListener('click', function () {
       var players = rows.slice(0, count).map(function (r, i) { return { name: (r.name || 'Joueur ' + (i + 1)).trim(), color: r.color, leader: r.leader, bot: !!r.bot }; });
+      var chk = document.getElementById('tutoChk');
+      tutoWanted = chk ? chk.checked : tutoWanted;
+      try { localStorage.setItem('fof-tuto', tutoWanted ? '1' : '0'); } catch (e) {}
       FOF.startUI(FOF.newGame({ players: players }));
+      if (tutoWanted && FOF.tutorialStart) FOF.tutorialStart();
     });
     FOF.showSetup();
     // reprise automatique seulement dans l'onglet qui était déjà assis dans ce salon (après un rechargement)

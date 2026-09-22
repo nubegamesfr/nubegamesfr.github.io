@@ -3,7 +3,7 @@
   'use strict';
   var prev = null, reduce = false;
   try { reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) {}
-  var PH = { collect: ['Collecte', '🪙'], recruit: ['Recrutement', '📜'], military: ['Phase militaire', '⚔'], build: ['Construction', '🏰'] };
+  var PH = { collect: ['Collecte', 'coins'], recruit: ['Recrutement', 'cards'], military: ['Phase militaire', 'swords'], build: ['Construction', 'castle'] };
 
   function snap(st) {
     return {
@@ -41,32 +41,32 @@
     document.body.appendChild(f); setTimeout(function () { f.remove(); }, 1500);
   }
   var KIND = {
-    capfall: ['pop', '🏰', 'bad'], devastate: ['pop', '🔥', 'bad'], conquer: ['pop', '🚩', 'good'], tyran: ['tyran', '👑', 'bad'],
-    elim: ['pop', '☠', 'bad'], pact: ['pop', '🤝', 'good'], pactbreak: ['pop', '💔', 'bad'], revolt: ['pop', '🔥', 'bad'],
-    attackwin: ['toast', '⚔', 'good'], attacklose: ['toast', '🛡', 'bad'], recruit: ['toast', '📜', 'good'], build: ['toast', '🔨', 'good'],
-    land: ['toast', '🚩', 'good'], gold: ['toast', '🪙', 'good'], deficit: ['toast', '⚠', 'bad'], 'dip+': ['toast', '🤝', 'good'], 'dip-': ['toast', '⚠', 'bad'],
-    bad: ['toast', '⚠', 'bad'], cede: ['toast', '🤝', 'good'], cedeterr: ['toast', '⚠', 'bad'], convert: ['toast', '✦', 'good'], card: ['toast', '🂠', ''], win: [null]
+    capfall: ['pop', 'castle', 'bad'], devastate: ['pop', 'flame', 'bad'], conquer: ['pop', 'banner', 'good'], tyran: ['tyran', 'crown', 'bad'],
+    elim: ['pop', 'skull', 'bad'], pact: ['pop', 'branch', 'good'], pactbreak: ['pop', 'broken', 'bad'], revolt: ['pop', 'flame', 'bad'],
+    attackwin: ['toast', 'swords', 'good'], attacklose: ['toast', 'shield', 'bad'], recruit: ['toast', 'cards', 'good'], build: ['toast', 'hammer', 'good'],
+    land: ['toast', 'banner', 'good'], gold: ['toast', 'coins', 'good'], deficit: ['toast', 'warn', 'bad'], 'dip+': ['toast', 'branch', 'good'], 'dip-': ['toast', '⚠', 'bad'],
+    bad: ['toast', 'warn', 'bad'], cede: ['toast', 'branch', 'good'], cedeterr: ['toast', 'warn', 'bad'], convert: ['toast', 'star', 'good'], card: ['toast', '🂠', ''], win: [null]
   };
   function classify(l) { var r = KIND[l.k]; return r ? [null].concat(r) : [null, 'toast', '•', '']; }
   function toast(text, icon, tone, col) {
     var el = fxLayer(), box = el.querySelector('.fx-toasts');
     if (!box) { box = document.createElement('div'); box.className = 'fx-toasts'; el.appendChild(box); }
     var t = document.createElement('div'); t.className = 'fx-toast ' + (tone || ''); if (col) t.style.setProperty('--tc', col);
-    t.innerHTML = '<span class="i">' + icon + '</span><span>' + FOF.esc(text) + '</span>';
+    t.innerHTML = '<span class="i">' + (FOF.hasIcon(icon) ? FOF.ic(icon, 17) : icon) + '</span><span>' + FOF.esc(text) + '</span>';
     box.appendChild(t); while (box.children.length > 4) box.firstChild.remove();
     setTimeout(function () { t.classList.add('out'); setTimeout(function () { t.remove(); }, 400); }, 3600);
   }
   function pop(text, icon, tone, col) {
     var el = fxLayer(), p = document.createElement('div');
     p.className = 'fx-pop ' + (tone || ''); if (col) p.style.setProperty('--tc', col);
-    p.innerHTML = '<span class="i">' + icon + '</span><b>' + FOF.esc(text) + '</b>';
+    p.innerHTML = '<span class="i">' + (FOF.hasIcon(icon) ? FOF.ic(icon, 34) : icon) + '</span><b>' + FOF.esc(text) + '</b>';
     el.appendChild(p); setTimeout(function () { p.remove(); }, 2300);
   }
   FOF.FX_pop = pop;
   function tyranPop(p) {
     if (!p) return;
     var el = document.createElement('div'); el.className = 'fx-tyran';
-    el.innerHTML = '<div class="ty-crown">👑</div><div class="ty-t">TYRAN</div><div class="ty-n">' + FOF.esc(p.name) + ' a renié toute parole donnée.</div><div class="ty-s">Tous peuvent désormais l’attaquer sans perdre de diplomatie, et ses terres se révolteront à chaque tour.</div>';
+    el.innerHTML = '<div class="ty-crown">' + FOF.ic('crown', 84) + '</div><div class="ty-t">TYRAN</div><div class="ty-n">' + FOF.esc(p.name) + ' a renié toute parole donnée.</div><div class="ty-s">Tous peuvent désormais l’attaquer sans perdre de diplomatie, et ses terres se révolteront à chaque tour.</div>';
     document.body.appendChild(el); setTimeout(function () { el.classList.add('out'); setTimeout(function () { el.remove(); }, 600); }, 4200);
   }
   var pendingGold = 0;
@@ -113,7 +113,7 @@
           var p = st.players[st.cur];
           banner('<small>Tour ' + st.round + '</small><b>' + FOF.esc(p.name) + '</b><span>' + FOF.esc(FOF.LEADERS[p.leader].name) + '</span>', o.color(p.id));
         } else if (cur.phase !== prev.phase && PH[cur.phase]) {
-          banner('<span class="ico">' + PH[cur.phase][1] + '</span><b>' + PH[cur.phase][0] + '</b>', o.color(st.cur));
+          banner('<span class="ico">' + FOF.ic(PH[cur.phase][1], 28) + '</span><b>' + PH[cur.phase][0] + '</b>', o.color(st.cur));
         }
       }
       // 3) territoires qui changent de main
@@ -139,7 +139,7 @@
       cur.dip.forEach(function (v, i) {
         var d = v - prev.dip[i]; if (!d || st.players[i].tyran) return;
         var opp = document.querySelectorAll('#players .opp')[i];
-        floatAt(opp && opp.querySelector('.nm'), (d > 0 ? '+' : '') + d + ' 🤝', d > 0 ? 'gain dip' : 'loss dip');
+        floatAt(opp && opp.querySelector('.nm'), (d > 0 ? '+' : '') + d + ' ' + FOF.ic('branch', 13), d > 0 ? 'gain dip' : 'loss dip');
       });
       // 6) messages visuels (pop pour les grands événements, bulles pour le reste) + sons
       var snd = [], n = Math.min(4, cur.logN - prev.logN), popped = false;

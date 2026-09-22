@@ -91,19 +91,19 @@
     document.querySelectorAll('.music').forEach(function (el) {
       var off = prefs.muted || prefs.vol === 0, d = decks[active];
       var b = el.querySelector('[data-mute]'), r = el.querySelector('input[data-vol="music"]'), r2 = el.querySelector('input[data-vol="sfx"]'), n = el.querySelector('.mtitle');
-      if (b) { b.textContent = off ? '🔇' : '🎵'; b.setAttribute('aria-pressed', String(off)); b.title = (off ? 'Activer la musique' : 'Couper la musique') + (d.audio ? ' — en cours : ' + d.cur().t + ' (' + d.cur().a + ')' : ''); }
+      if (b) { b.innerHTML = off ? FOF.ic('mute', 16) : FOF.ic('note', 16); b.setAttribute('aria-pressed', String(off)); b.title = (off ? 'Activer la musique' : 'Couper la musique') + (d.audio ? ' — en cours : ' + d.cur().t + ' (' + d.cur().a + ')' : ''); }
       if (r && document.activeElement !== r) r.value = Math.round(prefs.vol * 100);
       if (r2 && document.activeElement !== r2) r2.value = Math.round(prefs.sfx * 100);
-      var fx = el.querySelector('[data-msfx]'); if (fx) { fx.textContent = prefs.sfx > 0 ? '🔔' : '🔕'; fx.title = prefs.sfx > 0 ? 'Couper les bruitages' : 'Activer les bruitages'; }
-      if (n) n.textContent = d.audio ? '♪ ' + d.cur().t + ' · ' + d.cur().a : '♪ Musique';
+      var fx = el.querySelector('[data-msfx]'); if (fx) { fx.innerHTML = prefs.sfx > 0 ? FOF.ic('bell', 16) : FOF.ic('bellOff', 16); fx.title = prefs.sfx > 0 ? 'Couper les bruitages' : 'Activer les bruitages'; }
+      if (n) n.innerHTML = FOF.ic('note', 13) + ' ' + FOF.esc(d.audio ? d.cur().t + ' · ' + d.cur().a : 'Musique');
       el.classList.toggle('off', off); el.classList.toggle('battle', active === 'battle');
     });
   }
   FOF.musicHTML = function () {
     return '<div class="music" role="group" aria-label="Son">' +
-      '<button type="button" class="btn small ghost" data-mute="1">🎵</button><input type="range" min="0" max="100" data-vol="music" aria-label="Volume de la musique" title="Volume de la musique">' +
-      '<button type="button" class="btn small ghost" data-msfx="1">🔔</button><input type="range" min="0" max="100" data-vol="sfx" aria-label="Volume des bruitages" title="Volume des bruitages">' +
-      '<button type="button" class="btn small ghost" data-mskip="1" title="Morceau suivant" aria-label="Morceau suivant">⏭</button>' +
+      '<button type="button" class="btn small ghost" data-mute="1">' + FOF.ic('note', 16) + '</button><input type="range" min="0" max="100" data-vol="music" aria-label="Volume de la musique" title="Volume de la musique">' +
+      '<button type="button" class="btn small ghost" data-msfx="1">' + FOF.ic('bell', 16) + '</button><input type="range" min="0" max="100" data-vol="sfx" aria-label="Volume des bruitages" title="Volume des bruitages">' +
+      '<button type="button" class="btn small ghost" data-mskip="1" title="Morceau suivant" aria-label="Morceau suivant">' + FOF.ic('skip', 15) + '</button>' +
       '<span class="mtitle" title="Musiques libres de droits (CC0) : CodeManu, pauliuw, TAD, RandomMind, cynicmusic, Wolfgang_"></span></div>';
   };
   var lastSfx = 0.8;

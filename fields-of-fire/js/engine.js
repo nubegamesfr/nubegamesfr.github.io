@@ -7,11 +7,12 @@
 
   /* ---------- création ---------- */
   FOF.newGame = function (cfg) {
-    var st = { v: 1, seed: cfg.seed || (Date.now() & 0x7fffffff), n: cfg.players.length };
+    var st = { v: 1, seed: cfg.seed || (Date.now() & 0x7fffffff), n: cfg.players.length, t0: Date.now(), tLast: Date.now() };
     st.map = FOF.generateMap(st, st.n);
     st.players = cfg.players.map(function (p, i) {
       return { id: i, name: p.name, color: p.color, leader: p.leader, bot: !!p.bot, mod: FOF.LEADERS[p.leader].mod, gold: 3, dip: 3, tyran: false, tyranStamp: null,
         alive: true, capital: null, lpos: null, lArr: 0, lMoved: false, lConq: false, lFought: false, pact: null,
+        tally: { gold: 3, recruit: 0, build: 0, battles: 0, wins: 0, losses: 0, conquest: 0, lost: 0, peak: 1 },
         attackedLast: false, attackedNow: false, flags: {} };
     });
     // v1.5 : dirigeants placés au hasard n'importe où, jamais sur deux cases voisines
@@ -46,6 +47,8 @@
   var T = function (st, id) { return st.map.terr[id]; };
   FOF.cur = function (st) { return st.players[st.cur]; };
   FOF.unitsAt = function (st, loc, pid) { return st.units.filter(function (u) { return u.pos === loc && (pid === undefined || u.owner === pid); }); };
+  FOF.MAX_AGE = 48 * 3600 * 1000;   // une partie laissée de côté plus de 48 h est abandonnée
+  FOF.expired = function (st) { return !!st && !st.winner && Date.now() - (st.tLast || st.t0 || Date.now()) > FOF.MAX_AGE; };
   FOF.terrOf = function (st, pid) { return st.map.terr.filter(function (t) { return t.ctrl === pid; }); };
   FOF.countBld = function (st, pid, type) { var n = 0; st.map.terr.forEach(function (t) { t.blds.forEach(function (b) { if (b.o === pid && b.t === type) n++; }); }); return n; };
   FOF.army = function (st, pid) { return st.units.filter(function (u) { return u.owner === pid; }); };
@@ -57,7 +60,7 @@
     if (type === 'Ci' && p.leader === 'gustave') c = 6;
     if (type === 'Ci' && p.leader === 'mathilde') c = 4;
     if (type === 'T' && p.leader === 'adele') c = 6;
-    if (type === 'P' && p.leader === 'alienor') c = 1;
+    if (type === 'P' && p.leader === 'alienor') c = 2;
     if (p.leader === 'hugues') c = Math.max(1, c - 1);
     return c;
   };
@@ -166,7 +169,8 @@
   function startTurn(st) {
     var p = FOF.cur(st);
     p.attackedLast = p.attackedNow; p.attackedNow = false;
-    p.flags = {}; p.lMoved = false; p.lConq = false; p.lFought = false;
+    p.flags = {}; p.lMoved = false; p.lConq = false; p.lFought = false; p.lFromSea = false;
+    FOF.army(st, p.id).forEach(function (u) { u.fromSea = false; });
     FOF.army(st, p.id).forEach(function (u) { u.moved = 0; u.fought = false; u.pacif = false; u.movesLeft = FOF.unitMove(st, u); });
     p.lMovesLeft = 1;
     st.phase = 'collect';
@@ -178,7 +182,7 @@
     if (!p.tyran && !p.attackedLast && FOF.army(st, p.id).some(function (u) { return u.key === 'heraut'; })) gainDip(st, p, 1, 'Héraut');
     var net = inc.total - inc.upkeep;
     st.collect = { inc: inc, net: net, deficit: net < 0 ? -net : 0 };
-    if (net >= 0) { p.gold += net; log(st, p.name + ' lève l’impôt : ' + inc.total + ' écus récoltés, ' + inc.upkeep + ' pour la solde des troupes, +' + net + ' en coffre.', p.id, 'gold'); }
+    if (net >= 0) { p.gold += net; p.tally.gold += net; log(st, p.name + ' lève l’impôt : ' + inc.total + ' écus récoltés, ' + inc.upkeep + ' pour la solde des troupes, +' + net + ' en coffre.', p.id, 'gold'); }
     else {
       log(st, p.name + ' lève l’impôt : ' + inc.total + ' écus, mais la solde en exige ' + inc.upkeep + ' ; il manque ' + (-net) + ' écus au trésor.', p.id, 'deficit');
       var reserve = FOF.army(st, p.id).reduce(function (a, u) { return a + u.gold; }, 0);
@@ -275,7 +279,6 @@
     if (t) {
       A = elitePower(st, att, t.biome); detA.push(['Élites (' + FOF.BIOME_NAMES[t.biome] + ')', A]);
       if (lead) { A += p.mod; detA.push(['Dirigeant', p.mod]); if (p.leader === 'odon') { A += att.length; detA.push(['Odon : +1 par élite', att.length]); } }
-      if (p.leader === 'alienor' && t.seas.length) { A += att.length; detA.push(['Aliénor : côte', att.length]); }
       var ep = elitePower(st, du, t.biome); D = ep; detD.push(['Élites (' + FOF.BIOME_NAMES[t.biome] + ')', ep]);
       if (dl) { D += d.mod; detD.push(['Dirigeant', d.mod]); }
       var db = FOF.defBonus(st, d, t); D += db; if (db) detD.push(['Aménagements' + (t.id === d.capital ? ' + capitale' : ''), db]);
@@ -350,6 +353,7 @@
     }
     pv.att.forEach(function (u) { u.fought = true; u.movesLeft = 0; });
     if (pv.lead) { p.lFought = true; p.lMovesLeft = 0; }
+    p.tally.battles++; d.tally.battles++; if (win) { p.tally.wins++; d.tally.losses++; } else { p.tally.losses++; d.tally.wins++; }
     if (win) {
       pv.du.forEach(function (u) { if (!FOF.isElite(u.key) && !d.tyran) loseDip(st, p, 1, 'unité spéciale détruite'); discardUnit(st, u); });
       res.events.push('Victoire de ' + p.name + ' !');
@@ -457,6 +461,7 @@
   /* ---------- point d'entrée unique ---------- */
   FOF.act = function (st, a) {
     if (st.winner) throw new Error('La partie est terminée.');
+    st.tLast = Date.now();
     var p = FOF.cur(st);
     var pend = st.pending[0];
     if (pend && a.type !== 'resolve' && a.type !== 'deficitTake') throw new Error('Une décision est en attente.');
@@ -495,7 +500,7 @@
         p.gold -= def.upkeep;
         var nu = { uid: st.uid++, key: key, owner: p.id, pos: 't' + a.tid, gold: def.upkeep, arr: st.turnNo, moved: 0, fought: false, pacif: false };
         nu.movesLeft = FOF.unitMove(st, nu);
-        st.units.push(nu); st.zone[a.slot] = draw(st); p.flags.bought = true;
+        st.units.push(nu); st.zone[a.slot] = draw(st); p.flags.bought = true; p.tally.recruit++;
         log(st, p.name + ' enrôle des ' + def.name + ' à ' + T(st, a.tid).name + '.', p.id, 'recruit'); break;
       }
       case 'release': {
@@ -510,20 +515,20 @@
           if (p.lConq || p.lFought || p.lMovesLeft <= 0) throw new Error('Votre dirigeant ne peut plus bouger.');
           var rl = FOF.reach(st, p.lpos, 'L', p, p.lMovesLeft);
           if (rl[a.to] === undefined) throw new Error('Case hors de portée.');
-          p.lMovesLeft -= rl[a.to]; p.lpos = a.to; p.lArr = st.turnNo; p.lMoved = true;
+          p.lMovesLeft -= rl[a.to]; p.lFromSea = p.lpos[0] === 's'; p.lpos = a.to; p.lArr = st.turnNo; p.lMoved = true;
         } else {
           var mu = st.units.filter(function (x) { return x.uid === a.piece && x.owner === p.id; })[0];
           if (!mu || mu.fought || mu.pacif || mu.movesLeft <= 0) throw new Error('Cette unité ne peut plus bouger.');
           var ru = FOF.reach(st, mu.pos, mu, p, mu.movesLeft);
           if (ru[a.to] === undefined) throw new Error('Case hors de portée.');
-          mu.movesLeft -= ru[a.to]; mu.pos = a.to; mu.arr = st.turnNo; mu.moved++;
+          mu.movesLeft -= ru[a.to]; mu.fromSea = mu.pos[0] === 's'; mu.pos = a.to; mu.arr = st.turnNo; mu.moved++;
         }
         break;
       }
       case 'conquer': {
         var lt = p.lpos && p.lpos[0] === 't' ? T(st, +p.lpos.slice(1)) : null;
         if (st.phase !== 'military' || !lt || lt.ctrl !== null || p.lArr >= st.turnNo || p.lMoved || p.lFought) throw new Error('Conquête impossible : le dirigeant doit être sur ce territoire neutre depuis votre tour précédent, sans bouger.');
-        lt.ctrl = p.id; lt.conqStamp = st.turnNo; p.lConq = true; p.lMovesLeft = 0;
+        lt.ctrl = p.id; lt.conqStamp = st.turnNo; p.lConq = true; p.lMovesLeft = 0; p.tally.conquest++;
         log(st, p.name + ' plante sa bannière sur ' + lt.name + '.', p.id, 'conquer'); checkWin(st); break;
       }
       case 'attack': if (st.phase !== 'military') throw new Error('Attaques en phase militaire.'); doAttack(st, a); break;
@@ -542,7 +547,7 @@
       }
       case 'build': {
         var e2 = FOF.canBuild(st, a.tid, a.btype); if (e2) throw new Error(e2);
-        var c = FOF.bldCost(st, p, a.btype); p.gold -= c; T(st, a.tid).blds.push({ t: a.btype, o: p.id });
+        var c = FOF.bldCost(st, p, a.btype); p.gold -= c; T(st, a.tid).blds.push({ t: a.btype, o: p.id }); p.tally.build++;
         log(st, p.name + ' fait élever ' + B[a.btype].name.toLowerCase() + ' à ' + T(st, a.tid).name + ' (' + c + ' écus).', p.id, 'build'); checkWin(st); break;
       }
       case 'replace': {
@@ -606,6 +611,7 @@
   }
 
   function endTurn(st) {
+    st.players.forEach(function (q) { if (q.alive) q.tally.peak = Math.max(q.tally.peak, FOF.terrOf(st, q.id).length); });
     var p = FOF.cur(st);
     if (p.tyran && st.turnNo > p.tyranStamp) {
       var own = FOF.terrOf(st, p.id).filter(function (t) { return t.id !== p.capital; });

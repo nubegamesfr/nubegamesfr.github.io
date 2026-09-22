@@ -419,11 +419,24 @@
       if (rs.kind[i] !== 1 && rs.shore[i] > 4 * rs.S) amb.seaPts.push({ x: ux, y: uy, near: rs.shore[i] < 12 * rs.S });
       else if (rs.kind[i] === 1 && st.map.terr[rs.id[i]].biome === 'F' && rs.dist[i] > 4 * rs.S) amb.forest.push({ x: ux, y: uy, t: rs.id[i] });
     }
-    amb.waves = []; for (var w = 0; w < 46 && amb.seaPts.length; w++) amb.waves.push(newWave(true));
+    // prairies et marécages, pour les papillons et les lucioles
+    amb.plain = []; amb.marsh = [];
+    for (var k2 = 0; k2 < 3000; k2++) {
+      var gx2 = (Math.random() * rs.gw) | 0, gy2 = (Math.random() * rs.gh) | 0, i2 = gy2 * rs.gw + gx2;
+      if (rs.kind[i2] !== 1 || rs.dist[i2] < 3 * rs.S) continue;
+      var bm = st.map.terr[rs.id[i2]].biome, pt = { x: rs.minX + gx2 / rs.S, y: rs.minY + gy2 / rs.S };
+      if (bm === 'P') amb.plain.push(pt); else if (bm === 'Ma') amb.marsh.push(pt);
+    }
+    amb.waves = []; for (var w = 0; w < 70 && amb.seaPts.length; w++) amb.waves.push(newWave(true));
     amb.boats = [];
     var near = amb.seaPts.filter(function (p) { return p.near; });
-    for (var b2 = 0; b2 < 2 && near.length; b2++) { var p0 = near[(Math.random() * near.length) | 0]; amb.boats.push({ x: p0.x, y: p0.y, a: rnd(0, 6.28), sp: rnd(1.2, 2) }); }
-    amb.fox = null; amb.birds = null; amb.nextFox = 3; amb.nextBirds = 8;
+    for (var b2 = 0; b2 < 4 && near.length; b2++) { var p0 = near[(Math.random() * near.length) | 0]; amb.boats.push({ x: p0.x, y: p0.y, a: rnd(0, 6.28), sp: rnd(1.2, 2.2) }); }
+    // papillons (prairies) et lucioles (marécages), présents en permanence
+    amb.flies = [];
+    for (var f2 = 0; f2 < 10 && amb.plain.length; f2++) { var pp = amb.plain[(Math.random() * amb.plain.length) | 0]; amb.flies.push({ kind: 'b', x: pp.x, y: pp.y, x0: pp.x, y0: pp.y, t: rnd(0, 6), sp: rnd(0.7, 1.4) }); }
+    for (var g2 = 0; g2 < 14 && amb.marsh.length; g2++) { var mp = amb.marsh[(Math.random() * amb.marsh.length) | 0]; amb.flies.push({ kind: 'l', x: mp.x, y: mp.y, x0: mp.x, y0: mp.y, t: rnd(0, 6), sp: rnd(0.4, 0.9) }); }
+    amb.fish = []; amb.nextFish = 2;
+    amb.fox = null; amb.birds = null; amb.nextFox = 3; amb.nextBirds = 4;
   }
   function newWave(anyAge) { var p = amb.seaPts[(Math.random() * amb.seaPts.length) | 0]; return { x: p.x, y: p.y, age: anyAge ? rnd(0, 4) : 0, life: rnd(3, 5), s: rnd(3, 5.5) }; }
   function isSea(ux, uy) { var rs = cache, gx = ((ux - rs.minX) * rs.S) | 0, gy = ((uy - rs.minY) * rs.S) | 0; if (gx < 0 || gy < 0 || gx >= rs.gw || gy >= rs.gh) return false; var i = gy * rs.gw + gx; return rs.kind[i] !== 1 && rs.shore[i] > 3 * rs.S; }
@@ -486,12 +499,47 @@
         c.fillStyle = 'rgba(235,232,225,' + (0.35 * (1 - ph)) + ')'; c.beginPath(); c.arc(sx2, sy2, (1.2 + ph * 3) * K, 0, 7); c.fill();
       }
     });
+    // poissons qui sautent au large
+    amb.nextFish -= dt;
+    if (amb.nextFish <= 0 && amb.seaPts.length) {
+      var fp = amb.seaPts[(Math.random() * amb.seaPts.length) | 0];
+      amb.fish.push({ x: fp.x, y: fp.y, t: 0, d: rnd(0.8, 1.2), dir: Math.random() < 0.5 ? 1 : -1 });
+      amb.nextFish = rnd(2.5, 6);
+    }
+    amb.fish = amb.fish.filter(function (f) {
+      f.t += dt; var q2 = f.t / f.d; if (q2 >= 1) return false;
+      var jump = Math.sin(Math.PI * q2), x3 = X(f.x + f.dir * q2 * 3.5), y3 = Y(f.y) - jump * 5 * K;
+      c.save(); c.translate(x3, y3); c.rotate(f.dir * (q2 - 0.5) * 1.6); c.scale(f.dir, 1);
+      c.fillStyle = 'rgba(225,245,250,.85)'; c.beginPath(); c.ellipse(0, 0, 1.9 * K, 0.85 * K, 0, 0, 7); c.fill();
+      c.beginPath(); c.moveTo(-1.7 * K, 0); c.lineTo(-3 * K, -0.9 * K); c.lineTo(-3 * K, 0.9 * K); c.closePath(); c.fill();
+      c.restore();
+      if (q2 > 0.75) { c.strokeStyle = 'rgba(235,250,255,' + (1 - q2) * 2 + ')'; c.lineWidth = 0.5 * K; c.beginPath(); c.ellipse(X(f.x + f.dir * 3.5), Y(f.y), 2.6 * K * (q2 - 0.7) * 3, 0.9 * K * (q2 - 0.7) * 3, 0, 0, 7); c.stroke(); }
+      return true;
+    });
+    // papillons dans les prairies, lucioles dans les marécages
+    (amb.flies || []).forEach(function (f) {
+      f.t += dt * f.sp;
+      var ox = Math.sin(f.t * 0.9) * 5 + Math.sin(f.t * 2.3) * 1.4, oy = Math.cos(f.t * 0.7) * 3.4 + Math.sin(f.t * 3.1) * 0.9;
+      var x4 = X(f.x0 + ox), y4 = Y(f.y0 + oy);
+      if (f.kind === 'b') {
+        var wing = Math.abs(Math.sin(f.t * 9)) * 0.9 + 0.25;
+        c.fillStyle = 'rgba(255,246,190,.95)';
+        c.beginPath(); c.ellipse(x4 - 0.7 * K, y4, 0.75 * K, 0.75 * K * wing, -0.5, 0, 7); c.fill();
+        c.beginPath(); c.ellipse(x4 + 0.7 * K, y4, 0.75 * K, 0.75 * K * wing, 0.5, 0, 7); c.fill();
+        c.fillStyle = 'rgba(90,70,40,.9)'; c.fillRect(x4 - 0.15 * K, y4 - 0.5 * K, 0.3 * K, 1 * K);
+      } else {
+        var glow = 0.35 + 0.65 * Math.abs(Math.sin(f.t * 1.7));
+        var g3 = c.createRadialGradient(x4, y4, 0, x4, y4, 2.4 * K);
+        g3.addColorStop(0, 'rgba(230,255,150,' + (0.9 * glow) + ')'); g3.addColorStop(1, 'rgba(180,255,120,0)');
+        c.fillStyle = g3; c.beginPath(); c.arc(x4, y4, 2.4 * K, 0, 7); c.fill();
+      }
+    });
     // renard qui traverse une forêt
     amb.nextFox -= dt;
     if (!amb.fox && amb.nextFox <= 0 && amb.forest.length > 8) {
       var p1 = amb.forest[(Math.random() * amb.forest.length) | 0], same = amb.forest.filter(function (q) { return q.t === p1.t && Math.abs(q.x - p1.x) > 10; });
       if (same.length) { var p2 = same[(Math.random() * same.length) | 0]; amb.fox = { x0: p1.x, y0: p1.y, x1: p2.x, y1: p2.y, t: 0, d: rnd(6, 9) }; }
-      amb.nextFox = rnd(10, 18);
+      amb.nextFox = rnd(6, 12);
     }
     if (amb.fox) {
       var fx = amb.fox; fx.t += dt; var q = Math.min(1, fx.t / fx.d);
@@ -514,13 +562,13 @@
     }
     // vol d'oiseaux
     amb.nextBirds -= dt;
-    if (!amb.birds && amb.nextBirds <= 0) { var fromL = Math.random() < 0.5; amb.birds = { x: fromL ? rs.minX - 10 : rs.minX + rs.wU + 10, y: rs.minY + rnd(0.15, 0.85) * rs.hU, vx: (fromL ? 1 : -1) * rnd(14, 20), vy: rnd(-3, 3) }; amb.nextBirds = rnd(20, 35); }
+    if (!amb.birds && amb.nextBirds <= 0) { var fromL = Math.random() < 0.5; amb.birds = { x: fromL ? rs.minX - 10 : rs.minX + rs.wU + 10, y: rs.minY + rnd(0.15, 0.85) * rs.hU, vx: (fromL ? 1 : -1) * rnd(14, 20), vy: rnd(-3, 3) }; amb.nextBirds = rnd(7, 16); }
     if (amb.birds) {
       var bd = amb.birds; bd.x += bd.vx * dt; bd.y += bd.vy * dt;
       if (bd.x < rs.minX - 20 || bd.x > rs.minX + rs.wU + 20) amb.birds = null;
       else {
         c.strokeStyle = 'rgba(30,26,22,.75)'; c.lineWidth = 0.7 * K;
-        [[0, 0], [-5, -3], [-5, 3], [-10, -6]].forEach(function (o, j) {
+        [[0, 0], [-5, -3], [-5, 3], [-10, -6], [-10, 1], [-15, -3]].forEach(function (o, j) {
           var bx = X(bd.x + o[0] * Math.sign(bd.vx)), by = Y(bd.y + o[1]), fl = Math.sin(ts / 110 + j) * 1.2 * K, w = 2.2 * K;
           c.beginPath(); c.moveTo(bx - w, by - fl); c.quadraticCurveTo(bx - w / 2, by - w * 0.4, bx, by); c.quadraticCurveTo(bx + w / 2, by - w * 0.4, bx + w, by - fl); c.stroke();
         });
@@ -542,6 +590,35 @@
       var i = gy * rs.gw + gx; return rs.kind[i] === 1 ? 't' + rs.id[i] : rs.kind[i] === 2 ? 's' + rs.id[i] : null;
     },
     anchor: function (loc) { return cache ? cache.anchor[loc] || null : { x: 0, y: 0 }; },
+    // vrai si le point (unités) appartient à la région demandée
+    inside: function (loc, ux, uy) {
+      var rs = cache; if (!rs) return false;
+      var gx = Math.round((ux - rs.minX) * rs.S), gy = Math.round((uy - rs.minY) * rs.S);
+      if (gx < 0 || gy < 0 || gx >= rs.gw || gy >= rs.gh) return false;
+      var i = gy * rs.gw + gx, k = loc[0] === 't' ? 1 : 2;
+      return rs.kind[i] === k && rs.id[i] === +loc.slice(1);
+    },
+    // cherche autour de l'ancre une position où le rectangle (largeur w, de -up à +down) tient dans la case
+    place: function (loc, w, up, down) {
+      var rs = cache, a = rs && rs.anchor[loc]; if (!a) return null;
+      var self = FOF.Board, hw = w / 2;
+      function fits(x, y) {
+        return self.inside(loc, x, y) && self.inside(loc, x - hw, y - up) && self.inside(loc, x + hw, y - up) &&
+          self.inside(loc, x - hw, y + down) && self.inside(loc, x + hw, y + down);
+      }
+      if (fits(a.x, a.y)) return { x: a.x, y: a.y };
+      var steps = [0, 3, -3, 6, -6, 9, -9, 13, -13, 17, -17, 22, -22];
+      for (var r = 1; r < steps.length; r++) for (var i = 0; i <= r; i++) {
+        var cand = [[steps[r], steps[i]], [steps[i], steps[r]]];
+        for (var c = 0; c < 2; c++) { var x = a.x + cand[c][0], y = a.y + cand[c][1]; if (fits(x, y)) return { x: x, y: y }; }
+      }
+      // rien ne tient : on réduit la marge et on se contente du centre de la case
+      for (var k2 = 0.8; k2 >= 0.2; k2 -= 0.2) {
+        var hw2 = hw * k2, up2 = up * k2, dn2 = down * k2;
+        if (self.inside(loc, a.x - hw2, a.y - up2) && self.inside(loc, a.x + hw2, a.y + dn2)) return { x: a.x, y: a.y };
+      }
+      return { x: a.x, y: a.y };
+    },
     icons: function () { return []; },
     bounds: function () { return cache ? { x: cache.minX, y: cache.minY, w: cache.wU, h: cache.hU } : null; },
     prepare: function (st, baseCanvas, done) {

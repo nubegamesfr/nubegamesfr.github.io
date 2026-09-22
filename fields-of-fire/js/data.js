@@ -58,7 +58,7 @@
     adele:   { name: 'Adèle la Pieuse', mod: 2, text: 'Ses temples coûtent 6 or et donnent +1 défense.' },
     henri:   { name: 'Henri le Stratège', mod: 1, text: 'Toutes ses unités d’élite se déplacent d’1 case de plus.' },
     hugues:  { name: 'Hugues le Bâtisseur', mod: 2, text: 'Ses aménagements coûtent 1 or de moins (minimum 1). À l’essai.' },
-    alienor: { name: 'Aliénor l’Amirale', mod: 2, text: 'Ports à 1 or, +1 or par port. Embarque depuis une côte voisine d’un de ses ports. Élites +1 contre un territoire côtier. Combat en mer. À l’essai.' }
+    alienor: { name: 'Aliénor l’Amirale', mod: 1, text: 'Ports à 2 or, +1 or par port. Embarque depuis une côte voisine d’un de ses ports. Seule à pouvoir engager un combat en mer. À l’essai.' }
   };
 
   FOF.PLAYER_COLORS = [

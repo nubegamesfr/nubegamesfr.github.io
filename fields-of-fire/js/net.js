@@ -95,7 +95,7 @@
   FOF.joinRoom = function (code, name) {
     var r = new Room(FOF.normCode(code), FOF.clientId());
     return r.fetch().then(function (row) {
-      if (r.seatIndex() >= 0) return r; // déjà assis (reconnexion)
+      if (r.seatIndex() >= 0) return checkStale(r); // déjà assis (reconnexion)
       if (row.status !== 'lobby') throw new Error('La partie a déjà commencé.');
       if (row.seats.length >= 6) throw new Error('Le salon est complet (6 joueurs).');
       return r.mutate(function (row) {
@@ -108,10 +108,17 @@
       }).then(function () { if (r.seatIndex() < 0) throw new Error('Impossible de rejoindre ce salon.'); return r; });
     });
   };
+  // une partie sans action depuis plus de 48 h est close automatiquement
+  function checkStale(r) {
+    var row = r.row;
+    if (!row || row.status !== 'playing' || !row.state || !FOF.expired(row.state)) return r;
+    FOF.statsAbandon(row.state);
+    return r.cas({ status: 'closed' }).catch(function () {}).then(function () { throw new Error('Partie abandonnée : plus aucune action depuis 48 heures.'); });
+  }
   FOF.resumeRoom = function (code, cid) {
     try { sessionStorage.setItem('fof-cid', cid); } catch (e) {}
     var r = new Room(code, cid);
-    return r.fetch().then(function () { if (r.seatIndex() < 0) throw new Error('Vous ne faites plus partie de ce salon.'); return r; });
+    return r.fetch().then(function () { if (r.seatIndex() < 0) throw new Error('Vous ne faites plus partie de ce salon.'); return checkStale(r); });
   };
   FOF.randomFreeLeader = function (used) {
     var free = Object.keys(FOF.LEADERS).filter(function (k) { return used.indexOf(k) < 0; });

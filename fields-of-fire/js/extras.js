@@ -15,7 +15,7 @@
   /* ---------- signaler un bug ---------- */
   function openBug() {
     var el = $('bugModal');
-    el.innerHTML = '<div class="modal-bg"><div class="modal"><h2>🐞 Signaler un bug</h2><p class="muted">Décrivez ce qui s’est passé et ce que vous attendiez. L’état de la partie est joint automatiquement pour nous aider à reproduire le problème.</p>' +
+    el.innerHTML = '<div class="modal-bg"><div class="modal"><h2>' + FOF.ic('bug', 20) + ' Signaler un bug</h2>'+'<p class="muted">Décrivez ce qui s’est passé et ce que vous attendiez. L’état de la partie est joint automatiquement pour nous aider à reproduire le problème.</p>' +
       '<textarea id="bugText" rows="6" maxlength="3000" placeholder="Ex. : j’ai acheté une unité mais je ne pouvais la déployer nulle part…"></textarea>' +
       '<input id="bugContact" maxlength="120" placeholder="Votre nom ou contact (facultatif)">' +
       '<p class="err" id="bugErr"></p><div class="actions"><button class="btn" data-bugclose="1">Annuler</button><button class="btn primary" data-bugsend="1">Envoyer</button></div></div></div>';
@@ -53,7 +53,7 @@
   }
   function hex(id) { var c = (FOF.PLAYER_COLORS || []).filter(function (x) { return x.id === id; })[0]; return c ? c.hex : '#ccc'; }
   function renderChat() {
-    var b = $('chatBtn'); if (b) b.innerHTML = '💬' + (chat.unread ? '<span class="badge">' + chat.unread + '</span>' : '');
+    var b = $('chatBtn'); if (b) b.innerHTML = FOF.ic('chat', 17) + (chat.unread ? '<span class="badge">' + chat.unread + '</span>' : '');
     var list = $('chatList'); if (!list) return;
     list.innerHTML = chat.msgs.map(function (m) { return '<div class="cmsg"><b style="color:' + hex(m.color) + '">' + esc(m.name) + '</b> ' + esc(m.msg) + '</div>'; }).join('') || '<div class="muted">Aucun message. Dites bonjour !</div>';
     list.scrollTop = list.scrollHeight;
