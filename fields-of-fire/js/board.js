@@ -1,7 +1,8 @@
-/* Fields of Fire — rendu de la carte : frontières irrégulières dessinées à la main (canvas) + pions (SVG) */
+/* Fields of Fire — rendu de la carte (v1.4) : trame haute définition, frontières irrégulières,
+   motifs « papier peint » par terrain, mer avec hauts-fonds, surbrillances par masques. */
 (function (FOF) {
   'use strict';
-  var R = 30, PX = 1;            // PX : taille d'un pixel logique de la trame
+  var R = 30;                      // rayon d'une case hexagonale de base (unités logiques)
   var IMG = {}, imgReady = null;
   function loadImages() {
     if (imgReady) return imgReady;
@@ -11,7 +12,6 @@
     }));
     return imgReady;
   }
-  // bruit de valeur déterministe
   function hash(x, y, s) { var h = x * 374761393 + y * 668265263 + s * 982451653; h = (h ^ (h >>> 13)) * 1274126177; return ((h ^ (h >>> 16)) >>> 0) / 4294967296; }
   function vnoise(x, y, s) {
     var xi = Math.floor(x), yi = Math.floor(y), xf = x - xi, yf = y - yi;
@@ -19,179 +19,252 @@
     var a = hash(xi, yi, s), b = hash(xi + 1, yi, s), c = hash(xi, yi + 1, s), d = hash(xi + 1, yi + 1, s);
     return (a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v) * 2 - 1;
   }
-  function pixToHex(x, y, W) {
-    var w = Math.sqrt(3) * R, px = x - 4 - w / 2, py = y - R - 4;
+  function pixToHex(x, y) {
+    var px = x - 4 - Math.sqrt(3) * R / 2, py = y - R - 4;
     var q = (Math.sqrt(3) / 3 * px - py / 3) / R, r = (2 / 3 * py) / R;
     var cx = q, cz = r, cy = -cx - cz, rx = Math.round(cx), ry = Math.round(cy), rz = Math.round(cz);
     var dx = Math.abs(rx - cx), dy = Math.abs(ry - cy), dz = Math.abs(rz - cz);
     if (dx > dy && dx > dz) rx = -ry - rz; else if (dy <= dz) rz = -rx - ry;
-    var row = rz, col = rx + (row - (row & 1)) / 2;
-    return { col: col, row: row };
+    return { col: rx + (rz - (rz & 1)) / 2, row: rz };
   }
 
-  // Trame d'appartenance calculée une fois par carte
+  // couleurs (terre : parchemin teinté ; encre du motif)
+  var LAND = { P: [236, 216, 146], F: [160, 196, 124], M: [196, 182, 160], Ma: [138, 184, 166] };
+  var INK = { P: '#9a7a2a', F: '#2f6128', M: '#5e4c3c', Ma: '#245a4c' };
+  var SEA_DEEP = [52, 98, 122], SEA_SHALLOW = [132, 186, 192];
+
   var cache = null;
-  function buildRaster(st) {
-    var m = st.map, W = m.W, H = m.H, seed = st.map.terr.length * 131 + W;
+  function build(st) {
+    var m = st.map, W = m.W, H = m.H, seed = m.terr.length * 131 + W;
     var hexT = {}; m.terr.forEach(function (t) { hexT[t.hex] = t.id; });
+    // cadrage serré sur les terres (+ une bande de mer)
     var minX = 1e9, minY = 1e9, maxX = -1e9, maxY = -1e9;
-    m.terr.map(function (t) { return t.hex; }).concat(Object.keys(m.zoneOf).map(Number)).forEach(function (h) {
-      var c = FOF.hexCenter(h, W, R); minX = Math.min(minX, c.x - R * 0.9); maxX = Math.max(maxX, c.x + R * 0.9); minY = Math.min(minY, c.y - R * 0.9); maxY = Math.max(maxY, c.y + R * 0.9);
-    });
-    var gw = Math.ceil((maxX - minX) / PX), gh = Math.ceil((maxY - minY) / PX), N = gw * gh;
+    m.terr.forEach(function (t) { var c = FOF.hexCenter(t.hex, W, R); minX = Math.min(minX, c.x); maxX = Math.max(maxX, c.x); minY = Math.min(minY, c.y); maxY = Math.max(maxY, c.y); });
+    var pad = R * 1.9; minX -= pad; minY -= pad; maxX += pad; maxY += pad;
+    var wU = maxX - minX, hU = maxY - minY;
+    var S = Math.max(1.4, Math.min(3, 2400 / wU));
+    var gw = Math.ceil(wU * S), gh = Math.ceil(hU * S), N = gw * gh;
     var kind = new Int8Array(N), id = new Int16Array(N);
     for (var gy = 0; gy < gh; gy++) for (var gx = 0; gx < gw; gx++) {
-      var x = minX + gx * PX, y = minY + gy * PX;
-      var wx = x + R * 0.42 * vnoise(x / 38, y / 38, seed) + R * 0.16 * vnoise(x / 11, y / 11, seed + 7);
-      var wy = y + R * 0.42 * vnoise(x / 38 + 50, y / 38, seed + 3) + R * 0.16 * vnoise(x / 11, y / 11 + 90, seed + 9);
-      var hc = pixToHex(wx, wy, W), i = gy * gw + gx;
+      var x = minX + (gx + 0.5) / S, y = minY + (gy + 0.5) / S;
+      var wx = x + R * 0.42 * vnoise(x / 38, y / 38, seed) + R * 0.16 * vnoise(x / 11, y / 11, seed + 7) + R * 0.05 * vnoise(x / 3.5, y / 3.5, seed + 11);
+      var wy = y + R * 0.42 * vnoise(x / 38 + 50, y / 38, seed + 3) + R * 0.16 * vnoise(x / 11, y / 11 + 90, seed + 9) + R * 0.05 * vnoise(x / 3.5 + 20, y / 3.5, seed + 13);
+      var hc = pixToHex(wx, wy), i = gy * gw + gx;
       if (hc.col < 0 || hc.row < 0 || hc.col >= W || hc.row >= H) { kind[i] = 0; continue; }
       var h = hc.row * W + hc.col;
       if (hexT[h] !== undefined) { kind[i] = 1; id[i] = hexT[h]; }
       else if (m.zoneOf[h] !== undefined) { kind[i] = 2; id[i] = m.zoneOf[h]; }
       else kind[i] = 0;
     }
-    // distance au bord (0..6) pour les liserés
-    var dist = new Uint8Array(N).fill(9), q = [];
-    for (i = 0; i < N; i++) {
-      var gx2 = i % gw, gy2 = (i / gw) | 0, edge = false;
-      [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(function (d) {
-        var nx = gx2 + d[0], ny = gy2 + d[1]; if (nx < 0 || ny < 0 || nx >= gw || ny >= gh) { edge = true; return; }
-        var j = ny * gw + nx; if (kind[j] !== kind[i] || id[j] !== id[i]) edge = true;
-      });
-      if (edge) { dist[i] = 0; q.push(i); }
+    // champ de distance au bord de sa région, et distance de la mer à la terre
+    var CAP = Math.round(14 * S);
+    function bfs(isSeed, same) {
+      var d = new Uint8Array(N).fill(255), q = new Int32Array(N), qh = 0, qt = 0;
+      for (var i = 0; i < N; i++) if (isSeed(i)) { d[i] = 0; q[qt++] = i; }
+      while (qh < qt) {
+        var u = q[qh++], du = d[u]; if (du >= CAP) continue;
+        var ux = u % gw;
+        if (ux > 0) step(u - 1); if (ux < gw - 1) step(u + 1); if (u >= gw) step(u - gw); if (u + gw < N) step(u + gw);
+      }
+      function step(j) { if (d[j] > d[u] + 1 && same(u, j)) { d[j] = d[u] + 1; q[qt++] = j; } }
+      return d;
     }
-    while (q.length) {
-      var u = q.shift(), ux = u % gw, uy = (u / gw) | 0;
-      if (dist[u] >= 8) continue;
-      [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(function (d) {
-        var nx = ux + d[0], ny = uy + d[1]; if (nx < 0 || ny < 0 || nx >= gw || ny >= gh) return;
-        var j = ny * gw + nx; if (dist[j] > dist[u] + 1 && kind[j] === kind[u] && id[j] === id[u]) { dist[j] = dist[u] + 1; q.push(j); }
-      });
+    function edge(i) {
+      var x = i % gw, k = kind[i], v = id[i];
+      return (x > 0 && (kind[i - 1] !== k || id[i - 1] !== v)) || (x < gw - 1 && (kind[i + 1] !== k || id[i + 1] !== v)) ||
+        (i >= gw && (kind[i - gw] !== k || id[i - gw] !== v)) || (i + gw < N && (kind[i + gw] !== k || id[i + gw] !== v));
     }
-    // ancre de chaque territoire / zone : point le plus intérieur
-    var anchorT = {}, anchorS = {}, best = {};
-    for (i = 0; i < N; i++) {
+    var dist = bfs(edge, function (a, b) { return kind[a] === kind[b] && id[a] === id[b]; });
+    function landAdj(i) {
+      if (kind[i] === 1) return false; var x = i % gw;
+      return (x > 0 && kind[i - 1] === 1) || (x < gw - 1 && kind[i + 1] === 1) || (i >= gw && kind[i - gw] === 1) || (i + gw < N && kind[i + gw] === 1);
+    }
+    var shore = bfs(landAdj, function (a, b) { return kind[b] !== 1; });
+    // côte : pixels de terre qui touchent la mer
+    function coast(i) {
+      var x = i % gw; return (x > 0 && kind[i - 1] !== 1) || (x < gw - 1 && kind[i + 1] !== 1) || (i >= gw && kind[i - gw] !== 1) || (i + gw < N && kind[i + gw] !== 1);
+    }
+    var coastD = bfs(function (i) { return kind[i] === 1 && coast(i); }, function (a, b) { return kind[b] === 1; });
+    // ancres : point le plus intérieur de chaque région + boîtes englobantes
+    var best = {}, box = {};
+    for (var i = 0; i < N; i++) {
       if (kind[i] !== 1 && kind[i] !== 2) continue;
-      var key = (kind[i] === 1 ? 't' : 's') + id[i], sc = dist[i] * 10 + hash(i, 3, seed);
+      var key = (kind[i] === 1 ? 't' : 's') + id[i], x2 = i % gw, y2 = (i / gw) | 0;
+      var sc = Math.min(dist[i], CAP) * 10 + hash(i, 3, seed);
       if (!best[key] || sc > best[key].sc) best[key] = { sc: sc, i: i };
+      var b = box[key] || (box[key] = { x0: x2, y0: y2, x1: x2, y1: y2 });
+      if (x2 < b.x0) b.x0 = x2; if (x2 > b.x1) b.x1 = x2; if (y2 < b.y0) b.y0 = y2; if (y2 > b.y1) b.y1 = y2;
     }
-    Object.keys(best).forEach(function (k) { var i2 = best[k].i; (k[0] === 't' ? anchorT : anchorS)[+k.slice(1)] = { x: minX + (i2 % gw) * PX, y: minY + ((i2 / gw) | 0) * PX }; });
-    // les zones de mer : ancre centrée sur la case d'ancrage prévue
-    m.seas.forEach(function (z) { var c = FOF.hexCenter(z.anchor, W, R); anchorS[z.id] = { x: c.x, y: c.y }; });
-    return { key: st.seed + ':' + m.terr.length, minX: minX, minY: minY, gw: gw, gh: gh, kind: kind, id: id, dist: dist, anchorT: anchorT, anchorS: anchorS, w: gw * PX, h: gh * PX, seed: seed };
+    var anchor = {};
+    Object.keys(best).forEach(function (k) { var j = best[k].i; anchor[k] = { x: minX + ((j % gw) + 0.5) / S, y: minY + (((j / gw) | 0) + 0.5) / S }; });
+    m.seas.forEach(function (z) { if (!anchor['s' + z.id]) { var c = FOF.hexCenter(z.anchor, W, R); anchor['s' + z.id] = { x: Math.max(minX + 10, Math.min(maxX - 10, c.x)), y: Math.max(minY + 10, Math.min(maxY - 10, c.y)) }; } });
+    return { key: st.seed + ':' + m.terr.length, seed: seed, minX: minX, minY: minY, wU: wU, hU: hU, S: S, gw: gw, gh: gh, kind: kind, id: id, dist: dist, shore: shore, coastD: coastD, anchor: anchor, box: box, masks: {}, tint: {} };
   }
 
-  // couleurs de terrain bien distinctes (plaines blé, forêt verte, montagnes pierre, marécage vert d'eau)
-  var BIOME_LAND = { P: [236, 214, 138], F: [150, 186, 108], M: [184, 168, 150], Ma: [128, 170, 156] };
-  var BIOME_INK = { P: [196, 160, 70], F: [70, 118, 52], M: [112, 96, 82], Ma: [62, 110, 100] };
-  // motif propre à chaque terrain : épis, arbres, hachures, roseaux
-  function biomeMark(b, x, y) {
-    if (b === 'F') { var cx = (x >> 3), cy = (y >> 3), h = hash(cx, cy, 3); if (h < 0.55) return false; var ox = (cx << 3) + 4 + ((h * 10) | 0) % 3 - 1, oy = (cy << 3) + 4; var dx = x - ox, dy = y - oy; return dx * dx + dy * dy <= 3.2; }
-    if (b === 'M') { if (hash(x >> 4, y >> 4, 5) < 0.35) return false; var u = (x + y) % 9, v = (x - y + 900) % 9; return (u === 0 && (y % 9) < 5) || (v === 0 && (y % 9) >= 4 && (y % 9) < 7); }
-    if (b === 'Ma') return (y % 6 === 0) && ((x + ((y / 6) | 0) * 5) % 11 < 5) && hash(x >> 3, y >> 3, 9) > 0.25;
-    if (b === 'P') return (x % 7 === 0) && (y % 7 === 3 || y % 7 === 4) && hash(x >> 2, y >> 2, 13) > 0.55;
-    return false;
-  }
   function drawBase(st, rs, canvas) {
-    var ctx = canvas.getContext('2d'), gw = rs.gw, gh = rs.gh;
-    var img = ctx.createImageData(gw, gh), d = img.data, m = st.map;
-    for (var i = 0; i < gw * gh; i++) {
-      var k = rs.kind[i], x = i % gw, y = (i / gw) | 0, n = hash(x >> 1, y >> 1, 11) * 10 - 5, r, g, b;
+    var gw = rs.gw, gh = rs.gh, N = gw * gh, S = rs.S, m = st.map;
+    canvas.width = gw; canvas.height = gh;
+    var ctx = canvas.getContext('2d'), img = ctx.createImageData(gw, gh), d = img.data;
+    var kind = rs.kind, id = rs.id, dist = rs.dist, shore = rs.shore, coastD = rs.coastD;
+    var biomeOf = m.terr.map(function (t) { return t.biome; });
+    var sh = Math.round(2.2 * S), shy = Math.round(3.2 * S);
+    for (var i = 0; i < N; i++) {
+      var x = i % gw, y = (i / gw) | 0, k = kind[i], r, g, b;
+      var grain = (hash(x, y, 5) - 0.5) * 7 + vnoise(x / (40 * S), y / (40 * S), 3) * 6;
       if (k === 1) {
-        var bi = m.terr[rs.id[i]].biome, c = BIOME_LAND[bi]; r = c[0] + n; g = c[1] + n; b = c[2] + n;
-        if (rs.dist[i] > 2 && biomeMark(bi, x, y)) { var ik = BIOME_INK[bi]; r = ik[0]; g = ik[1]; b = ik[2]; }
-        if (rs.dist[i] === 0) {
-          // côte : trait épais ; frontière intérieure : trait fin
-          var coast = isCoast(rs, i);
-          if (coast) { r = 42; g = 34; b = 24; } else { r = r * 0.55; g = g * 0.55; b = b * 0.55; }
-        } else if (rs.dist[i] === 1 && isCoast(rs, i, 2)) { r = 60; g = 50; b = 38; }
-      } else if (k === 2) {
-        var sh = Math.min(rs.dist[i], 8) * 2;
-        r = 168 + sh + n; g = 190 + sh + n; b = 190 + sh + n;
-        if (rs.dist[i] === 0 && zoneEdge(rs, i) && ((x + y) % 7 < 4)) { r = 110; g = 130; b = 134; }
-      } else { r = 150 + n; g = 174 + n; b = 176 + n; }
+        var c = LAND[biomeOf[id[i]]], di = dist[i];
+        // léger dégradé vers l'intérieur de chaque territoire (effet de relief)
+        var rel = 1 - 0.1 * Math.max(0, 1 - di / (9 * S));
+        r = c[0] * rel + grain; g = c[1] * rel + grain; b = c[2] * rel + grain;
+        var cd = coastD[i];
+        if (cd < 1.3 * S) { r = 44; g = 38; b = 34; }                                    // trait de côte
+        else if (cd < 3.2 * S) { r = r * 0.9 + 22; g = g * 0.9 + 20; b = b * 0.9 + 12; } // liseré de sable
+        else if (di < 0.7 * S) { r = r * 0.5; g = g * 0.5; b = b * 0.5; }              // frontière intérieure
+      } else {
+        var t = Math.min(1, shore[i] / (13 * S)); t = t * t * (3 - 2 * t);
+        r = SEA_SHALLOW[0] + (SEA_DEEP[0] - SEA_SHALLOW[0]) * t + grain * 0.6;
+        g = SEA_SHALLOW[1] + (SEA_DEEP[1] - SEA_SHALLOW[1]) * t + grain * 0.6;
+        b = SEA_SHALLOW[2] + (SEA_DEEP[2] - SEA_SHALLOW[2]) * t + grain * 0.6;
+        // écume le long des côtes
+        if (shore[i] < 1.6 * S) { r += 40; g += 40; b += 36; }
+        // ombre portée des terres
+        var sx = x - sh, sy = y - shy;
+        if (sx >= 0 && sy >= 0 && kind[sy * gw + sx] === 1) { r *= 0.8; g *= 0.8; b *= 0.82; }
+        // limites des zones de mer, en pointillés
+        if (k === 2 && dist[i] < 0.6 * S && ((x + y) % Math.round(7 * S)) < 3.5 * S) {
+          var o = rs.kind; var nb = [i - 1, i + 1, i - gw, i + gw].some(function (j) { return j >= 0 && j < N && o[j] === 2 && id[j] !== id[i]; });
+          if (nb) { r += 38; g += 44; b += 44; }
+        }
+        if (k === 0) { r *= 0.92; g *= 0.92; b *= 0.94; }
+      }
       d[i * 4] = r; d[i * 4 + 1] = g; d[i * 4 + 2] = b; d[i * 4 + 3] = 255;
     }
-    canvas.width = gw; canvas.height = gh;
     ctx.putImageData(img, 0, 0);
-    // vaguelettes et icônes de terrain (dessinées à 1 unité = PX)
-    ctx.save(); ctx.scale(1 / PX, 1 / PX); ctx.translate(-rs.minX, -rs.minY);
-    ctx.strokeStyle = 'rgba(60,80,86,.45)'; ctx.lineWidth = 1.1;
-    for (var s = 0; s < gw * gh / 900; s++) {
-      var j = Math.floor(hash(s, 5, rs.seed) * gw * gh);
-      if (rs.kind[j] !== 2 && rs.kind[j] !== 0) continue;
-      if (rs.dist[j] < 4 && rs.kind[j] === 2) continue;
-      var sx = rs.minX + (j % gw) * PX, sy = rs.minY + ((j / gw) | 0) * PX;
-      ctx.beginPath(); ctx.moveTo(sx - 4, sy); ctx.quadraticCurveTo(sx - 2, sy - 2.5, sx, sy); ctx.quadraticCurveTo(sx + 2, sy + 2.5, sx + 4, sy); ctx.stroke();
-    }
-    rs.icons = {};
+    // décor illustré par terrain : montagnes, arbres, épis, roseaux et mares
+    var deco = [];
+    var STEP = { M: 8.5, F: 5.6, P: 7, Ma: 8 };
     m.terr.forEach(function (t) {
-      var pts = [], tries = 0;
-      while (pts.length < 2 && tries < 500) {
-        tries++;
-        var jj = Math.floor(hash(t.id * 97 + tries, 7, rs.seed) * gw * gh);
-        if (rs.kind[jj] !== 1 || rs.id[jj] !== t.id || rs.dist[jj] < 6) continue;
-        var px = rs.minX + (jj % gw) * PX, py = rs.minY + ((jj / gw) | 0) * PX, a = rs.anchorT[t.id];
-        if (Math.abs(px - a.x) < 26 && Math.abs(py - a.y) < 24) continue;
-        if (pts.some(function (p) { return Math.abs(p.x - px) < 18 && Math.abs(p.y - py) < 18; })) continue;
-        pts.push({ x: px, y: py });
+      var bk = t.biome, step = STEP[bk], a = rs.anchor['t' + t.id], bx = rs.box['t' + t.id];
+      if (!bx) return;
+      var x0 = rs.minX + bx.x0 / S, x1 = rs.minX + bx.x1 / S, y0 = rs.minY + bx.y0 / S, y1 = rs.minY + bx.y1 / S, n = 0;
+      for (var uy = y0; uy <= y1; uy += step * 0.86) for (var ux = x0 + ((Math.round((uy - y0) / (step * 0.86)) & 1) ? step / 2 : 0); ux <= x1; ux += step) {
+        n++;
+        var jx = ux + (hash(n, t.id, 21) - 0.5) * step * 0.7, jy = uy + (hash(n, t.id, 22) - 0.5) * step * 0.6;
+        var gx = Math.floor((jx - rs.minX) * S), gy = Math.floor((jy - rs.minY) * S);
+        if (gx < 0 || gy < 0 || gx >= gw || gy >= gh) continue;
+        var j = gy * gw + gx;
+        if (kind[j] !== 1 || id[j] !== t.id || dist[j] < 2 * S || coastD[j] < 3 * S) continue;
+        if (Math.abs(jx - a.x) < 16 && jy - a.y > -15 && jy - a.y < 21) continue;   // place pour les pions
+        deco.push({ b: bk, x: (jx - rs.minX) * S, y: (jy - rs.minY) * S, r: hash(n, t.id, 23) });
       }
-      rs.icons[t.id] = pts.slice(0, 2);
     });
-    ctx.restore();
-  }
-  function isCoast(rs, i, rad) {
-    rad = rad || 1; var gw = rs.gw, x = i % gw, y = (i / gw) | 0;
-    for (var dy = -rad; dy <= rad; dy++) for (var dx = -rad; dx <= rad; dx++) {
-      var nx = x + dx, ny = y + dy; if (nx < 0 || ny < 0 || nx >= gw || ny >= rs.gh) continue;
-      if (rs.kind[ny * gw + nx] !== 1) return true;
-    }
-    return false;
-  }
-  function zoneEdge(rs, i) {
-    var gw = rs.gw, x = i % gw, y = (i / gw) | 0;
-    return [[1, 0], [0, 1], [-1, 0], [0, -1]].some(function (d) { var nx = x + d[0], ny = y + d[1]; if (nx < 0 || ny < 0 || nx >= gw || ny >= rs.gh) return false; var j = ny * gw + nx; return rs.kind[j] === 2 && rs.id[j] !== rs.id[i]; });
+    deco.sort(function (p, q) { return p.y - q.y; });
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    deco.forEach(function (o) { DRAW[o.b](ctx, o.x, o.y, S, o.r); });
   }
 
-  function hexToRgb(h) { return [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)]; }
-  function drawOverlay(st, rs, canvas, view, colorOf) {
-    var ctx = canvas.getContext('2d'), gw = rs.gw, gh = rs.gh;
-    canvas.width = gw; canvas.height = gh;
-    var img = ctx.createImageData(gw, gh), d = img.data, m = st.map;
-    var ownCol = {}; m.terr.forEach(function (t) { if (t.ctrl !== null) ownCol[t.id] = hexToRgb(colorOf(t.ctrl)); });
-    var reach = view.reach || {}, picks = {}; (view.picks || []).forEach(function (t) { picks['t' + t] = 1; });
-    for (var i = 0; i < gw * gh; i++) {
-      var k = rs.kind[i]; if (k !== 1 && k !== 2) continue;
-      var loc = (k === 1 ? 't' : 's') + rs.id[i], di = rs.dist[i], a = 0, c = null;
-      if (k === 1 && ownCol[rs.id[i]]) { c = ownCol[rs.id[i]]; a = di <= 2 ? 0.95 : di <= 4 ? 0.3 : 0.08; if (di === 0) a = 0; }
-      if (reach[loc] !== undefined) { c = [255, 196, 64]; a = di <= 3 ? 0.95 : 0.42; }
-      if (picks[loc]) { c = [70, 190, 110]; a = di <= 3 ? 0.95 : 0.4; }
-      if (view.sel === loc && di <= 3 && di > 0) { c = [255, 255, 245]; a = 1; }
-      if (!c) continue;
-      d[i * 4] = c[0]; d[i * 4 + 1] = c[1]; d[i * 4 + 2] = c[2]; d[i * 4 + 3] = Math.round(a * 255);
+  // dessins vectoriels des terrains (x, y = pied du motif, en pixels ; k = pixels par unité)
+  var DRAW = {
+    M: function (c, x, y, k, r) {
+      var h = (6 + r * 3.5) * k, w = (5 + r * 2) * k;
+      c.fillStyle = 'rgba(60,45,35,.18)'; c.beginPath(); c.ellipse(x + 1.5 * k, y + 0.5 * k, w * 0.9, 1.6 * k, 0, 0, 7); c.fill();
+      c.fillStyle = '#8c7b69'; c.beginPath(); c.moveTo(x - w, y); c.lineTo(x, y - h); c.lineTo(x + w, y); c.closePath(); c.fill();
+      c.fillStyle = '#b3a38f'; c.beginPath(); c.moveTo(x - w, y); c.lineTo(x, y - h); c.lineTo(x - w * 0.12, y); c.closePath(); c.fill();
+      c.fillStyle = '#f4f1ea'; c.beginPath(); c.moveTo(x - w * 0.3, y - h * 0.7); c.lineTo(x, y - h); c.lineTo(x + w * 0.3, y - h * 0.7); c.lineTo(x + w * 0.1, y - h * 0.62); c.lineTo(x - w * 0.05, y - h * 0.72); c.closePath(); c.fill();
+      c.strokeStyle = '#4a3c30'; c.lineWidth = 0.9 * k; c.beginPath(); c.moveTo(x - w, y); c.lineTo(x, y - h); c.lineTo(x + w, y); c.stroke();
+    },
+    F: function (c, x, y, k, r) {
+      var s = (2.6 + r * 1.1) * k;
+      c.fillStyle = 'rgba(30,50,20,.2)'; c.beginPath(); c.ellipse(x + 1 * k, y + 0.6 * k, s * 0.9, 1.3 * k, 0, 0, 7); c.fill();
+      c.strokeStyle = '#5a3d22'; c.lineWidth = 1.1 * k; c.beginPath(); c.moveTo(x, y); c.lineTo(x, y - s * 0.9); c.stroke();
+      c.fillStyle = r > 0.5 ? '#3f7a34' : '#4c8a3c'; c.beginPath(); c.arc(x, y - s * 1.35, s, 0, 7); c.fill();
+      c.fillStyle = 'rgba(190,230,140,.45)'; c.beginPath(); c.arc(x - s * 0.35, y - s * 1.65, s * 0.42, 0, 7); c.fill();
+      c.strokeStyle = '#24461d'; c.lineWidth = 0.7 * k; c.beginPath(); c.arc(x, y - s * 1.35, s, 0, 7); c.stroke();
+    },
+    P: function (c, x, y, k, r) {
+      c.strokeStyle = r > 0.5 ? '#b8932f' : '#a58326'; c.lineWidth = 0.9 * k;
+      for (var i = -1; i <= 1; i++) {
+        var bx = x + i * 1.8 * k, h = (5 + (i === 0 ? 1.8 : 0) + r) * k;
+        c.beginPath(); c.moveTo(bx, y); c.quadraticCurveTo(bx + i * 0.8 * k, y - h * 0.6, bx + i * 1.4 * k, y - h); c.stroke();
+        c.fillStyle = '#d7b54a'; c.beginPath(); c.ellipse(bx + i * 1.4 * k, y - h, 0.8 * k, 1.7 * k, i * 0.3, 0, 7); c.fill();
+      }
+    },
+    Ma: function (c, x, y, k, r) {
+      c.fillStyle = 'rgba(70,130,140,.55)'; c.beginPath(); c.ellipse(x, y, (4 + r * 2.5) * k, (1.4 + r * 0.6) * k, 0, 0, 7); c.fill();
+      c.strokeStyle = 'rgba(220,245,245,.55)'; c.lineWidth = 0.6 * k; c.beginPath(); c.ellipse(x - 0.8 * k, y - 0.3 * k, 2 * k, 0.5 * k, 0, 3.4, 6); c.stroke();
+      c.strokeStyle = '#3e6b3a'; c.lineWidth = 0.9 * k;
+      [-3.2, -2.2, 3, 3.8].forEach(function (dx, i) {
+        var h = (4 + ((i + r * 4) % 3)) * k; c.beginPath(); c.moveTo(x + dx * k, y); c.lineTo(x + dx * k + (i % 2 ? 0.8 : -0.8) * k, y - h); c.stroke();
+        if (i === 1) { c.fillStyle = '#6b4a2a'; c.beginPath(); c.ellipse(x + dx * k - 0.8 * k, y - h, 0.7 * k, 1.6 * k, 0, 0, 7); c.fill(); }
+      });
     }
-    ctx.putImageData(img, 0, 0);
+  };
+
+  // masques par région : « fill » (toute la région) et « band » (bordure intérieure)
+  function mask(rs, loc, type) {
+    var k = loc + ':' + type; if (rs.masks[k]) return rs.masks[k];
+    var b = rs.box[loc]; if (!b) return null;
+    var w = b.x1 - b.x0 + 1, h = b.y1 - b.y0 + 1, c = document.createElement('canvas'); c.width = w; c.height = h;
+    var cx = c.getContext('2d'), im = cx.createImageData(w, h), dd = im.data;
+    var kk = loc[0] === 't' ? 1 : 2, v = +loc.slice(1), band = 3.2 * rs.S;
+    for (var y = 0; y < h; y++) for (var x = 0; x < w; x++) {
+      var i = (b.y0 + y) * rs.gw + b.x0 + x; if (rs.kind[i] !== kk || rs.id[i] !== v) continue;
+      var a = type === 'fill' ? 255 : (rs.dist[i] <= band ? 255 : 0);
+      dd[(y * w + x) * 4 + 3] = a;
+    }
+    cx.putImageData(im, 0, 0);
+    return (rs.masks[k] = { c: c, x: b.x0, y: b.y0 });
+  }
+  function tinted(rs, loc, type, color) {
+    var k = loc + ':' + type + ':' + color; if (rs.tint[k]) return rs.tint[k];
+    var mk = mask(rs, loc, type); if (!mk) return null;
+    var c = document.createElement('canvas'); c.width = mk.c.width; c.height = mk.c.height;
+    var cx = c.getContext('2d'); cx.drawImage(mk.c, 0, 0); cx.globalCompositeOperation = 'source-in'; cx.fillStyle = color; cx.fillRect(0, 0, c.width, c.height);
+    return (rs.tint[k] = { c: c, x: mk.x, y: mk.y });
+  }
+  function paint(ctx, rs, loc, type, color, alpha) {
+    var t = tinted(rs, loc, type, color); if (!t) return;
+    ctx.globalAlpha = alpha; ctx.drawImage(t.c, t.x, t.y); ctx.globalAlpha = 1;
   }
 
   FOF.Board = {
     R: R,
     locAt: function (st, lx, ly) {
       var rs = cache; if (!rs) return null;
-      var gx = Math.floor((lx - rs.minX) / PX), gy = Math.floor((ly - rs.minY) / PX);
+      var gx = Math.floor((lx - rs.minX) * rs.S), gy = Math.floor((ly - rs.minY) * rs.S);
       if (gx < 0 || gy < 0 || gx >= rs.gw || gy >= rs.gh) return null;
       var i = gy * rs.gw + gx; return rs.kind[i] === 1 ? 't' + rs.id[i] : rs.kind[i] === 2 ? 's' + rs.id[i] : null;
     },
-    anchor: function (loc) { if (!cache) return { x: 0, y: 0 }; return loc[0] === 't' ? cache.anchorT[+loc.slice(1)] : cache.anchorS[+loc.slice(1)]; },
-    icons: function (tid) { return cache && cache.icons ? cache.icons[tid] || [] : []; },
-    bounds: function () { return cache ? { x: cache.minX, y: cache.minY, w: cache.w, h: cache.h } : null; },
+    anchor: function (loc) { return cache ? cache.anchor[loc] || null : { x: 0, y: 0 }; },
+    icons: function () { return []; },
+    bounds: function () { return cache ? { x: cache.minX, y: cache.minY, w: cache.wU, h: cache.hU } : null; },
     prepare: function (st, baseCanvas, done) {
       var key = st.seed + ':' + st.map.terr.length;
       if (cache && cache.key === key && baseCanvas.dataset.key === key) { done(); return; }
-      loadImages().then(function () {
-        cache = buildRaster(st); drawBase(st, cache, baseCanvas); baseCanvas.dataset.key = key; done();
-      });
+      loadImages().then(function () { cache = build(st); drawBase(st, cache, baseCanvas); baseCanvas.dataset.key = key; done(); });
     },
-    overlay: function (st, canvas, view, colorOf) { if (cache) drawOverlay(st, cache, canvas, view, colorOf); }
+    // couche des propriétaires, sélection et cibles à choisir
+    overlay: function (st, canvas, view, colorOf) {
+      var rs = cache; if (!rs) return;
+      if (canvas.width !== rs.gw || canvas.height !== rs.gh) { canvas.width = rs.gw; canvas.height = rs.gh; }
+      var ctx = canvas.getContext('2d'); ctx.clearRect(0, 0, rs.gw, rs.gh);
+      st.map.terr.forEach(function (t) {
+        if (t.ctrl === null) return;
+        var col = colorOf(t.ctrl);
+        paint(ctx, rs, 't' + t.id, 'fill', col, 0.3);
+        paint(ctx, rs, 't' + t.id, 'band', col, 0.95);
+      });
+      (view.picks || []).forEach(function (tid) { paint(ctx, rs, 't' + tid, 'fill', '#46c46e', 0.45); paint(ctx, rs, 't' + tid, 'band', '#2fa857', 1); });
+      if (view.sel) paint(ctx, rs, view.sel, 'band', '#ffffff', 1);
+    },
+    // cases atteignables : calque séparé qui clignote (CSS)
+    reach: function (st, canvas, reach) {
+      var rs = cache; if (!rs) return;
+      if (canvas.width !== rs.gw || canvas.height !== rs.gh) { canvas.width = rs.gw; canvas.height = rs.gh; }
+      var ctx = canvas.getContext('2d'); ctx.clearRect(0, 0, rs.gw, rs.gh);
+      var locs = reach ? Object.keys(reach) : [];
+      locs.forEach(function (loc) { paint(ctx, rs, loc, 'fill', '#ffffff', 0.42); paint(ctx, rs, loc, 'band', '#ffffff', 1); });
+      canvas.classList.toggle('on', locs.length > 0);
+    }
   };
 })(window.FOF = window.FOF || {});

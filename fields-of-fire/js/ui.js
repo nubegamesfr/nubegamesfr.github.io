@@ -69,7 +69,7 @@
   var PHASES = [['collect', 'Collecte'], ['recruit', 'Recrutement'], ['military', 'Militaire'], ['build', 'Construction']];
   function renderHeader() {
     var pi = PHASES.map(function (x) { return x[0]; }).indexOf(st.phase);
-    $('phases').innerHTML = PHASES.map(function (x, i) { return '<span class="phase ' + (i === pi ? 'on' : i < pi ? 'done' : '') + '"><span class="n">' + (i + 1) + '</span>' + x[1] + '</span>'; }).join('');
+    $('phases').innerHTML = PHASES.map(function (x, i) { return '<span class="phase ' + (i === pi ? 'on' : i < pi ? 'done' : '') + '"><span class="n">' + (i + 1) + '</span><span class="t">' + x[1] + '</span></span>'; }).join('');
     $('roundChip').innerHTML = 'Tour ' + st.round + (net ? ' · <span class="room-code" title="Code du salon">' + net.code + '</span> · vous : <b style="color:' + color(net.seatIndex()) + '">' + esc(st.players[net.seatIndex()].name) + '</b>' : '');
   }
 
@@ -98,7 +98,8 @@
     wrap.style.marginTop = zoom === 1 ? Math.max(12, (board.clientHeight - b.h * sc) / 2) + 'px' : '12px';
     wrap.dataset.scale = sc;
     var picks = pickTargets();
-    FOF.Board.overlay(st, $('ovCv'), { sel: sel, reach: mode && mode.kind === 'move' ? mode.reach : null, picks: picks }, color);
+    FOF.Board.overlay(st, $('ovCv'), { sel: sel, picks: picks }, color);
+    FOF.Board.reach(st, $('rcCv'), mode && mode.kind === 'move' ? mode.reach : null);
     $('tokens').setAttribute('viewBox', b.x + ' ' + b.y + ' ' + b.w + ' ' + b.h);
     $('tokens').innerHTML = tokensSVG();
     renderPopover(sc);
@@ -110,36 +111,37 @@
     var out = ['<defs>'], m = st.map, p = FOF.cur(st);
     st.players.forEach(function (q) { out.push('<clipPath id="cl' + q.id + '"><circle r="10.5"/></clipPath>'); });
     out.push('<clipPath id="clu"><circle r="8"/></clipPath></defs>');
-    // noms, couronnes, aménagements
-    var BCH = { P: '#f3e2a4', F: '#c2dba0', M: '#d6cabc', Ma: '#b2d3c8' };
-    m.terr.forEach(function (t) {
-      FOF.Board.icons(t.id).forEach(function (q) {
-        out.push('<g class="bic" transform="translate(' + q.x + ' ' + q.y + ')"><circle r="7.2" fill="' + BCH[t.biome] + '" stroke="rgba(40,30,20,.45)" stroke-width=".7"/><image href="assets/icons/biome-' + t.biome + '.png" x="-5.2" y="-5.2" width="10.4" height="10.4"/></g>');
-      });
-    });
+    // drapeaux de capitale, aménagements, marteaux de construction
+    var canBuildHere = st.phase === 'build' && myTurn() && !st.pending.length && !st.winner;
+    var mallets = [];
     m.terr.forEach(function (t) {
       var a = FOF.Board.anchor('t' + t.id); if (!a) return;
-      var name = t.name, cap = t.ctrl !== null && st.players[t.ctrl].capital === t.id;
-      out.push('<text class="tlabel" x="' + a.x + '" y="' + (a.y - 12) + '">' + (cap ? '♛ ' : '') + esc(name) + '</text>');
+      if (t.ctrl !== null && st.players[t.ctrl].capital === t.id && st.players[t.ctrl].alive) {
+        var fc = color(t.ctrl);
+        out.push('<g class="flag" transform="translate(' + (a.x - 17) + ' ' + (a.y - 12) + ')"><line x1="0" y1="0" x2="0" y2="-19" stroke="#2a2118" stroke-width="1.6" stroke-linecap="round"/><path class="flagcloth" d="M0.8 -18.5 C5 -20.5 8 -16 13 -17.5 L13 -9 C8 -7.5 5 -12 0.8 -10 Z" fill="' + fc + '" stroke="#1b1712" stroke-width=".7"/><circle cx="0" cy="-19.5" r="1.4" fill="#e2b448"/></g>');
+      }
+      var nb = t.blds.length;
       t.blds.forEach(function (bd, i) {
-        var bx = a.x - (t.blds.length * 13) / 2 + i * 13, by = a.y + 17;
-        out.push('<rect x="' + bx + '" y="' + by + '" width="12" height="12" rx="2" fill="#f4ebd3" stroke="' + color(bd.o) + '" stroke-width="1.8"/><image href="assets/icons/bld-' + bd.t + '.png" x="' + (bx + 1.5) + '" y="' + (by + 1.5) + '" width="9" height="9"/>');
+        var bx = a.x - (nb * 16) / 2 + i * 16, by = a.y + 19;
+        out.push('<rect x="' + bx + '" y="' + by + '" width="15" height="15" rx="3" fill="#f7efd9" stroke="' + color(bd.o) + '" stroke-width="2"/><image href="assets/icons/bld-' + bd.t + '.png" x="' + (bx + 2) + '" y="' + (by + 2) + '" width="11" height="11"/>');
       });
+      if (canBuildHere && ['C', 'F', 'P', 'Ci', 'T'].some(function (ty) { return !FOF.canBuild(st, t.id, ty); })) {
+        mallets.push('<g class="mallet" data-tloc="t' + t.id + '" transform="translate(' + (a.x + 24) + ' ' + (a.y - 22) + ')"><g class="bob"><circle r="9" fill="#f7efd9" stroke="#8a5a2b" stroke-width="1.4"/><g transform="rotate(-35)"><rect x="-1.2" y="-2" width="2.4" height="10" rx="1" fill="#9a6a3a" stroke="#4a2f16" stroke-width=".6"/><rect x="-5.5" y="-6.5" width="11" height="5.5" rx="1.4" fill="#c08a52" stroke="#4a2f16" stroke-width=".7"/><line x1="-2.5" y1="-6.3" x2="-2.5" y2="-1.2" stroke="#4a2f16" stroke-width=".5"/><line x1="2.5" y1="-6.3" x2="2.5" y2="-1.2" stroke="#4a2f16" stroke-width=".5"/></g><title>Construire ici</title></g></g>');
+      }
     });
-    m.seas.forEach(function (z) { var a = FOF.Board.anchor('s' + z.id); out.push('<text class="slabel" x="' + a.x + '" y="' + (a.y - 14) + '">' + esc(FOF.locName(st, 's' + z.id).toUpperCase()) + '</text>'); });
     // pions
     var byLoc = {};
     st.players.forEach(function (q) { if (q.alive && q.lpos) (byLoc[q.lpos] = byLoc[q.lpos] || []).push({ leader: true, owner: q.id }); });
     st.units.forEach(function (u) { (byLoc[u.pos] = byLoc[u.pos] || []).push(u); });
     Object.keys(byLoc).forEach(function (loc) {
       var a = FOF.Board.anchor(loc); if (!a) return;
-      var list = byLoc[loc], n = Math.min(list.length, 5), gap = 19;
+      var list = byLoc[loc], n = Math.min(list.length, 5), gap = 24;
       list.slice(0, 5).forEach(function (it, i) {
         var x = a.x + (i - (n - 1) / 2) * gap, y = a.y + 3;
         var col = color(it.owner), mine = it.owner === p.id, piece = it.leader ? 'L' : it.uid;
         var movable = mine && st.phase === 'military' && !st.pending.length && (it.leader ? !(p.lConq || p.lFought || p.lMovesLeft <= 0) : !(it.fought || it.pacif || it.movesLeft <= 0));
-        var selected = mode && mode.kind === 'move' && mode.piece === piece;
-        var g = '<g class="tk' + (movable ? ' can' : '') + '" data-tk="' + piece + '" data-tloc="' + loc + '" data-own="' + it.owner + '" data-x="' + x + '" data-y="' + y + '" transform="translate(' + x + ' ' + y + ')"><g class="tki">';
+        var selected = mine && mode && mode.kind === 'move' && mode.piece === piece;
+        var g = '<g class="tk' + (movable ? ' can' : '') + '" data-tk="' + piece + '" data-tloc="' + loc + '" data-own="' + it.owner + '" data-x="' + x + '" data-y="' + y + '" transform="translate(' + x + ' ' + y + ')"><g class="tki"><g transform="scale(1.28)">';
         if (it.leader) {
           var art = FOF.heroArt(st.players[it.owner].leader);
           g += '<circle r="11.5" fill="' + col + '"/>' + (art ? '<image href="' + art + '" x="-10.5" y="-10.5" width="21" height="22" preserveAspectRatio="xMidYMin slice" clip-path="url(#cl' + it.owner + ')"/>' : '<text y="4" text-anchor="middle" font-size="12" fill="#fff">♛</text>') +
@@ -151,11 +153,11 @@
             (el ? '<circle class="ring" r="9" fill="none" stroke="' + (selected ? '#fff' : col) + '" stroke-width="' + (selected ? 3 : 2.2) + '"/>' : '<rect class="ring" x="-8.5" y="-8.5" width="17" height="17" rx="3" fill="none" stroke="' + (selected ? '#fff' : col) + '" stroke-width="2.2"/>');
         }
         if (movable) { var ml = it.leader ? p.lMovesLeft : it.movesLeft; g += '<circle cx="-8" cy="9" r="4.6" fill="#4aa43d" stroke="#1d3a17" stroke-width=".8"/><text x="-8" y="9.3" class="mvbadge" style="fill:#fff">' + ml + '</text>'; }
-        out.push(g + '<title>' + esc(it.leader ? FOF.LEADERS[st.players[it.owner].leader].name : FOF.unitDef(it.key).name) + ' — ' + esc(st.players[it.owner].name) + '</title></g></g>');
+        out.push(g + '<title>' + esc(it.leader ? FOF.LEADERS[st.players[it.owner].leader].name : FOF.unitDef(it.key).name) + ' — ' + esc(st.players[it.owner].name) + '</title></g></g></g>');
       });
       if (list.length > 5) out.push('<text class="tlabel" x="' + (a.x + 3 * gap) + '" y="' + (a.y + 6) + '">+' + (list.length - 5) + '</text>');
     });
-    return out.join('');
+    return out.join('') + mallets.join('');
   }
   function pickTargets() {
     var pd = st.pending[0];
@@ -168,17 +170,71 @@
     if (pd && pd.type === 'cedeTerritory') return '<b>' + esc(st.players[pd.pid].name) + '</b> doit céder un territoire à ' + esc(st.players[pd.to].name) + ' : cliquez un territoire vert.';
     if (pd && pd.type === 'revolt') return 'Tyrannie : <b>' + esc(st.players[pd.pid].name) + '</b> choisit le territoire qui se révolte (en vert).';
     if (mode && mode.kind === 'deploy') return 'Où déployer <b>' + esc(FOF.unitDef(st.zone[mode.slot]).name) + '</b> ? Cliquez un territoire vert.';
-    if (mode && mode.kind === 'move') return 'Déplacer <b>' + esc(mode.label) + '</b> : cliquez une case dorée (' + mode.left + ' case' + (mode.left > 1 ? 's' : '') + ' max).';
+    if (mode && mode.kind === 'move') return 'Déplacer <b>' + esc(mode.label) + '</b> : cliquez une case qui clignote en blanc (' + mode.left + ' case' + (mode.left > 1 ? 's' : '') + ' max).';
     return '';
   }
+
+  /* ---------- zoom à la molette et déplacement de la carte à la souris ---------- */
+  var drag = null, dragMoved = false;
+  function setZoom(z, cx, cy) {
+    var board = $('board'), wrap = $('boardWrap'), r = wrap.getBoundingClientRect(), br = board.getBoundingClientRect();
+    var fx = (cx - r.left) / r.width, fy = (cy - r.top) / r.height;
+    zoom = Math.max(1, Math.min(3.2, z)); render();
+    var r2 = wrap.getBoundingClientRect();
+    board.scrollLeft += (r2.left + fx * r2.width) - cx; board.scrollTop += (r2.top + fy * r2.height) - cy;
+  }
+  document.addEventListener('wheel', function (e) {
+    if (!st || !e.target.closest || !e.target.closest('#boardWrap') || e.target.closest('#popover')) return;
+    e.preventDefault(); setZoom(zoom * (e.deltaY < 0 ? 1.15 : 1 / 1.15), e.clientX, e.clientY);
+  }, { passive: false });
+  document.addEventListener('mousedown', function (e) {
+    if (!st || e.button !== 0 || !e.target.closest('#boardWrap') || e.target.closest('#popover') || zoom <= 1) return;
+    var b = $('board'); drag = { x: e.clientX, y: e.clientY, sl: b.scrollLeft, stp: b.scrollTop }; dragMoved = false;
+  });
+  document.addEventListener('mousemove', function (e) {
+    if (!drag) return; var dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+    if (!dragMoved && Math.abs(dx) + Math.abs(dy) < 6) return;
+    dragMoved = true; var b = $('board'); b.scrollLeft = drag.sl - dx; b.scrollTop = drag.stp - dy; b.classList.add('panning');
+  });
+  document.addEventListener('mouseup', function () { if (drag) { drag = null; $('board').classList.remove('panning'); setTimeout(function () { dragMoved = false; }, 0); } });
+
+  /* ---------- survol : nom et infos de la case ---------- */
+  var hoverRaf = 0, hoverEv = null;
+  function hoverInfo(loc) {
+    if (loc[0] === 's') return '<b>' + esc(FOF.locName(st, loc)) + '</b><small>Zone de mer</small>';
+    var t = st.map.terr[+loc.slice(1)], owner = t.ctrl === null ? null : st.players[t.ctrl];
+    var cap = owner && owner.capital === t.id;
+    var h = '<b>' + (cap ? '⚑ ' : '') + esc(t.name) + '</b><small><img src="assets/icons/biome-' + t.biome + '.png" alt=""> ' + FOF.BIOME_NAMES[t.biome] + (t.seas.length ? ' · côtier' : '') + '</small>';
+    h += '<small>' + (owner ? '<i class="dot" style="background:' + color(owner.id) + '"></i>' + esc(owner.name) + (cap ? ' · capitale' : '') : 'Neutre') + '</small>';
+    if (t.blds.length) h += '<small>' + t.blds.map(function (b) { return '<img src="assets/icons/bld-' + b.t + '.png" alt=""> ' + FOF.BUILDINGS[b.t].name + (b.o !== t.ctrl ? ' (' + esc(st.players[b.o].name) + ')' : ''); }).join(' · ') + '</small>';
+    return h;
+  }
+  function onHover() {
+    hoverRaf = 0; var e = hoverEv, tip = $('hoverTip'); if (!st || !e || !tip) return;
+    var wrap = $('boardWrap'), rect = wrap.getBoundingClientRect(), b = FOF.Board.bounds();
+    var tk = e.target.closest && e.target.closest('.tk');
+    var loc = tk ? tk.dataset.tloc : b ? FOF.Board.locAt(st, b.x + (e.clientX - rect.left) / rect.width * b.w, b.y + (e.clientY - rect.top) / rect.height * b.h) : null;
+    if (!loc || e.target.closest('#popover')) { tip.hidden = true; return; }
+    if (tip.dataset.loc !== loc) { tip.innerHTML = hoverInfo(loc); tip.dataset.loc = loc; }
+    tip.hidden = false;
+    var x = e.clientX + 16, y = e.clientY + 18;
+    if (x + tip.offsetWidth > window.innerWidth - 8) x = e.clientX - tip.offsetWidth - 12;
+    if (y + tip.offsetHeight > window.innerHeight - 8) y = e.clientY - tip.offsetHeight - 12;
+    tip.style.left = x + 'px'; tip.style.top = y + 'px';
+  }
+  document.addEventListener('mousemove', function (e) {
+    if (!st || !e.target.closest || !e.target.closest('#boardWrap')) { var t = $('hoverTip'); if (t && !t.hidden) t.hidden = true; return; }
+    hoverEv = e; if (!hoverRaf) hoverRaf = requestAnimationFrame(onHover);
+  });
 
   /* ---------- clics sur la carte ---------- */
   function boardClick(e) {
     if (!st) return;
-    var tk = e.target.closest('.tk');
+    var tk = e.target.closest('.tk'), ml = e.target.closest('.mallet');
     var wrap = $('boardWrap'), rect = wrap.getBoundingClientRect(), b = FOF.Board.bounds();
     var px = e.clientX - rect.left, py = e.clientY - rect.top;
-    var loc = tk ? tk.dataset.tloc : FOF.Board.locAt(st, b.x + px / rect.width * b.w, b.y + py / rect.height * b.h);
+    var loc = tk ? tk.dataset.tloc : ml ? ml.dataset.tloc : FOF.Board.locAt(st, b.x + px / rect.width * b.w, b.y + py / rect.height * b.h);
+    if (FOF.sfx) FOF.sfx(mode && mode.kind === 'move' && loc && mode.reach[loc] !== undefined ? 'march' : tk && +tk.dataset.own === st.cur ? 'select' : 'tap');
     if (!loc) { pop = null; mode = null; render(); return; }
     // clic sur un de mes pions en phase militaire : on part directement en déplacement
     if (tk && !mode && !st.pending.length && st.phase === 'military' && +tk.dataset.own === st.cur && myTurn()) {
@@ -339,6 +395,7 @@
     var h = ['<div class="me" style="--pc:' + color(p.id) + '">' + FOF.heroImg(p.leader) + '<div class="who"><div class="ribbon" style="background:' + color(p.id) + ';color:#fff;border-color:#1b1a1d">' + esc(p.name) + '</div>' +
       '<div class="line"><span class="star gold" style="width:24px;height:24px;font-size:13px">' + p.mod + '</span><span>' + esc(FOF.LEADERS[p.leader].name) + '</span>' + (p.tyran ? '<span class="pill tyran">Tyran</span>' : '') + (p.pact !== null ? '<span class="pill pact">Pacte avec ' + esc(st.players[p.pact].name) + '</span>' : '') + '</div>' +
       '<div class="purse" data-gold="' + p.id + ':' + p.gold + '" title="Revenu : ' + inc.total + ' − entretien ' + inc.upkeep + '"><span class="coin"></span><b>' + p.gold + '</b><span class="muted" style="font-size:12.5px">or · revenu ' + (inc.total - inc.upkeep >= 0 ? '+' : '') + (inc.total - inc.upkeep) + '/tour</span></div></div></div>'];
+    h[0] = h[0].replace('<div class="me"', '<div class="me" data-heroinfo="1" title="Voir la fiche du dirigeant"');
     h.push('<div style="display:flex;gap:18px;align-items:center;min-width:0;flex-wrap:wrap"><div class="tracks" style="--pc:' + color(p.id) + '">' +
       track('Territoires', '<img class="icn" src="assets/icons/bld-C.png" alt="">', FOF.terrOf(st, p.id).length, v.mil) +
       track('Temples', '<img class="icn" src="assets/icons/bld-T.png" alt="">', FOF.countBld(st, p.id, 'T'), v.rel) +
@@ -359,7 +416,6 @@
   function renderRight() {
     var h = [];
     var p = FOF.cur(st);
-    h.push('<div class="box"><div class="section-title">Votre dirigeant</div>' + FOF.heroHTML(p.leader) + '</div>');
     if (st.phase === 'build') {
       var ced = st.map.terr.filter(function (t) { return t.ctrl !== null && t.ctrl !== p.id && t.blds.some(function (b) { return b.o === p.id; }); });
       if (ced.length && !p.tyran) h.push('<div class="box"><div class="section-title">Céder (+1 diplomatie)</div>' + ced.map(function (t) { return '<div class="kv"><span>' + esc(t.name) + '</span><button class="btn small" data-cede="' + t.id + '">Céder</button></div>'; }).join('') + '</div>');
@@ -394,6 +450,7 @@
         (cp.tyran ? '<p style="color:#f2a79c">Vous êtes Tyran : un de vos territoires se révoltera à la fin du tour.</p>' : '') +
         '<div class="actions"><button class="btn primary" data-close="1">Commencer mon tour</button></div></div>';
     } else if (modal && modal.kind === 'help') h = helpHTML();
+    else if (modal && modal.kind === 'hero') { var hp = FOF.cur(st); h = '<div class="modal"><h2>' + esc(hp.name) + '</h2>' + FOF.heroHTML(hp.leader) + '<div class="actions"><button class="btn primary" data-close="1">Fermer</button></div></div>'; }
     else if (modal && modal.kind === 'confirmNew') h = '<div class="modal"><h2>' + (net ? 'Quitter la partie en ligne ?' : 'Nouvelle partie ?') + '</h2><p>' + (net ? 'Vous pourrez la rejoindre à nouveau avec le code <b>' + net.code + '</b>.' : 'La partie en cours sera perdue.') + '</p><div class="actions"><button class="btn" data-close="1">Annuler</button><button class="btn danger" data-act="newgame">' + (net ? 'Quitter' : 'Recommencer') + '</button></div></div>';
     el.hidden = !h; el.innerHTML = h ? '<div class="modal-bg">' + h + '</div>' : '';
   }
@@ -434,7 +491,7 @@
     var v = st.victory;
     return '<div class="modal help"><h2>Aide-mémoire</h2>' +
       '<h3>Victoire (immédiate)</h3><ul><li>Militaire : ' + v.mil + ' territoires</li><li>Religieuse : ' + v.rel + ' temples</li><li>Diplomatique : ' + v.dip + ' de diplomatie</li></ul>' +
-      '<h3>Se déplacer</h3><ul><li>En phase militaire, cliquez un de vos pions : les cases atteignables s’allument en or. Cliquez-en une.</li><li>Le badge vert sur un pion indique les cases qui lui restent.</li><li>Pour prendre la mer, partez d’un territoire avec un port (le vôtre ou celui d’un autre).</li></ul>' +
+      '<h3>Se déplacer</h3><ul><li>En phase militaire, cliquez un de vos pions : les cases atteignables clignotent en blanc. Cliquez-en une.</li><li>Le badge vert sur un pion indique les cases qui lui restent.</li><li>Pour prendre la mer, partez d’un territoire avec un port (le vôtre ou celui d’un autre).</li></ul>' +
       '<h3>Conquérir un neutre</h3><ul><li>Votre dirigeant doit être sur le territoire neutre depuis votre tour précédent, et ne pas bouger : bouton « Conquérir ».</li></ul>' +
       '<h3>Construire</h3><ul><li>En phase de construction, cliquez un de vos territoires : la fenêtre de construction s’ouvre. 2 aménagements par territoire (2 campements possibles).</li></ul>' +
       '<h3>Combat</h3><ul><li>1 dé + puissance des élites selon le terrain + dirigeant ; le défenseur ajoute ses aménagements et +2 sur sa capitale. Égalité : on relance.</li><li>Chaque attaque coûte 1 diplomatie (sauf contre un Tyran). Sous 0 : vous devenez Tyran.</li></ul>' +
@@ -444,11 +501,13 @@
   /* ================= événements ================= */
   document.addEventListener('click', function (e) {
     if (!st) return;
-    if (e.target.closest('#boardWrap') && !e.target.closest('#popover')) { boardClick(e); return; }
-    var el = e.target.closest('[data-act],[data-buy],[data-discard],[data-move],[data-conquer],[data-pacify],[data-effect],[data-build],[data-replace],[data-capital],[data-cede],[data-attack],[data-close],[data-resolve],[data-take],[data-tsel],[data-treb],[data-go],[data-next],[data-closepop],[data-cancel],[data-mini],[data-hidemarket],[data-showmarket]');
+    if (e.target.closest('#boardWrap') && !e.target.closest('#popover')) { if (!dragMoved) boardClick(e); return; }
+    var el = e.target.closest('[data-act],[data-buy],[data-discard],[data-move],[data-conquer],[data-pacify],[data-effect],[data-build],[data-replace],[data-capital],[data-cede],[data-attack],[data-close],[data-resolve],[data-take],[data-tsel],[data-treb],[data-go],[data-next],[data-closepop],[data-cancel],[data-mini],[data-hidemarket],[data-showmarket],[data-heroinfo]');
     if (!el) return;
     var ds = el.dataset, p = FOF.cur(st);
-    var VIEW = ds.closepop || ds.cancel || ds.hidemarket || ds.showmarket || ds.close || ds.act === 'newgame';
+    var VIEW = ds.closepop || ds.cancel || ds.hidemarket || ds.showmarket || ds.close || ds.heroinfo || ds.act === 'newgame';
+    if (FOF.sfx) FOF.sfx(clickSound(ds));
+    if (ds.heroinfo) { modal = { kind: 'hero' }; return render(); }
     if (!VIEW && !myTurn()) { err = 'Ce n’est pas à vous de jouer.'; pop = null; return render(); }
     if (ds.next) { mode = null; pop = null; return dispatch({ type: 'nextPhase' }); }
     if (ds.act === 'edouard') return dispatch({ type: 'edouard' });
@@ -484,15 +543,34 @@
     if (ds.go) { var m = modal, treb = FOF.trebuchetFor(st, m.loc); modal = null; return dispatch({ type: 'attack', loc: m.loc, target: m.target, kind: m.kind, withLeader: !!m.withLeader, treb: treb && m.trebBld !== undefined ? treb.uid : undefined, trebBld: m.trebBld }); }
     if (ds.resolve) return dispatch({ type: 'resolve', choice: ds.resolve });
     if (ds.take) return dispatch({ type: 'deficitTake', uid: +ds.take });
-    if (ds.close) { modal = null; return render(); }
+    if (ds.close) { modal = null; render(); if (FOF.FX_flushGold) FOF.FX_flushGold(); return; }
   });
+  function clickSound(ds) {
+    if (ds.next) return st.phase === 'build' ? 'bell' : 'page';
+    if (ds.buy !== undefined) return 'coins';
+    if (ds.discard !== undefined) return 'card';
+    if (ds.build || ds.replace || ds.capital) return 'mallet';
+    if (ds.cede || ds.pacify || ds.act === 'edouard') return 'dip';
+    if (ds.move || ds.mini) return 'select';
+    if (ds.conquer) return 'flag';
+    if (ds.effect) return 'magic';
+    if (ds.attack || ds.tsel || ds.treb || ds.go) return 'draw';
+    if (ds.take) return 'spend';
+    if (ds.act === 'spy') return 'card';
+    return 'click';
+  }
   document.addEventListener('change', function (e) { if (e.target.id === 'withLeader' && modal) { modal.withLeader = e.target.checked; render(); } });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && st) { if (mode) mode = null; else if (pop) pop = null; else if (modal && (modal.kind === 'attack' || modal.kind === 'help')) modal = null; render(); } });
   window.addEventListener('resize', function () { if (st) render(); });
   FOF.bindBar = function () {
+    var g = $('game'), lb = $('logBtn'), open = window.innerWidth >= 1700;
+    try { var sv = localStorage.getItem('fof-log'); if (sv !== null) open = sv === '1'; } catch (e) {}
+    function setLog(o) { g.classList.toggle('no-right', !o); lb.setAttribute('aria-pressed', String(o)); try { localStorage.setItem('fof-log', o ? '1' : '0'); } catch (e) {} if (st) render(); }
+    setLog(open);
+    lb.addEventListener('click', function () { setLog(g.classList.contains('no-right')); });
     $('helpBtn').addEventListener('click', function () { if (!st) return; modal = { kind: 'help' }; render(); });
     $('newBtn').addEventListener('click', function () { if (!st) return; modal = { kind: 'confirmNew' }; render(); });
-    $('zoomIn').addEventListener('click', function () { zoom = Math.min(3, zoom * 1.25); render(); });
+    $('zoomIn').addEventListener('click', function () { zoom = Math.min(3.2, zoom * 1.25); render(); });
     $('zoomOut').addEventListener('click', function () { zoom = Math.max(1, zoom / 1.25); render(); });
   };
 })(window.FOF = window.FOF || {});

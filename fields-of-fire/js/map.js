@@ -60,7 +60,7 @@
   function tryGenerate(s, n) {
     var cs = continentSizes(s, n);
     var targets = cs.sizes.slice(); if (cs.extra) targets.push(cs.extra);
-    var W = 6 + 2 * n, H = 7 + n + (n > 4 ? 1 : 0);
+    var W = 3 + 2 * n, H = 5 + n;
     var N = W * H, owner = new Array(N).fill(-1);
     function ok(i, c) { // case libre, pas au bord, pas collée à un autre continent
       var col = i % W, row = Math.floor(i / W);

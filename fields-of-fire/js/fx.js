@@ -76,6 +76,17 @@
     el.appendChild(p); setTimeout(function () { p.remove(); }, 2300);
   }
   FOF.FX_pop = pop;
+  var pendingGold = 0;
+  FOF.FX_flushGold = function () { if (pendingGold) { var n = pendingGold; pendingGold = 0; setTimeout(function () { goldPop(n); }, 120); } };
+  function goldPop(n) {
+    var m = document.getElementById('modal');
+    if (m && !m.hidden && m.querySelector('.pass')) { pendingGold += n; return; }
+    var el = document.createElement('div'); el.className = 'fx-gold' + (n < 0 ? ' loss' : '');
+    el.innerHTML = '<i class="coin"></i><div>' + (n > 0 ? '+' : '') + n + ' or<small>' + (n > 0 ? 'Collecte' : 'Entretien') + '</small></div>';
+    if (n > 0) for (var k = 0; k < 10; k++) { var s = document.createElement('i'); s.className = 'spark'; var ang = k / 10 * Math.PI * 2; s.style.setProperty('--dx', Math.round(Math.cos(ang) * 120) + 'px'); s.style.setProperty('--dy', Math.round(Math.sin(ang) * 70) + 'px'); s.style.animationDelay = (0.15 + Math.random() * 0.2) + 's'; el.appendChild(s); }
+    document.body.appendChild(el); setTimeout(function () { el.remove(); }, 2500);
+    setTimeout(function () { FOF.sfx(n > 0 ? 'coins' : 'spend'); }, 150);
+  }
   function svgRing(loc, col) {
     var a = FOF.Board.anchor(loc), svg = document.getElementById('tokens'); if (!a || !svg) return;
     var ns = 'http://www.w3.org/2000/svg';
@@ -119,6 +130,11 @@
         var a = FOF.Board.anchor('t' + i); if (!a) return;
         if (b.split(',').length >= (prev.blds[i] ? prev.blds[i].split(',').length : 0)) svgRing('t' + i, '#f1d488');
       });
+      // 4b) grand pop d'or à la collecte du joueur actif (et en ligne : seulement si c'est moi)
+      if (cur.turnNo !== prev.turnNo && !cur.winner && (!o.online || o.seat === st.cur)) {
+        var gd = cur.gold[st.cur] - prev.gold[st.cur];
+        if (gd !== 0) goldPop(gd);
+      }
       // 5) or et diplomatie qui bougent
       cur.gold.forEach(function (g, i) {
         var d = g - prev.gold[i]; if (!d) return;
@@ -147,7 +163,8 @@
         FOF.sfx('dice'); setTimeout(function () { FOF.sfx(mine === null ? 'clash' : mine ? 'win' : 'loss'); }, 420);
       } else if (cur.winner && !prev.winner) {
         FOF.sfx(!o.online || o.seat === st.winner.pid ? 'victory' : 'defeat');
-      } else if (snd.length) FOF.sfx(snd[0]);
+      } else if (Date.now() - (FOF.sfxLast || 0) < 700) { /* le clic a déjà fait son bruit */ }
+      else if (snd.length) FOF.sfx(snd[0]);
       else if (cur.turnNo !== prev.turnNo) FOF.sfx(o.online && o.seat === st.cur ? 'turn' : 'phase');
       else if (cur.phase !== prev.phase) FOF.sfx('phase');
       else if (document.querySelector('#tokens .tk.fx-moved')) FOF.sfx('move');

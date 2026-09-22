@@ -40,10 +40,26 @@
     defeat: function () { notes([330, 294, 262, 196], 'triangle', 0.18, 0.28, 0.6); },
     dip: function () { tone(784, 0, 0.3, 'sine', 0.12); tone(1175, 0.1, 0.4, 'sine', 0.1); },
     bad: function () { tone(196, 0, 0.35, 'sawtooth', 0.06, 150); tone(98, 0, 0.5, 'triangle', 0.18); },
+    // --- sons d'interface (clics) ---
+    click: function () { tone(1800, 0, 0.035, 'triangle', 0.08); noise(0, 0.03, 4000, 2, 0.08); },
+    tap: function () { noise(0, 0.06, 1400, 1.2, 0.12); tone(420, 0, 0.06, 'sine', 0.06); },
+    select: function () { tone(660, 0, 0.12, 'triangle', 0.16); tone(990, 0.05, 0.16, 'triangle', 0.12); },
+    march: function () { [0, 0.13, 0.26].forEach(function (t, i) { noise(t, 0.08, 220 - i * 20, 1.4, 0.55, 'lowpass'); tone(90, t, 0.08, 'sine', 0.2); }); },
+    page: function () { noise(0, 0.22, 2600, 0.6, 0.16, 'highpass'); tone(520, 0.02, 0.35, 'sine', 0.07); },
+    bell: function () { [[523, 0.2], [1046, 0.1], [1444, 0.07], [2825, 0.035]].forEach(function (p) { tone(p[0], 0, 2.2, 'sine', p[1]); }); tone(784, 0.35, 1.8, 'sine', 0.08); },
+    coins: function () { for (var i = 0; i < 6; i++) { var t = i * 0.055 + Math.random() * 0.03, f = 2400 + Math.random() * 1600; tone(f, t, 0.18, 'triangle', 0.12); tone(f * 1.51, t, 0.12, 'sine', 0.05); } },
+    card: function () { noise(0, 0.16, 1800, 0.7, 0.22); noise(0.05, 0.1, 5000, 0.8, 0.1, 'highpass'); },
+    mallet: function () { [0, 0.2].forEach(function (t) { tone(240, t, 0.12, 'sine', 0.4, 110); noise(t, 0.06, 1100, 3, 0.45); noise(t, 0.12, 380, 2, 0.3, 'lowpass'); }); },
+    flag: function () { notes([392, 523, 659], 'triangle', 0.16, 0.08, 0.28); noise(0, 0.25, 900, 0.6, 0.08); },
+    magic: function () { [1318, 1568, 1976, 2637].forEach(function (f, i) { tone(f, i * 0.06, 0.5, 'sine', 0.08); }); },
+    draw: function () { noise(0, 0.28, 5200, 1.5, 0.22, 'bandpass'); tone(2900, 0.05, 0.4, 'sine', 0.04, 3300); },
     error: function () { tone(140, 0, 0.16, 'square', 0.06); tone(110, 0.08, 0.18, 'square', 0.05); }
   };
   var last = {};
+  var UI = { click: 1, tap: 1, select: 1, march: 1, page: 1, bell: 1, coins: 1, card: 1, mallet: 1, flag: 1, magic: 1, draw: 1, dip: 1, spend: 1 };
+  FOF.sfxLast = 0;
   FOF.sfx = function (name) {
+    if (UI[name]) FOF.sfxLast = Date.now();
     if (!on || !S[name]) return;
     var now = Date.now(); if (last[name] && now - last[name] < 120) return; last[name] = now;
     try { if (!ac()) return; S[name](); } catch (e) {}

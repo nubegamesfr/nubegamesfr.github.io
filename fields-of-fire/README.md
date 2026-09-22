@@ -1,4 +1,4 @@
-# Fields of Fire — version web (v1.3, prototype)
+# Fields of Fire — version web (v1.4, prototype)
 
 Jeu 100 % statique (HTML/CSS/JS, sans build). Servi par GitHub Pages sur https://nubegames.fr/fields-of-fire/ (dossier `fields-of-fire/` du repo `nubegamesfr.github.io`).
 
@@ -23,3 +23,14 @@ Limites du prototype : pas de comptes, quiconque a le code d'un salon peut y éc
 - **Effets sonores** (`js/sfx.js`) : synthétisés en Web Audio (aucun fichier) : or, recrutement, pas, construction, dés, victoire/défaite de combat, conquête, phase, tour, victoire finale, erreur. Bouton 🔔 pour les couper.
 - **Animations** (`js/fx.js`) : pions qui glissent, bandeau de phase et de tour, +/− or et diplomatie flottants, onde sur les territoires conquis ou bâtis, cartes distribuées dans le marché, pop pour les grands événements (conquête, capitale tombée, Tyran, pacte, élimination), bulles pour le reste, confettis de victoire. Respecte « réduire les animations » du système.
 - **Carte** : couleurs et motifs distincts par terrain (épis, arbres, hachures, roseaux) + pastilles d'icônes.
+
+## v1.4 (retours de playtest)
+- Carte redessinée : rendu haute définition, terrains illustrés (montagnes, forêts, champs de blé, mares et roseaux), mer avec hauts-fonds et écume, ombre portée des terres, carte plus resserrée (moins d'océan vide).
+- Territoires teintés à la couleur de leur propriétaire (bordure épaisse), drapeau de la couleur du joueur sur chaque capitale.
+- Noms des cases au survol seulement (infobulle : terrain, propriétaire, aménagements).
+- Déplacement : les cases atteignables clignotent en blanc. Zoom à la molette et déplacement de la carte à la souris.
+- Construction : un maillet en bois apparaît sur les territoires où l'on peut bâtir.
+- Grand pop « +N or » à la collecte.
+- Textes agrandis (~15 %), joueurs en bandeau horizontal, chronique repliable (bouton 📜).
+- Sons à chaque clic selon l'action (maillet, cloche de fin de tour, pièces, carte, pas, épée…).
+- Statistiques remises à zéro le 22/09/2026.
