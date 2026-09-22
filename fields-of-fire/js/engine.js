@@ -10,7 +10,7 @@
     var st = { v: 1, seed: cfg.seed || (Date.now() & 0x7fffffff), n: cfg.players.length };
     st.map = FOF.generateMap(st, st.n);
     st.players = cfg.players.map(function (p, i) {
-      return { id: i, name: p.name, color: p.color, leader: p.leader, mod: FOF.LEADERS[p.leader].mod, gold: 3, dip: 3, tyran: false, tyranStamp: null,
+      return { id: i, name: p.name, color: p.color, leader: p.leader, bot: !!p.bot, mod: FOF.LEADERS[p.leader].mod, gold: 3, dip: 3, tyran: false, tyranStamp: null,
         alive: true, capital: null, lpos: null, lArr: 0, lMoved: false, lConq: false, lFought: false, pact: null,
         attackedLast: false, attackedNow: false, flags: {} };
     });
@@ -39,7 +39,7 @@
     if (!st.deck.length) { st.deck = st.discard; st.discard = []; FOF.shuffle(st, st.deck); }
     return st.deck.length ? st.deck.pop() : null;
   }
-  function log(st, msg, pid, k) { st.logN = (st.logN || st.log.length) + 1; st.log.push({ t: st.turnNo, p: pid === undefined ? null : pid, m: msg, k: k || '' }); if (st.log.length > 400) st.log.shift(); }
+  function log(st, msg, pid, k) { st.logN = (st.logN || st.log.length) + 1; st.log.push({ t: st.turnNo, p: pid === undefined ? null : pid, m: msg, k: k || '' }); if (st.log.length > 80) st.log.shift(); }
   FOF.log = log;
 
   /* ---------- lecture ---------- */

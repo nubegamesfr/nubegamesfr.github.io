@@ -207,6 +207,8 @@
     }
   };
 
+  var SEA3 = [[92, 206, 222], [52, 150, 214], [34, 104, 190], [26, 78, 162]];
+  function mix3(p, v) { var n = p.length - 1, f = Math.max(0, Math.min(n, v * n)), k = Math.min(n - 1, Math.floor(f)), t = f - k, a = p[k], b = p[k + 1]; return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t]; }
   function drawBase(st, rs, canvas) {
     var gw = rs.gw, gh = rs.gh, N = gw * gh, S = rs.S, m = st.map;
     canvas.width = gw; canvas.height = gh;
@@ -238,12 +240,12 @@
         else if (di < 0.55) col = [col[0] * 0.38 + 26, col[1] * 0.38 + 22, col[2] * 0.38 + 14];   // frontière
         else if (di < 1.2) col = [Math.min(255, col[0] + 16), Math.min(255, col[1] + 16), Math.min(255, col[2] + 12)]; // liseré clair
       } else {
-        var s0 = shore[i] / S, t = Math.min(1, s0 / 7);
-        var vw = 0.5 + vnoise(lx / (9 * u), ly / (6 * u), 43) * 0.4;
-        col = s0 < 5 ? tone(PX.shal, (1 - t) * 0.8 + vw * 0.3, lx, ly) : tone(PX.deep, vw, lx, ly);
-        if (s0 < 5 && s0 >= 3.6) col = tone(s0 < 4.3 ? PX.shal : PX.deep, vw, lx, ly);
-        // vaguelettes : petits traits clairs
-        var wl = Math.round(2.6 * u), ws = Math.round(5 * u); if (s0 > 4 && (ly % wl) < Math.max(1, 0.32 * u) && hash((lx / ws) | 0, (ly / wl) | 0, 71) > 0.78 && (lx % ws) < ws * 0.55) col = [col[0] * 0.5 + 60, col[1] * 0.5 + 92, col[2] * 0.5 + 122];
+        // mer : dégradé net selon la distance à la côte (hauts-fonds → large), très légère variation d'ensemble
+        var s0 = shore[i] / S, depth = Math.min(1, Math.max(0, (s0 - 1.2) / 11)); depth = depth * depth * (3 - 2 * depth);
+        var big = vnoise(lx / (40 * u), ly / (40 * u), 43) * 6;
+        col = mix3(SEA3, depth);
+        col = [col[0] + big, col[1] + big, col[2] + big * 0.6];
+        if (s0 >= 2.6 && s0 < 3.1) col = [col[0] + 18, col[1] + 22, col[2] + 18];   // liseré des hauts-fonds
         if (s0 < 1.1) col = [236, 250, 252];                                          // écume
         else if (s0 < 1.7) col = [150, 222, 236];
         if (s0 >= 1.1) { var sx = lx - shx, sy = ly - shy; if (sx >= 0 && sy >= 0 && LK[sy * lw + sx] === 1) col = [col[0] * 0.78, col[1] * 0.8, col[2] * 0.86]; }
@@ -317,6 +319,16 @@
       c.globalCompositeOperation = 'destination-in'; c.drawImage(mc, 0, 0);
       ctx.drawImage(lay, bx.x0, bx.y0);
     });
+    // petites vagues dessinées au large, espacées régulièrement
+    ctx.strokeStyle = 'rgba(210,235,255,.33)'; ctx.lineWidth = 0.45 * S; ctx.lineCap = 'round';
+    var wsx = 22 * S, wsy = 13 * S, wr = 0;
+    for (var wy = wsy / 2; wy < gh; wy += wsy, wr++) for (var wx = (wr & 1 ? wsx / 2 : 0) + wsx / 3; wx < gw; wx += wsx) {
+      var jx2 = wx + (hash(wx | 0, wy | 0, 5) - 0.5) * wsx * 0.5, jy2 = wy + (hash(wx | 0, wy | 0, 6) - 0.5) * wsy * 0.5;
+      var qi = (Math.min(gh - 1, jy2 | 0)) * gw + Math.min(gw - 1, jx2 | 0);
+      if (kind[qi] === 1 || shore[qi] < 6 * S) continue;
+      var ww = 2.4 * S;
+      ctx.beginPath(); ctx.moveTo(jx2 - ww, jy2); ctx.quadraticCurveTo(jx2 - ww / 2, jy2 - ww * 0.45, jx2, jy2); ctx.quadraticCurveTo(jx2 + ww / 2, jy2 - ww * 0.45, jx2 + ww, jy2); ctx.stroke();
+    }
     var vg = ctx.createRadialGradient(gw / 2, gh / 2, Math.min(gw, gh) * 0.5, gw / 2, gh / 2, Math.max(gw, gh) * 0.78);
     vg.addColorStop(0, 'rgba(8,20,50,0)'); vg.addColorStop(1, 'rgba(8,20,50,.28)');
     ctx.fillStyle = vg; ctx.fillRect(0, 0, gw, gh);
@@ -442,6 +454,38 @@
       c.fillStyle = '#f3ecd8'; c.beginPath(); c.moveTo(x, y - 0.4 * K); c.lineTo(x, y - 7 * K); c.lineTo(x + f * 4.2 * K, y - 1 * K); c.closePath(); c.fill();
       c.strokeStyle = 'rgba(230,245,250,.5)'; c.lineWidth = 0.6 * K; c.beginPath(); c.moveTo(x - f * 5 * K, y + 1.4 * K); c.lineTo(x - f * 9 * K, y + 1.8 * K); c.stroke();
     });
+    // ombres de nuages qui glissent sur la carte
+    var CW = rs.wU, CH = rs.hU;
+    if (!amb.clouds || amb.clouds.key !== rs.key) { amb.clouds = { key: rs.key, list: [] }; for (var ci = 0; ci < 4; ci++) amb.clouds.list.push({ x: rs.minX + Math.random() * CW, y: rs.minY + Math.random() * CH, r: rnd(40, 75), sp: rnd(2.5, 5) }); }
+    amb.clouds.list.forEach(function (cl) {
+      cl.x += cl.sp * dt; if (cl.x - cl.r * 1.6 > rs.minX + CW) { cl.x = rs.minX - cl.r * 1.6; cl.y = rs.minY + Math.random() * CH; }
+      var gx = X(cl.x), gy = Y(cl.y), R0 = cl.r * K;
+      [[0, 0, 1], [0.7, 0.15, 0.7], [-0.65, 0.1, 0.65]].forEach(function (o) {
+        var g = c.createRadialGradient(gx + o[0] * R0, gy + o[1] * R0, 0, gx + o[0] * R0, gy + o[1] * R0, R0 * o[2]);
+        g.addColorStop(0, 'rgba(10,25,40,.13)'); g.addColorStop(1, 'rgba(10,25,40,0)');
+        c.fillStyle = g; c.beginPath(); c.ellipse(gx + o[0] * R0, gy + o[1] * R0, R0 * o[2], R0 * o[2] * 0.6, 0, 0, 7); c.fill();
+      });
+    });
+    // reflets de soleil sur la mer
+    if (!amb.glints) amb.glints = [];
+    if (amb.glints.length < 10 && amb.seaPts.length && Math.random() < dt * 6) { var sp0 = amb.seaPts[(Math.random() * amb.seaPts.length) | 0]; amb.glints.push({ x: sp0.x, y: sp0.y, t: 0, d: rnd(0.8, 1.6) }); }
+    amb.glints = amb.glints.filter(function (g) {
+      g.t += dt; var a = Math.sin(Math.PI * Math.min(1, g.t / g.d)); if (g.t > g.d) return false;
+      var x = X(g.x), y = Y(g.y), r = (1 + a * 1.6) * K;
+      c.strokeStyle = 'rgba(255,255,255,' + (0.8 * a) + ')'; c.lineWidth = 0.5 * K;
+      c.beginPath(); c.moveTo(x - r, y); c.lineTo(x + r, y); c.moveTo(x, y - r * 0.7); c.lineTo(x, y + r * 0.7); c.stroke();
+      return true;
+    });
+    // fumée qui s'élève des capitales
+    if (amb.st) amb.st.players.forEach(function (pl, pi) {
+      if (!pl.alive || pl.capital === null) return;
+      var an = rs.anchor['t' + pl.capital]; if (!an) return;
+      for (var k2 = 0; k2 < 4; k2++) {
+        var ph = ((ts / 1000 + pi * 0.37 + k2 * 0.8) % 3.2) / 3.2;
+        var sx2 = X(an.x - 14 + Math.sin(ph * 5 + k2) * 1.5 + ph * 4), sy2 = Y(an.y - 20 - ph * 16);
+        c.fillStyle = 'rgba(235,232,225,' + (0.35 * (1 - ph)) + ')'; c.beginPath(); c.arc(sx2, sy2, (1.2 + ph * 3) * K, 0, 7); c.fill();
+      }
+    });
     // renard qui traverse une forêt
     amb.nextFox -= dt;
     if (!amb.fox && amb.nextFox <= 0 && amb.forest.length > 8) {
@@ -485,7 +529,7 @@
   }
 
   FOF.Board = {
-    ambient: function (st, canvas) {
+    ambient: function (st, canvas) { amb.st = st;
       amb.cv = canvas;
       if (cache && amb.key !== cache.key) ambSetup(st);
       if (!amb.raf) amb.raf = requestAnimationFrame(frame);

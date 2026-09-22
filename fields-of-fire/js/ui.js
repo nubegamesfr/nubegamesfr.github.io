@@ -37,16 +37,17 @@
   };
   function sig(c) { return c ? JSON.stringify([c.loc, c.att, c.def, c.rolls]) : ''; }
   function actor() { var pd = st.pending[0]; return pd ? pd.pid : st.cur; }
-  function myTurn() { return !net || net.seatIndex() === actor(); }
+  function isBotActor() { var w = st && st.players[actor()]; return !!(w && w.bot); }
+  function myTurn() { if (isBotActor()) return false; return !net || net.seatIndex() === actor(); }
   FOF.myTurn = function () { return !!st && myTurn(); };
   FOF.currentNet = function () { return net; };
   FOF.currentState = function () { return st; };
   FOF.rerender = function () { if (st) render(); };
 
-  function dispatch(a, keepPop) {
-    if (!myTurn()) { err = 'Ce n’est pas à vous de jouer.'; return render(); }
+  function dispatch(a, keepPop, force) {
+    if (!force && !myTurn()) { err = isBotActor() ? 'L’ordinateur est en train de jouer…' : 'Ce n’est pas à vous de jouer.'; return render(); }
     try { FOF.act(st, a); err = ''; }
-    catch (e) { err = e.message; if (FOF.sfx) FOF.sfx('error'); }
+    catch (e) { err = e.message; if (FOF.sfx && !force) FOF.sfx('error'); }
     if (!err) {
       FOF.statsTick(st);
       if (a.type === 'attack') combatSig = sig(st.lastCombat);
@@ -62,7 +63,7 @@
   /* ================= rendu ================= */
   function render() {
     if (!st) return;
-    if (st.turnNo !== lastTurnShown && !st.winner && !modal) { lastTurnShown = st.turnNo; if (!net || net.seatIndex() === st.cur) modal = { kind: 'turn' }; }
+    if (st.turnNo !== lastTurnShown && !st.winner && !modal) { lastTurnShown = st.turnNo; if ((!net || net.seatIndex() === st.cur) && !st.players[st.cur].bot) modal = { kind: 'turn' }; }
     if (st.winner) modal = { kind: 'victory' };
     var before = FOF.FX ? FOF.FX.before() : null;
     renderHeader(); renderOpponents(); renderBoard(); renderMat(); renderRight(); renderModal();
@@ -73,6 +74,27 @@
       if (battle) { clearTimeout(calmT); calmT = null; FOF.musicMode('battle'); }
       else if (!calmT) calmT = setTimeout(function () { calmT = null; if (!(modal && (modal.kind === 'attack' || modal.kind === 'combat'))) FOF.musicMode('calm'); }, 5000);
     }
+    scheduleBot();
+  }
+
+  /* ---------- adversaires ordinateur : ils jouent une action à la fois, à un rythme lisible ---------- */
+  var botT = null;
+  function botActive() {
+    if (!st || st.winner || !isBotActor()) return false;
+    if (net && !net.isHost()) return false;          // en ligne, c'est l'hôte qui fait jouer les bots
+    return true;
+  }
+  function scheduleBot() {
+    if (botT || !botActive()) return;
+    var fast = FOF.animOn === false, delay = fast ? 300 : 700;
+    if (modal && modal.kind === 'combat') delay = fast ? 1500 : 3200;
+    botT = setTimeout(function () {
+      botT = null; if (!botActive()) return;
+      if (modal && modal.kind === 'combat') { modal = null; if (FOF.FX_flushGold) FOF.FX_flushGold(); }
+      var a = FOF.botAct(st); if (!a) return;
+      dispatch(a, false, true);
+      if (err) { FOF.botFailed(st, a); err = ''; render(); }
+    }, delay);
   }
 
   var PHASES = [['collect', 'Collecte'], ['recruit', 'Recrutement'], ['military', 'Militaire'], ['build', 'Construction']];
@@ -87,7 +109,7 @@
       var terr = FOF.terrOf(st, p.id).length, tem = FOF.countBld(st, p.id, 'T');
       var pills = (p.tyran ? '<span class="pill tyran">Tyran</span>' : '') + (p.pact !== null ? '<span class="pill pact">Pacte</span>' : '') + (!p.alive ? '<span class="pill">Éliminé</span>' : '');
       return '<div class="opp ' + (p.id === st.cur ? 'active ' : '') + (!p.alive ? 'dead' : '') + '" style="--pc:' + color(p.id) + '">' + FOF.heroImg(p.leader) +
-        '<div><div class="nm"><span>' + esc(p.name) + '</span>' + pills + '</div><div class="ld">' + esc(FOF.LEADERS[p.leader].name) + '</div>' +
+        '<div><div class="nm"><span>' + esc(p.name) + (p.bot ? ' <small title="Ordinateur">🤖</small>' : '') + '</span>' + pills + '</div><div class="ld">' + esc(FOF.LEADERS[p.leader].name) + '</div>' +
         '<div class="st"><span title="Or"><span class="coin" style="width:11px;height:11px;vertical-align:-1px"></span> <b>' + p.gold + '</b></span>' +
         '<span title="Diplomatie">🤝 <b>' + (p.tyran ? '—' : p.dip) + '</b></span>' +
         '<span title="Territoires"><img class="icn" src="assets/icons/terr.svg" alt=""> <b>' + terr + '/' + st.victory.mil + '</b></span>' +
@@ -130,17 +152,19 @@
     var mallets = [];
     m.terr.forEach(function (t) {
       var a = FOF.Board.anchor('t' + t.id); if (!a) return;
-      if (t.ctrl !== null && st.players[t.ctrl].capital === t.id && st.players[t.ctrl].alive) {
+      // capitale : drapeau à gauche, aménagements à sa droite (le groupe reste centré, rien ne se chevauche)
+      var isCap = t.ctrl !== null && st.players[t.ctrl].capital === t.id && st.players[t.ctrl].alive;
+      var nb = t.blds.length, groupW = (isCap ? 16 : 0) + nb * 17 - (nb ? 2 : 0), gx0 = a.x - groupW / 2;
+      if (isCap) {
         var fc = color(t.ctrl);
-        out.push('<g class="flag" transform="translate(' + (a.x - Math.max(12, t.blds.length * 8.5 + 5)) + ' ' + (a.y - 2) + ')"><line x1="0" y1="0" x2="0" y2="-19" stroke="#2a2118" stroke-width="1.6" stroke-linecap="round"/><path class="flagcloth" d="M0.8 -18.5 C5 -20.5 8 -16 13 -17.5 L13 -9 C8 -7.5 5 -12 0.8 -10 Z" fill="' + fc + '" stroke="#1b1712" stroke-width=".7"/><circle cx="0" cy="-19.5" r="1.4" fill="#e2b448"/></g>');
+        out.push('<g class="flag" transform="translate(' + (nb ? gx0 : a.x - 6) + ' ' + (a.y - 1) + ')"><line x1="0" y1="0" x2="0" y2="-19" stroke="#2a2118" stroke-width="1.6" stroke-linecap="round"/><path class="flagcloth" d="M0.8 -18.5 C5 -20.5 8 -16 13 -17.5 L13 -9 C8 -7.5 5 -12 0.8 -10 Z" fill="' + fc + '" stroke="#1b1712" stroke-width=".7"/><circle cx="0" cy="-19.5" r="1.4" fill="#e2b448"/></g>');
       }
-      var nb = t.blds.length;
       t.blds.forEach(function (bd, i) {
-        var bx = a.x - (nb * 17) / 2 + i * 17, by = a.y - 16;
+        var bx = gx0 + (isCap ? 16 : 0) + i * 17, by = a.y - 16;
         out.push('<rect x="' + bx + '" y="' + by + '" width="15" height="15" rx="3" fill="#f7efd9" stroke="' + color(bd.o) + '" stroke-width="2"/><image href="assets/icons/bld-' + bd.t + '.png" x="' + (bx + 2) + '" y="' + (by + 2) + '" width="11" height="11"/>');
       });
       if (canBuildHere && ['C', 'F', 'P', 'Ci', 'T'].some(function (ty) { return !FOF.canBuild(st, t.id, ty); })) {
-        mallets.push('<g class="mallet" data-tloc="t' + t.id + '" transform="translate(' + (a.x + (t.blds.length ? t.blds.length * 8.5 + 11 : 0)) + ' ' + (a.y - 8.5) + ')"><g class="bob"><circle r="9" fill="#f7efd9" stroke="#8a5a2b" stroke-width="1.4"/><g transform="rotate(-35)"><rect x="-1.2" y="-2" width="2.4" height="10" rx="1" fill="#9a6a3a" stroke="#4a2f16" stroke-width=".6"/><rect x="-5.5" y="-6.5" width="11" height="5.5" rx="1.4" fill="#c08a52" stroke="#4a2f16" stroke-width=".7"/><line x1="-2.5" y1="-6.3" x2="-2.5" y2="-1.2" stroke="#4a2f16" stroke-width=".5"/><line x1="2.5" y1="-6.3" x2="2.5" y2="-1.2" stroke="#4a2f16" stroke-width=".5"/></g><title>Construire ici</title></g></g>');
+        mallets.push('<g class="mallet" data-tloc="t' + t.id + '" transform="translate(' + (nb ? gx0 + groupW + 11 : isCap ? a.x + 16 : a.x) + ' ' + (a.y - 8.5) + ')"><g class="bob"><circle r="9" fill="#f7efd9" stroke="#8a5a2b" stroke-width="1.4"/><g transform="rotate(-35)"><rect x="-1.2" y="-2" width="2.4" height="10" rx="1" fill="#9a6a3a" stroke="#4a2f16" stroke-width=".6"/><rect x="-5.5" y="-6.5" width="11" height="5.5" rx="1.4" fill="#c08a52" stroke="#4a2f16" stroke-width=".7"/><line x1="-2.5" y1="-6.3" x2="-2.5" y2="-1.2" stroke="#4a2f16" stroke-width=".5"/><line x1="2.5" y1="-6.3" x2="2.5" y2="-1.2" stroke="#4a2f16" stroke-width=".5"/></g><title>Construire ici</title></g></g>');
       }
     });
     // pions
@@ -155,7 +179,7 @@
         var col = color(it.owner), mine = it.owner === p.id, piece = it.leader ? 'L' : it.uid;
         var movable = mine && st.phase === 'military' && !st.pending.length && (it.leader ? !(p.lConq || p.lFought || p.lMovesLeft <= 0) : !(it.fought || it.pacif || it.movesLeft <= 0));
         var selected = mine && mode && mode.kind === 'move' && mode.piece === piece;
-        var g = '<g class="tk' + (movable ? ' can' : '') + '" data-tk="' + piece + '" data-tloc="' + loc + '" data-own="' + it.owner + '" data-x="' + x + '" data-y="' + y + '" transform="translate(' + x + ' ' + y + ')"><g class="tki"><g transform="scale(1.28)">';
+        var g = '<g class="tk' + (movable ? ' can' : '') + (it.owner === st.cur ? ' cur' : '') + '" data-tk="' + piece + '" data-tloc="' + loc + '" data-own="' + it.owner + '" data-x="' + x + '" data-y="' + y + '" transform="translate(' + x + ' ' + y + ')"><g class="tki"><g transform="scale(1.28)">';
         if (it.leader) {
           var art = FOF.heroArt(st.players[it.owner].leader);
           g += '<circle r="11.5" fill="' + col + '"/>' + (art ? '<image href="' + art + '" x="-10.5" y="-10.5" width="21" height="22" preserveAspectRatio="xMidYMin slice" clip-path="url(#cl' + it.owner + ')"/>' : '<text y="4" text-anchor="middle" font-size="12" fill="#fff">♛</text>') +
@@ -444,10 +468,10 @@
   };
   function renderMat() {
     var p = FOF.cur(st), v = st.victory, army = FOF.army(st, p.id), inc = st.collect ? st.collect.inc : FOF.income(st, p);
-    var h = ['<div class="me" style="--pc:' + color(p.id) + '"><div class="pwrap">' + FOF.heroImg(p.leader) + '<div class="flames" aria-hidden="true">' + '<i></i>'.repeat(14) + '</div></div>' + '<div class="who"><div class="ribbon" style="background:' + color(p.id) + ';color:#fff;border-color:#1b1a1d">' + esc(p.name) + '</div>' +
+    var h = ['<div class="me' + (p.tyran ? ' tyran' : '') + '" style="--pc:' + color(p.id) + '"><div class="pwrap">' + FOF.heroImg(p.leader) + (p.tyran ? '<div class="flames" aria-hidden="true">' + '<i></i>'.repeat(14) + '</div>' : '') + '</div>' + '<div class="who"><div class="ribbon" style="background:' + color(p.id) + ';color:#fff;border-color:#1b1a1d">' + esc(p.name) + '</div>' +
       '<div class="line"><span class="star gold" style="width:24px;height:24px;font-size:13px">' + p.mod + '</span><span>' + esc(FOF.LEADERS[p.leader].name) + '</span>' + (p.tyran ? '<span class="pill tyran">Tyran</span>' : '') + (p.pact !== null ? '<span class="pill pact">Pacte avec ' + esc(st.players[p.pact].name) + '</span>' : '') + '</div>' +
       '<div class="purse" data-gold="' + p.id + ':' + p.gold + '" title="Revenu : ' + inc.total + ' − entretien ' + inc.upkeep + '"><span class="coin"></span><b>' + p.gold + '</b><span class="muted" style="font-size:12.5px">or · revenu ' + (inc.total - inc.upkeep >= 0 ? '+' : '') + (inc.total - inc.upkeep) + '/tour</span></div></div></div>'];
-    h[0] = h[0].replace('<div class="me"', '<div class="me" data-heroinfo="1" title="Voir la fiche du dirigeant"');
+    h[0] = h[0].replace('<div class="me', '<div data-heroinfo="1" title="Voir la fiche du dirigeant" class="me');
     h.push('<div style="display:flex;gap:18px;align-items:center;min-width:0;flex-wrap:wrap"><div class="tracks" style="--pc:' + color(p.id) + '">' +
       track('Territoires', '<img class="icn" src="assets/icons/terr.svg" alt="">', FOF.terrOf(st, p.id).length, v.mil) +
       track('Temples', '<img class="icn" src="assets/icons/bld-T.png" alt="">', FOF.countBld(st, p.id, 'T'), v.rel) +
@@ -458,7 +482,7 @@
           (st.phase === 'military' && !done ? '<span class="mv">' + u.movesLeft + '</span>' : '') + '<div class="mn">' + esc(FOF.unitDef(u.key).name) + '</div><div class="ms">' + esc(FOF.locName(st, u.pos)) + ' · réserve ' + u.gold + '</div></div>';
       }).join('') : '<span class="muted" style="font-size:13px">Aucune unité. Recrutez-en pendant la phase de recrutement.</span>') + '</div></div>');
     var hint = HINTS[st.phase];
-    if (!myTurn()) { var ap = st.players[actor()]; hint = ['Les autres joueurs voient la partie en direct. Vous pouvez consulter la carte.', 'Tour de ' + esc(ap.name) + '…']; }
+    if (!myTurn()) { var ap = st.players[actor()]; hint = ap.bot ? ['<span class="bot-think">🤖 <b>' + esc(ap.name) + '</b> réfléchit<i>.</i><i>.</i><i>.</i></span>', 'Tour de ' + esc(ap.name) + '…'] : ['Les autres joueurs voient la partie en direct. Vous pouvez consulter la carte.', 'Tour de ' + esc(ap.name) + '…']; }
     var blocked = mode && mode.kind === 'deploy';
     if (blocked) hint = ['Déployez d’abord votre unité (territoire qui clignote) ou annulez l’achat.', hint[1]];
     h.push('<div class="cta"><div class="hint">' + hint[0] + '</div><button class="btn primary go" data-next="1" ' + (st.pending.length || st.winner || !myTurn() || blocked ? 'disabled' : '') + '>' + hint[1] + '</button>' +

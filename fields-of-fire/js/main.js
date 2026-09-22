@@ -36,11 +36,12 @@
     for (var i = 0; i < 6; i++) rows.push({ name: DEFAULT_NAMES[i], color: FOF.PLAYER_COLORS[i].id, leader: ls[i] });
   }
   function renderLocal() {
-    $('countPick').innerHTML = '<span class="muted" style="margin-right:6px">Joueurs</span>' + [3, 4, 5, 6].map(function (n) { return '<button type="button" aria-pressed="' + (n === count) + '" data-count="' + n + '">' + n + '</button>'; }).join('');
+    $('countPick').innerHTML = '<span class="muted" style="margin-right:6px">Joueurs</span>' + [3, 4, 5, 6].map(function (n) { return '<button type="button" aria-pressed="' + (n === count) + '" data-count="' + n + '">' + n + '</button>'; }).join('') + '<button type="button" class="allbots" data-allbots="1" title="Vous contre l’ordinateur">🤖 Jouer contre des bots</button>';
     $('rows').innerHTML = rows.slice(0, count).map(function (r, i) {
       var hex = colorHex(r.color);
       return '<div class="prow" style="border-left:4px solid ' + hex + '"><button type="button" class="swatch" data-swatch="' + i + '" style="background:' + hex + '" aria-label="Changer de couleur"></button>' +
-        '<input id="pname' + i + '" data-name="' + i + '" value="' + esc(r.name) + '" maxlength="16" aria-label="Nom du joueur ' + (i + 1) + '">' +
+        '<div class="pname-box"><input id="pname' + i + '" data-name="' + i + '" value="' + esc(r.name) + '" maxlength="16" aria-label="Nom du joueur ' + (i + 1) + '">' +
+        '<button type="button" class="btn small bot-toggle' + (r.bot ? ' on' : '') + '" data-bot="' + i + '" aria-pressed="' + !!r.bot + '" title="Joueur humain ou ordinateur">' + (r.bot ? '🤖 Ordinateur' : '👤 Humain') + '</button></div>' +
         FOF.heroHTML(r.leader, { button: true, attrs: 'type="button" data-pickhero="' + i + '" title="Changer de dirigeant"', note: TRIAL.indexOf(r.leader) >= 0 ? 'à l’essai · changer ▾' : 'changer ▾' }) + '</div>';
     }).join('');
     $('winInfo').textContent = winText(count);
@@ -58,11 +59,12 @@
       var mine = i === me, hex = colorHex(s.color);
       h.push('<div class="prow seat' + (mine ? ' mine' : '') + '" style="border-left:4px solid ' + hex + '">' +
         (mine ? '<button type="button" class="swatch" data-oswatch="1" style="background:' + hex + '" aria-label="Changer de couleur"></button>' : '<span class="swatch" style="background:' + hex + '"></span>') +
-        (mine ? '<input id="seatName" value="' + esc(s.name) + '" maxlength="16" aria-label="Votre nom">' : '<div class="seat-name"><b>' + esc(s.name) + '</b>' + (s.cid === row.host_id ? '<small>hôte</small>' : '') + '</div>') +
+        (mine ? '<input id="seatName" value="' + esc(s.name) + '" maxlength="16" aria-label="Votre nom">' : '<div class="seat-name"><b>' + esc(s.name) + '</b>' + (s.cid === row.host_id ? '<small>hôte</small>' : s.bot ? '<small>🤖 ordinateur' + (host ? ' · <button type="button" class="linkbtn" data-rmbot="' + esc(s.cid) + '">retirer</button>' : '') + '</small>' : '') + '</div>') +
         (mine ? FOF.heroHTML(s.leader, { button: true, attrs: 'type="button" data-opick="1" title="Changer de dirigeant"', note: 'vous · changer ▾' }) : FOF.heroHTML(s.leader, { note: 'joueur ' + (i + 1) })) + '</div>');
     });
     for (var k = n; k < 6; k++) h.push('<div class="prow seat empty"><span class="swatch"></span><div class="seat-name muted">Place libre' + (k < 3 ? ' · minimum 3 joueurs' : '') + '</div></div>');
     h.push('</div><p class="note">' + winText(Math.max(3, n)) + '</p><div class="setup-actions">');
+    if (host && n < 6) h.push('<button class="btn" type="button" data-addbot="1">🤖 Ajouter un bot</button>');
     if (host) h.push('<button class="btn primary" type="button" data-ostart="1" ' + (n < 3 ? 'disabled' : '') + '>' + (n < 3 ? 'En attente de joueurs (' + n + '/3 minimum)' : 'Lancer la partie à ' + n + ' joueurs') + '</button>');
     else h.push('<span class="waiting">En attente du lancement par l’hôte…</span>');
     h.push('<button class="btn" type="button" data-oleave="1">Quitter le salon</button></div>');
@@ -133,7 +135,7 @@
     FOF.bindBar();
     try { $('myName').value = localStorage.getItem('fof-name') || ''; } catch (e) {}
     $('setup').addEventListener('click', function (e) {
-      var b = e.target.closest('[data-mode],[data-resume],[data-back],[data-count],[data-swatch],[data-pickhero],[data-copy],[data-oswatch],[data-opick],[data-ostart],[data-oleave]'); if (!b) return;
+      var b = e.target.closest('[data-mode],[data-resume],[data-back],[data-count],[data-swatch],[data-pickhero],[data-copy],[data-oswatch],[data-opick],[data-ostart],[data-oleave],[data-bot],[data-addbot],[data-rmbot],[data-allbots]'); if (!b) return;
       var d = b.dataset; setErr('');
       if (d.mode === 'local') return show('local');
       if (d.mode === 'create' || d.mode === 'join') {
@@ -150,6 +152,21 @@
         var so = FOF.loadOnline(); if (!so) return;
         FOF.resumeRoom(so.code, so.cid).then(enterRoom, function (err) { FOF.clearOnline(); setErr(err.message); renderMode(); });
         return;
+      }
+      if (d.bot !== undefined) { var rb = rows[+d.bot]; rb.bot = !rb.bot; if (rb.bot && /^(Joueur|Aurèle|Bérénice|Corentin|Daphné|Eudes|Félicie)/.test(rb.name)) rb.name = 'Bot ' + FOF.LEADERS[rb.leader].name.split(' ')[0]; return renderLocal(); }
+      if (d.allbots) { rows.slice(1, count).forEach(function (r) { r.bot = true; r.name = 'Bot ' + FOF.LEADERS[r.leader].name.split(' ')[0]; }); return renderLocal(); }
+      if (d.addbot) {
+        return room.mutate(function (row) {
+          if (row.status !== 'lobby' || row.seats.length >= 6 || row.host_id !== room.cid) return null;
+          var usedC = row.seats.map(function (s) { return s.color; }), usedL = row.seats.map(function (s) { return s.leader; });
+          var col = FOF.PLAYER_COLORS.filter(function (c) { return usedC.indexOf(c.id) < 0; })[0].id, ld = FOF.randomFreeLeader(usedL);
+          row.seats.push({ cid: 'bot-' + Math.random().toString(36).slice(2, 8), name: 'Bot ' + FOF.LEADERS[ld].name.split(' ')[0], color: col, leader: ld, bot: true });
+          return { seats: row.seats };
+        }).catch(function (err) { setErr(err.message); });
+      }
+      if (d.rmbot) {
+        var rid = d.rmbot;
+        return room.mutate(function (row) { if (row.status !== 'lobby' || row.host_id !== room.cid) return null; return { seats: row.seats.filter(function (s) { return s.cid !== rid; }) }; }).catch(function (err) { setErr(err.message); });
       }
       if (d.back) return show('mode');
       if (d.count) { count = +d.count; return renderLocal(); }
@@ -171,7 +188,7 @@
         b.disabled = true;
         room.mutate(function (row) {
           if (row.status !== 'lobby' || row.seats.length < 3) return null;
-          var st = FOF.newGame({ players: row.seats.map(function (s, i) { return { name: s.name || 'Joueur ' + (i + 1), color: s.color, leader: s.leader }; }) });
+          var st = FOF.newGame({ players: row.seats.map(function (s, i) { return { name: s.name || 'Joueur ' + (i + 1), color: s.color, leader: s.leader, bot: !!s.bot }; }) });
           FOF.statsInit(st, 'online', row.code);
           FOF.statsTick(st);
           return { status: 'playing', state: st };
@@ -210,7 +227,7 @@
     $('setup').addEventListener('input', function (e) { if (e.target.dataset.name !== undefined) rows[+e.target.dataset.name].name = e.target.value; if (e.target.id === 'joinCode') e.target.value = FOF.normCode(e.target.value); });
     $('shuffleBtn').addEventListener('click', function () { var ls = shuffled(); rows.forEach(function (r, i) { r.leader = ls[i]; }); renderLocal(); });
     $('startBtn').addEventListener('click', function () {
-      var players = rows.slice(0, count).map(function (r, i) { return { name: (r.name || 'Joueur ' + (i + 1)).trim(), color: r.color, leader: r.leader }; });
+      var players = rows.slice(0, count).map(function (r, i) { return { name: (r.name || 'Joueur ' + (i + 1)).trim(), color: r.color, leader: r.leader, bot: !!r.bot }; });
       FOF.startUI(FOF.newGame({ players: players }));
     });
     FOF.showSetup();
