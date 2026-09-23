@@ -507,7 +507,11 @@ header.bar .phase + .phase::before { width: 10px; margin-right: 6px; }
 .ledger .lg.plus b { color: #8fd48a; } .ledger .lg.minus b { color: #f2a79c; }
 .ledger .lg.tot { background: rgba(241,212,136,.08); border-bottom: 0; font-weight: 700; } .ledger .lg.tot b { color: var(--gold-hi); }
 .ledger .coin { width: 16px; height: 16px; }
+.btn.undo { border-color: #7f8bb0; color: #cfd8ee; background: #23242c; flex: none; }
+.btn.undo:hover { border-color: #aab6d8; background: #2b2d38; }
 .warn-line { color: #f2a79c; font-size: 15px; margin: 4px 0; }
+.warn-line.danger { background: rgba(160,50,40,.18); border: 1px solid #8e3b31; border-radius: 9px; padding: 8px 10px; display: flex; gap: 8px; align-items: flex-start; line-height: 1.4; }
+.warn-line.danger .ic { flex: none; margin-top: 2px; color: #f2a79c; }
 .collect-acts { display: flex; flex-direction: column; gap: 6px; margin: 8px 0; }
 
 /* menu circulaire du dirigeant */
@@ -658,7 +662,14 @@ header.bar .music { flex: none; }
 .pname-box { display: flex; flex-direction: column; gap: 6px; }
 .bot-toggle { font-size: 13.5px; padding: 4px 8px; }
 .bot-toggle.on { border-color: #7fb0e8; color: #cfe3ff; background: rgba(90,140,210,.18); }
-.count-pick .allbots { margin-left: 10px; width: auto !important; padding: 0 12px; border-color: #7fb0e8; color: #cfe3ff; }
+/* v1.8 : le bouton héritait de « border-radius: 50% » des pastilles de nombre et s'étirait en
+   grande ellipse. On lui rend une forme de bouton, et on le sépare du groupe de chiffres. */
+.count-pick .allbots { margin-left: auto; width: auto !important; height: 42px; padding: 0 16px;
+  border-radius: 999px; border: 1px solid var(--line-2, #4d4739); background: rgba(127,176,232,.10);
+  color: #cfe3ff; font-family: var(--f-body, inherit); font-size: 14.5px; letter-spacing: 0;
+  display: inline-flex; align-items: center; gap: 7px; white-space: nowrap; }
+.count-pick .allbots:hover { background: rgba(127,176,232,.20); border-color: #7fb0e8; }
+@media (max-width: 560px) { .count-pick .allbots { margin-left: 0; width: 100% !important; justify-content: center; } }
 .linkbtn { background: none; border: 0; color: var(--gold-hi); text-decoration: underline; cursor: pointer; font: inherit; padding: 0; }
 .bot-think i { font-style: normal; animation: think 1.2s infinite; opacity: .2; } .bot-think i:nth-child(3) { animation-delay: .2s; } .bot-think i:nth-child(4) { animation-delay: .4s; }
 @keyframes think { 50% { opacity: 1; } }
@@ -793,7 +804,11 @@ header.bar { position: relative; z-index: 96; }
   .board-tools { bottom: auto; }
 }
 /* phase de construction : les pions laissent passer le clic vers le territoire */
-#tokens.nohit .tk { pointer-events: none; }
+/* v1.8 : en phase de construction, seule la bannière de capitale et les icônes d'aménagement
+   captaient encore le clic à la place du territoire — d'où le « SVG devant la construction ».
+   On neutralise toute la couche, et on ne laisse que le maillet cliquable. */
+#tokens.nohit { pointer-events: none; }
+#tokens.nohit .mallet { pointer-events: auto; }
 /* abandon : bouton discret mais visible, confirmation obligatoire */
 .hdr-flag { opacity: .55; }
 .hdr-flag:hover { opacity: 1; border-color: #a8453b; color: #f2a79c; }
@@ -947,3 +962,15 @@ header.bar { position: relative; z-index: 96; }
 .modal.settings .set-opts { display: flex; gap: 8px; flex-wrap: wrap; }
 .modal.settings .set-opts .btn { min-height: 38px; }
 @media (max-width: 620px) { .modal.settings .set-row { gap: 8px; } .modal.settings .set-opts { width: 100%; } .modal.settings .set-opts .btn { flex: 1 1 auto; } }
+
+.modal.settings .set-audio { display: flex; align-items: center; gap: 6px; }
+.modal.settings .set-audio .mtitle { max-width: 170px; }
+
+/* v1.8 : l'aide devient un vrai texte de règles — lisible, aéré, avec les valeurs de la partie. */
+.modal.help { width: min(720px, 100%); }
+.modal.help p { margin: 0 0 10px; line-height: 1.55; color: var(--bone-dim); }
+.modal.help .section-title { margin-top: 18px; }
+.modal.help .section-title:first-of-type { margin-top: 6px; }
+.modal.help ul.rules-l, .modal.help ol.rules-l { margin: 0 0 12px; padding-left: 20px; color: var(--bone-dim); line-height: 1.55; }
+.modal.help ul.rules-l li, .modal.help ol.rules-l li { margin-bottom: 6px; }
+.modal.help b { color: var(--bone); }

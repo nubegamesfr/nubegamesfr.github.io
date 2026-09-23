@@ -65,6 +65,7 @@
   };
 
   function tryGenerate(s, n) {
+    var wide = !(s && s.wideSea === false);   // « mer élargie » : choix fait à la création de la partie
     var cs = continentSizes(s, n);
     var targets = cs.sizes.slice(); if (cs.extra) targets.push(cs.extra);
     var W = 3 + 2 * n, H = 5 + n;
@@ -123,12 +124,12 @@
     for (var i = 0; i < N; i++) {
       if (owner[i] !== -1) continue;
       var near = false;
-      for (var q = 0; q < terr.length && !near; q++) if (hexDist(i, terr[q].hex, W) <= 2) near = true;
+      for (var q = 0; q < terr.length && !near; q++) if (hexDist(i, terr[q].hex, W) <= (wide ? 3 : 2)) near = true;
       if (near) water.push(i);
     }
-    // v1.5 : deux fois plus de zones de mer ; chaque graine touche une côte, donc aucune zone isolée
+    // v1.9 : mer plus large (rayon 3) et davantage de zones — le large avait trop peu de cases
     var shoreW = water.filter(function (w) { return nbrs(w % W, Math.floor(w / W), W, H).some(function (j) { return owner[j] !== -1; }); });
-    var nz = Math.min(2 * n + 4, shoreW.length), zseeds = [shoreW[ri(s, shoreW.length)]];
+    var nz = Math.min(wide ? 3 * n + 6 : 2 * n + 4, shoreW.length), zseeds = [shoreW[ri(s, shoreW.length)]];
     while (zseeds.length < nz) {
       var far = -1, fd = -1;
       shoreW.forEach(function (w) { if (zseeds.indexOf(w) >= 0) return; var d = Math.min.apply(null, zseeds.map(function (z) { return hexDist(z, w, W); })); if (d > fd) { fd = d; far = w; } });

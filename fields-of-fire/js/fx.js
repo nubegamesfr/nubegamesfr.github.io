@@ -33,10 +33,14 @@
     b.className = 'fx-banner'; b.innerHTML = html; if (col) b.style.setProperty('--bc', col);
     el.appendChild(b); setTimeout(function () { b.remove(); }, 1900);
   }
-  function floatAt(target, text, cls) {
+  // `icon` : nom d'icône facultatif. Il était auparavant concaténé au texte, or floatAt écrit
+  // en textContent : le SVG s'affichait tel quel, en clair, pendant deux secondes.
+  function floatAt(target, text, cls, icon) {
     if (!target) return;
     var r = target.getBoundingClientRect(), f = document.createElement('div');
-    f.className = 'fx-float ' + (cls || ''); f.textContent = text;
+    f.className = 'fx-float ' + (cls || '');
+    if (icon && FOF.hasIcon(icon)) f.innerHTML = FOF.esc(text) + ' ' + FOF.ic(icon, 13);
+    else f.textContent = text;
     f.style.left = (r.left + r.width / 2) + 'px'; f.style.top = (r.top + 4) + 'px';
     document.body.appendChild(f); setTimeout(function () { f.remove(); }, 1500);
   }
@@ -139,7 +143,7 @@
       cur.dip.forEach(function (v, i) {
         var d = v - prev.dip[i]; if (!d || st.players[i].tyran) return;
         var opp = document.querySelectorAll('#players .opp')[i];
-        floatAt(opp && opp.querySelector('.nm'), (d > 0 ? '+' : '') + d + ' ' + FOF.ic('branch', 13), d > 0 ? 'gain dip' : 'loss dip');
+        floatAt(opp && opp.querySelector('.nm'), (d > 0 ? '+' : '') + d, d > 0 ? 'gain dip' : 'loss dip', 'branch');
       });
       // 6) messages visuels (pop pour les grands événements, bulles pour le reste) + sons
       var snd = [], n = Math.min(4, cur.logN - prev.logN), popped = false;

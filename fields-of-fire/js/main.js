@@ -5,12 +5,18 @@
   var esc = function (s) { return FOF.esc(s); };
   var count = 4, rows = [], picking = null, room = null, step = 'mode';
   var tutoWanted = true; try { tutoWanted = localStorage.getItem('fof-tuto') !== '0'; } catch (e) {}
+  var wideSea = true; try { wideSea = localStorage.getItem('fof-widesea') !== '0'; } catch (e) {}
   var DEFAULT_NAMES = ['Aurèle', 'Bérénice', 'Corentin', 'Daphné', 'Élouan', 'Faustine'];
   var LEAD_KEYS = Object.keys(FOF.LEADERS);
   var TRIAL = ['hugues', 'alienor'];
   function shuffled() { return LEAD_KEYS.slice().sort(function () { return Math.random() - 0.5; }); }
   function colorHex(id) { return FOF.PLAYER_COLORS.filter(function (c) { return c.id === id; })[0].hex; }
-  function winText(n) { var v = { 3: [10, 7], 4: [11, 8], 5: [12, 8], 6: [13, 8] }[n]; return v ? 'À ' + n + ' joueurs : ' + (7 * n) + ' territoires sur la carte. Victoire à ' + v[0] + ' territoires, ' + v[1] + ' temples ou 10 de diplomatie.' : ''; }
+  // les seuils étaient figés dans une table et ne suivaient plus l'équilibrage : on les calcule.
+  function winText(n) {
+    if (!n) return '';
+    return 'À ' + n + ' joueurs : ' + (7 * n) + ' territoires sur la carte. Victoire à ' + (8 + n) + ' territoires, '
+      + (6 + n) + ' temples ou ' + (4 + n) + ' de diplomatie.';
+  }
   function setErr(msg) { $('netErr').textContent = msg || ''; }
   function myName() { var v = ($('myName').value || '').trim().slice(0, 16); try { localStorage.setItem('fof-name', v); } catch (e) {} return v; }
 
@@ -47,7 +53,8 @@
     }).join('');
     $('winInfo').textContent = winText(count);
     var tw = document.getElementById('tutoOpt');
-    if (tw) tw.innerHTML = '<label class="tuto-check"><input type="checkbox" id="tutoChk"' + (tutoWanted ? ' checked' : '') + '> ' + FOF.ic('book', 15) + ' Didacticiel (3 tours, on peut l’arrêter à tout moment)</label>';
+    if (tw) tw.innerHTML = '<label class="tuto-check"><input type="checkbox" id="tutoChk"' + (tutoWanted ? ' checked' : '') + '> ' + FOF.ic('book', 15) + ' Didacticiel (3 tours, on peut l’arrêter à tout moment)</label>'
+      + '<label class="tuto-check" style="margin-left:18px" title="Plus de zones de mer et un large plus vaste : les ports et les unités navales comptent davantage."><input type="checkbox" id="seaChk"' + (wideSea ? ' checked' : '') + '> ⚓ Mer élargie</label>';
   }
 
   /* ---------- salon en ligne ---------- */
@@ -205,7 +212,7 @@
         room.mutate(function (row) {
           if (row.status !== 'lobby' || row.seats.length < 3) return null;
           if (!row.seats.every(function (s) { return seatReady(s, row); })) return null;
-          var st = FOF.newGame({ players: row.seats.map(function (s, i) { return { name: s.name || 'Joueur ' + (i + 1), color: s.color, leader: s.leader, bot: !!s.bot }; }) });
+          var st = FOF.newGame({ wideSea: wideSea, players: row.seats.map(function (s, i) { return { name: s.name || 'Joueur ' + (i + 1), color: s.color, leader: s.leader, bot: !!s.bot }; }) });
           FOF.statsInit(st, 'online', row.code);
           FOF.statsTick(st);
           return { status: 'playing', state: st };
@@ -245,10 +252,11 @@
     $('shuffleBtn').addEventListener('click', function () { var ls = shuffled(); rows.forEach(function (r, i) { r.leader = ls[i]; }); renderLocal(); });
     $('startBtn').addEventListener('click', function () {
       var players = rows.slice(0, count).map(function (r, i) { return { name: (r.name || 'Joueur ' + (i + 1)).trim(), color: r.color, leader: r.leader, bot: !!r.bot }; });
-      var chk = document.getElementById('tutoChk');
+      var chk = document.getElementById('tutoChk'), sea = document.getElementById('seaChk');
       tutoWanted = chk ? chk.checked : tutoWanted;
-      try { localStorage.setItem('fof-tuto', tutoWanted ? '1' : '0'); } catch (e) {}
-      FOF.startUI(FOF.newGame({ players: players }));
+      wideSea = sea ? sea.checked : wideSea;
+      try { localStorage.setItem('fof-tuto', tutoWanted ? '1' : '0'); localStorage.setItem('fof-widesea', wideSea ? '1' : '0'); } catch (e) {}
+      FOF.startUI(FOF.newGame({ players: players, wideSea: wideSea }));
       if (tutoWanted && FOF.tutorialStart) FOF.tutorialStart();
     });
     FOF.showSetup();

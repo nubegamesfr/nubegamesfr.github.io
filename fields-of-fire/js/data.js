@@ -16,7 +16,7 @@
 
   // Unités d'élite : dépl, puissance [P,F,M,Ma], entretien, condition
   FOF.ELITES = {
-    milice:     { name: 'Milice paysanne', move: 1, pow: [1,1,1,1], upkeep: 1, req: ['C', 1] },
+    milice:     { name: 'Milice paysanne', move: 1, pow: [1,1,1,1], upkeep: 2, req: ['C', 1] },
     frondeurs:  { name: 'Frondeurs', move: 2, pow: [1,1,0,1], upkeep: 1, req: ['C', 1] },
     pillards:   { name: 'Pillards', move: 1, pow: [0,1,1,1], upkeep: 1, req: ['C', 2] },
     ecumeurs:   { name: 'Écumeurs', move: 2, pow: [1,1,1,2], upkeep: 1, req: ['C', 3] },
@@ -55,14 +55,14 @@
   };
 
   FOF.LEADERS = {
-    odon:    { name: 'Odon le Brave', mod: 1, text: 'Quand il attaque avec des unités d’élite, chacune gagne +1.' },
-    gustave: { name: 'Gustave l’Irascible', mod: 2, text: 'Ses campements, forts et ports : +1 défense. Ses cités coûtent 6 or.' },
-    edouard: { name: 'Edouard le Sage', mod: 1, text: 'À la collecte, s’il a 3 de diplomatie ou moins : 3 or pour +1 diplomatie (1 fois).' },
-    mathilde:{ name: 'Mathilde la Bien-Aimée', mod: 1, text: 'Ses cités coûtent 4 or et donnent +1 défense.' },
+    odon:    { name: 'Odon le Brave', mod: 1, text: 'Chacune de ses unités d’élite engagée dans un assaut lui donne +1, qu’il mène l’assaut ou non.' },
+    gustave: { name: 'Gustave l’Irascible', mod: 2, text: 'Ses campements, forts et ports : +1 défense. Ses cités coûtent 5 or.' },
+    edouard: { name: 'Edouard le Sage', mod: 1, text: 'À la collecte, s’il a 3 de diplomatie ou moins : 4 or pour +1 diplomatie. Une seule fois par partie, et seulement s’il n’a ni attaqué ni été attaqué.' },
+    mathilde:{ name: 'Mathilde la Bien-Aimée', mod: 1, text: 'Sa première cité coûte 4 or ; les suivantes sont au prix normal.' },
     adele:   { name: 'Adèle la Pieuse', mod: 2, text: 'Ses temples coûtent 6 or et donnent +1 défense.' },
     henri:   { name: 'Henri le Stratège', mod: 1, text: 'Toutes ses unités d’élite se déplacent d’1 case de plus.' },
-    hugues:  { name: 'Hugues le Bâtisseur', mod: 2, text: 'Ses aménagements coûtent 1 or de moins (minimum 1). À l’essai.' },
-    alienor: { name: 'Aliénor l’Amirale', mod: 1, text: 'Ports à 2 or, +1 or par port. Ses unités embarquent depuis toute côte voisine d’un de ses ports. À l’essai.' }
+    hugues:  { name: 'Hugues le Bâtisseur', mod: 2, text: 'Ses campements, forts et ports coûtent 1 or de moins (minimum 1).' },
+    alienor: { name: 'Aliénor l’Amirale', mod: 1, text: 'Ses ports coûtent 2 or.' }
   };
 
   FOF.PLAYER_COLORS = [

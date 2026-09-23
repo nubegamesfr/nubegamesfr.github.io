@@ -49,8 +49,8 @@
     emissaire: function (st, p, t) { return !p.tyran && others(st, p).some(function (q) { return q.capital === t.id && t.ctrl === q.id; }); },
     ambassadeur: function (st, p, t) { return p.pact === null && !p.tyran && others(st, p).some(function (q) { return q.capital === t.id && t.ctrl === q.id && !q.tyran && q.pact === null; }); },
     pelerin: function (st, p, t) { return !p.tyran && t.blds.some(function (b) { return b.t === 'T' && b.o !== p.id; }); },
-    colonie: function (st, p, t) { return t.ctrl === null; },
-    exploratrice: function (st, p, t) { return t.ctrl === null && t.cont !== T(st, p.capital).cont; },
+    colonie: function (st, p, t) { return t.ctrl === null && t.revoltFrom !== p.id; },
+    exploratrice: function (st, p, t) { return t.ctrl === null && t.revoltFrom !== p.id && t.cont !== T(st, p.capital).cont; },
     partisan: function (st, p, t) { return enemyTerr(st, p, t) && t.blds.some(function (b) { return b.o === t.ctrl && b.t !== 'T'; }); },
     predicateur: function (st, p, t) { return enemyTerr(st, p, t) && t.blds.some(function (b) { return b.t === 'T' && b.o !== p.id; }); },
     gouverneur: function (st, p, t) { return t.ctrl === p.id && t.blds.some(function (b) { return b.o !== p.id; }); },
@@ -172,7 +172,7 @@
   function militaryAct(st, p) {
     var m = mem(st), lt = p.lpos && p.lpos[0] === 't' ? T(st, tid(p.lpos)) : null;
     // 1. conquête d'un neutre
-    if (lt && lt.ctrl === null && p.lArr < st.turnNo && !p.lMoved && !p.lFought && !p.lConq) { var c = { type: 'conquer' }; if (ok(st, c)) return c; }
+    if (lt && lt.ctrl === null && lt.revoltFrom !== p.id && p.lArr < st.turnNo && !p.lMoved && !p.lFought && !p.lConq) { var c = { type: 'conquer' }; if (ok(st, c)) return c; }
     var army = FOF.army(st, p.id);
     // 2. pacification
     for (var i = 0; i < army.length; i++) {

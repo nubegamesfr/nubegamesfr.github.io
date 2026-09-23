@@ -7,7 +7,8 @@
 
   /* ---------- création ---------- */
   FOF.newGame = function (cfg) {
-    var st = { v: 1, seed: cfg.seed || (Date.now() & 0x7fffffff), n: cfg.players.length, t0: Date.now(), tLast: Date.now() };
+    var st = { v: 1, seed: cfg.seed || (Date.now() & 0x7fffffff), n: cfg.players.length, t0: Date.now(), tLast: Date.now(),
+      wideSea: cfg.wideSea !== false };
     st.map = FOF.generateMap(st, st.n);
     st.players = cfg.players.map(function (p, i) {
       return { id: i, name: p.name, color: p.color, leader: p.leader, bot: !!p.bot, mod: FOF.LEADERS[p.leader].mod, gold: 3, dip: 3, tyran: false, tyranStamp: null,
@@ -408,10 +409,11 @@
         var tb = t.blds.filter(function (b) { return b.t === 'T' && b.o !== p.id; })[0];
         gainDip(st, p, 1, name); gainDip(st, st.players[tb.o], 1, 'pèlerinage reçu'); discardUnit(st, u); break;
       case 'colonie':
-        t.ctrl = p.id; t.conqStamp = st.turnNo; if (t.blds.length < 2) t.blds.push({ t: 'C', o: p.id });
+        if (t.revoltFrom === p.id) throw new Error('Ce territoire s\u2019est soulevé contre vous : vous ne pouvez plus vous y établir.');
+        t.ctrl = p.id; t.conqStamp = st.turnNo; t.revoltFrom = null; if (t.blds.length < 2) t.blds.push({ t: 'C', o: p.id });
         log(st, 'Des colons de ' + p.name + ' fondent un établissement à ' + t.name + '.', p.id, 'land'); discardUnit(st, u); break;
       case 'exploratrice':
-        t.ctrl = p.id; t.conqStamp = st.turnNo; p.gold += 1; log(st, 'L’exploratrice de ' + p.name + ' plante sa bannière à ' + t.name + ' (+1 écu).', p.id, 'land'); discardUnit(st, u); break;
+        t.ctrl = p.id; t.conqStamp = st.turnNo; t.revoltFrom = null; p.gold += 1; log(st, 'L’exploratrice de ' + p.name + ' plante sa bannière à ' + t.name + ' (+1 écu).', p.id, 'land'); discardUnit(st, u); break;
       case 'partisan':
         var cand = t.blds.map(function (b, i) { return i; }).filter(function (i) { return t.blds[i].o === t.ctrl && t.blds[i].t !== 'T'; });
         var idx = arg !== undefined && cand.indexOf(arg) >= 0 ? arg : cand[0];
@@ -535,7 +537,8 @@
       case 'conquer': {
         var lt = p.lpos && p.lpos[0] === 't' ? T(st, +p.lpos.slice(1)) : null;
         if (st.phase !== 'military' || !lt || lt.ctrl !== null || p.lArr >= st.turnNo || p.lMoved || p.lFought) throw new Error('Conquête impossible : le dirigeant doit être sur ce territoire neutre depuis votre tour précédent, sans bouger.');
-        lt.ctrl = p.id; lt.conqStamp = st.turnNo; p.lConq = true; p.lMovesLeft = 0; p.tally.conquest++;
+        if (lt.revoltFrom === p.id) throw new Error('Ce territoire s\u2019est soulevé contre vous : ses habitants ne vous reconnaîtront plus. Un autre joueur doit le reprendre avant vous.');
+        lt.ctrl = p.id; lt.conqStamp = st.turnNo; lt.revoltFrom = null; p.lConq = true; p.lMovesLeft = 0; p.tally.conquest++;
         log(st, p.name + ' plante sa bannière sur ' + lt.name + '.', p.id, 'conquer'); checkWin(st); break;
       }
       case 'attack': if (st.phase !== 'military') throw new Error('Attaques en phase militaire.'); doAttack(st, a); break;
@@ -569,7 +572,17 @@
       case 'moveCapital': {
         var ct = T(st, a.tid);
         if (st.phase !== 'build' || ct.ctrl !== p.id || ct.id === p.capital || p.gold < 10) throw new Error('Déplacement de capitale impossible.');
-        p.gold -= 10; p.capital = ct.id; log(st, p.name + ' transfère sa cour à ' + ct.name + '.', p.id, 'build'); break;
+        p.gold -= 10;
+        // l'Ambassade ne tient qu'à la capitale : la cour partie, elle est rasée.
+        var oldCap = T(st, p.capital), razed = false;
+        oldCap.blds = oldCap.blds.filter(function (b) {
+          if (b.t === 'A' && b.o === p.id) { razed = true; return false; }
+          return true;
+        });
+        p.capital = ct.id;
+        log(st, p.name + ' transfère sa cour à ' + ct.name + '.', p.id, 'build');
+        if (razed) log(st, 'L’ambassade de ' + p.name + ' à ' + oldCap.name + ' ferme ses portes : la cour n’y est plus.', p.id, 'bad');
+        break;
       }
       case 'cede': {
         var cdt = T(st, a.tid);
@@ -603,7 +616,7 @@
         t.ctrl = null; t.blds = [];
         log(st, att.name + ' met ' + t.name + ' à sac : il n’en reste que cendres.', att.id, 'devastate');
       } else {
-        t.ctrl = att.id; t.conqStamp = st.turnNo;
+        t.ctrl = att.id; t.conqStamp = st.turnNo; t.revoltFrom = null;
         log(st, att.name + ' s’empare de ' + t.name + '.', att.id, 'conquer');
       }
       if (def.alive && t.id === def.capital && a.choice !== 'keep') { log(st, 'La capitale de ' + def.name + ' est tombée !', def.id, 'capfall'); eliminate(st, def); }
@@ -612,14 +625,14 @@
       var loser = st.players[pend.pid], t2 = T(st, a.tid);
       if (t2.ctrl !== loser.id || t2.id === loser.capital) throw new Error('Choisissez un de vos territoires, hors capitale.');
       st.pending.shift();
-      t2.ctrl = pend.to; t2.conqStamp = st.turnNo;
+      t2.ctrl = pend.to; t2.conqStamp = st.turnNo; t2.revoltFrom = null;
       log(st, 'Vaincu, ' + loser.name + ' abandonne ' + t2.name + ' à ' + st.players[pend.to].name + '.', loser.id, 'cedeterr');
       checkWin(st);
     } else if (pend.type === 'revolt') {
       var ty = st.players[pend.pid], t3 = T(st, a.tid);
       if (t3.ctrl !== ty.id || t3.id === ty.capital) throw new Error('Choisissez un territoire hors capitale.');
       st.pending.shift();
-      t3.ctrl = null; t3.blds = [];
+      t3.ctrl = null; t3.blds = []; t3.revoltFrom = ty.id;   // le tyran ne peut plus la reprendre
       log(st, 'Le peuple de ' + t3.name + ' se soulève contre le tyran ' + ty.name + ' et chasse ses baillis.', ty.id, 'revolt');
       nextPlayer(st);
     } else throw new Error('Décision inconnue.');

@@ -16,7 +16,7 @@ public** (auteurs morts depuis plus de 70 ans), recadrées au format des cartes 
 | Milice paysanne | *Les Moissonneurs* | Pieter Bruegel l'Ancien | 1565 | Metropolitan Museum, New York |
 | Frondeurs | *David et Goliath* | Titien | v. 1542-1544 | Santa Maria della Salute, Venise |
 | Charpentier | *Saint Joseph charpentier* | Georges de La Tour | v. 1642 | Musée du Louvre |
-| Hugues le Bâtisseur | *La Tour de Babel* | Pieter Bruegel l'Ancien | 1563 | Kunsthistorisches Museum, Vienne |
+| Hugues le Bâtisseur | *Portrait de Giulio Romano* | Titien | v. 1536-1540 | Palazzo Te, Mantoue |
 | Aliénor l'Amirale | *Queen Eleanor* | Anthony Frederick Sandys | 1858 | Amgueddfa Cymru, Cardiff |
 
 Fichiers sources : reproductions photographiques publiées sur Wikimedia Commons, dans le

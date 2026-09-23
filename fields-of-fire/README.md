@@ -197,4 +197,33 @@ pincement sont utiles. Le paysage reste plus confortable.
 - **Réglages regroupés.** Le style de carte, la vitesse des bots et les animations occupaient chacun
   un bouton dans un en-tête déjà chargé. Un seul bouton `Réglages` (engrenage) ouvre une fenêtre qui
   porte les trois, avec le choix courant mis en évidence ; elle reste ouverte pendant qu'on bascule,
-  ce qui permet de comparer les deux styles de carte. L'en-tête passe de 14 à 11 boutons.
+  ce qui permet de comparer les deux styles de carte. Les contrôles de musique et de bruitages
+  l'ont rejointe : l'en-tête passe de 14 à 8 boutons. `musicUI()` ne fait que rafraîchir des
+  contrôles existants, la fenêtre les pose donc elle-même avec `musicHTML()` à chaque rendu.
+
+## v1.8e — retours de playtest (23/09/2026)
+
+- **La page clignotait pendant le tour d'un bot.** Deux causes cumulées, toutes deux introduites en
+  v1.8 : `fitMarket` retirait puis remettait ses paliers à chaque rendu (le marché s'affichait en
+  grand avant de se resserrer), et le marché était dessiné même pendant le tour d'un bot, donc sa
+  hauteur alternait entre 447 px et 0 à chaque passage. Le palier est désormais mis en cache
+  (clé : taille du plateau + nombre de cartes), le contenu du marché n'est réécrit que s'il a
+  changé, et le marché n'apparaît plus que pour le joueur dont c'est le tour. Mesuré sur 160 relevés
+  pendant que les bots jouent : une seule taille de carte, une seule hauteur de marché.
+- **Le SVG passait devant les territoires en phase de construction.** `nohit` ne neutralisait que
+  les pions (`.tk`) : la **bannière de capitale** et les icônes d'aménagement captaient toujours le
+  clic, donc impossible de bâtir sur la case sous une bannière — ce qui bloquait la partie une fois
+  une capitale déplacée. Toute la couche `#tokens` est maintenant neutralisée en phase de
+  construction, le maillet excepté. Vérifié : un clic au centre exact de la bannière atteint la
+  carte et ouvre le panneau de construction.
+- **L'Ambassade s'affichait « undefined »** dans le menu de construction : la table des effets
+  n'avait pas d'entrée pour elle. Les six aménagements ont désormais un libellé court et une
+  infobulle complète au survol.
+- **Nouvelle page `bugs.html`** : les signalements envoyés depuis le jeu ne partent pas par e-mail,
+  ils sont écrits dans la table `bug_reports`. Cette page les lit, les affiche avec leur contexte
+  (version, mode, phase, tour, salon, navigateur, état de la partie) et les exporte en CSV. Si la
+  base refuse la lecture, la page le dit explicitement : il faut alors ouvrir une policy SELECT sur
+  `bug_reports`, ou consulter la table depuis le tableau de bord Supabase.
+- Textes des dirigeants remis en accord avec le moteur : Gustave (cités à 5 or), Edouard (4 or, une
+  fois par partie, en paix), Mathilde (première cité seulement), Hugues (campements, forts, ports),
+  Aliénor (ports à 2 or), Odon (bonus indépendant de sa présence).

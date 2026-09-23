@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Fields of Fire · signalements</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<link rel="stylesheet" href="css/style.css?v=1.8">
+<style>
+  body { background: #121114; color: #e9e2d2; font-family: system-ui, sans-serif; margin: 0; }
+  main { max-width: 1100px; margin: 0 auto; padding: 28px 18px 60px; }
+  h1 { font-family: Cinzel, Georgia, serif; font-size: 30px; margin: 0 0 6px; }
+  .lead { color: #9b9484; margin: 0 0 20px; font-size: 15.5px; line-height: 1.5; }
+  .bar-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 18px; }
+  button, .btn2 { background: #1d1b20; color: #e9e2d2; border: 1px solid #4d4739; border-radius: 9px;
+                  padding: 9px 14px; font: inherit; cursor: pointer; text-decoration: none; display: inline-block; }
+  button:hover, .btn2:hover { border-color: #d4b04f; }
+  .err { color: #f2a79c; }
+  .kpis { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 22px; }
+  .kpi { border: 1px solid #332f28; border-radius: 12px; padding: 12px 16px; min-width: 130px; }
+  .kpi small { display: block; color: #8b8577; font-size: 12.5px; }
+  .kpi b { font-size: 22px; }
+  .rep { border: 1px solid #332f28; border-left: 3px solid #d4b04f; border-radius: 12px;
+         padding: 14px 16px; margin-bottom: 12px; background: #17161a; }
+  .rep .top { display: flex; gap: 12px; flex-wrap: wrap; align-items: baseline; margin-bottom: 8px; }
+  .rep .date { color: #8b8577; font-size: 13px; }
+  .rep .tag { font-size: 12px; border: 1px solid #4d4739; border-radius: 999px; padding: 2px 9px; color: #b9b2a0; }
+  .rep .msg { font-size: 16px; line-height: 1.5; white-space: pre-wrap; margin: 0 0 10px; }
+  .rep .ctx { color: #8b8577; font-size: 12.5px; word-break: break-word; }
+  .rep .contact { color: #d4b04f; font-size: 13.5px; }
+  details summary { cursor: pointer; color: #8b8577; font-size: 12.5px; margin-top: 8px; }
+  pre { background: #121114; border: 1px solid #332f28; border-radius: 8px; padding: 10px;
+        overflow: auto; font-size: 12px; max-height: 260px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Signalements de bugs</h1>
+  <p class="lead">Les signalements envoyés depuis le bouton « Signaler un bug » du jeu. <b>Ils ne partent pas par e-mail</b> : ils sont écrits dans la table <code>bug_reports</code> de la base, et cette page les lit.</p>
+  <div class="bar-row">
+    <button id="reload">Actualiser</button>
+    <button id="csv">Télécharger en CSV</button>
+    <a class="btn2" href="./">← Retour au jeu</a>
+    <a class="btn2" href="stats.html">Statistiques</a>
+  </div>
+  <p class="err" id="err"></p>
+  <div class="kpis" id="kpis"></div>
+  <div id="list"></div>
+</main>
+
+<script src="js/config.js"></script>
+<script>
+(function () {
+  var C = FOF.CONFIG, rows = [];
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+
+  function load() {
+    document.getElementById('err').textContent = '';
+    fetch(C.supabaseUrl + '/rest/v1/bug_reports?select=*&order=created_at.desc&limit=500',
+          { headers: { apikey: C.supabaseKey } })
+      .then(function (r) {
+        if (r.status === 401 || r.status === 403)
+          throw new Error('lecture refusée par la base. Il faut autoriser la lecture de la table bug_reports (policy SELECT) dans Supabase, ou consulter la table depuis le tableau de bord.');
+        if (!r.ok) throw new Error('erreur ' + r.status);
+        return r.json();
+      })
+      .then(function (d) { rows = d; render(); })
+      .catch(function (e) { document.getElementById('err').textContent = 'Impossible de charger les signalements : ' + e.message; });
+  }
+
+  function render() {
+    var avecContact = rows.filter(function (r) { return r.contact; }).length;
+    var versions = {};
+    rows.forEach(function (r) { var v = r.context && r.context.version; if (v) versions[v] = (versions[v] || 0) + 1; });
+    var vTxt = Object.keys(versions).sort().map(function (v) { return v + ' (' + versions[v] + ')'; }).join(' · ') || '—';
+    document.getElementById('kpis').innerHTML =
+      '<div class="kpi"><small>Signalements</small><b>' + rows.length + '</b></div>' +
+      '<div class="kpi"><small>Avec un contact</small><b>' + avecContact + '</b></div>' +
+      '<div class="kpi"><small>Versions concernées</small><b style="font-size:15px">' + esc(vTxt) + '</b></div>';
+
+    document.getElementById('list').innerHTML = rows.length ? rows.map(function (r) {
+      var c = r.context || {};
+      var quand = r.created_at ? new Date(r.created_at).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' }) : '—';
+      var tags = [c.version && ('v' + c.version), c.mode, c.phase && ('phase ' + c.phase),
+                  c.round && ('tour ' + c.round), c.room && ('salon ' + c.room), c.screen]
+                 .filter(Boolean).map(function (t) { return '<span class="tag">' + esc(t) + '</span>'; }).join(' ');
+      return '<article class="rep">' +
+        '<div class="top"><span class="date">' + esc(quand) + '</span>' + tags + '</div>' +
+        '<p class="msg">' + esc(r.message) + '</p>' +
+        (r.contact ? '<p class="contact">Contact : ' + esc(r.contact) + '</p>' : '') +
+        '<p class="ctx">' + esc(c.ua || '') + '</p>' +
+        (r.state ? '<details><summary>État de la partie au moment du signalement</summary><pre>' +
+          esc(JSON.stringify(r.state, null, 1).slice(0, 12000)) + '</pre></details>' : '') +
+        '</article>';
+    }).join('') : '<p class="lead">Aucun signalement pour le moment.</p>';
+  }
+
+  function csv() {
+    if (!rows.length) return;
+    var cols = ['created_at', 'message', 'contact', 'version', 'mode', 'phase', 'round', 'room', 'screen', 'ua'];
+    var lignes = rows.map(function (r) { var c = r.context || {};
+      return [r.created_at, r.message, r.contact, c.version, c.mode, c.phase, c.round, c.room, c.screen, c.ua]
+        .map(function (v) { v = v == null ? '' : String(v);
+          return /[;"\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }).join(';'); });
+    var txt = '﻿' + cols.join(';') + '\n' + lignes.join('\n');
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([txt], { type: 'text/csv;charset=utf-8' }));
+    a.download = 'fof-signalements.csv'; a.click();
+  }
+
+  document.getElementById('reload').addEventListener('click', load);
+  document.getElementById('csv').addEventListener('click', csv);
+  load();
+})();
+</script>
+</body>
+</html>
