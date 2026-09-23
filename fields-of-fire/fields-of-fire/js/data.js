@@ -9,9 +9,10 @@
     F:  { name: 'Fort',      cost: 3, def: 3 },
     P:  { name: 'Port',      cost: 3, def: 1 },
     Ci: { name: 'Cité',      cost: 5, def: 0 },
-    T:  { name: 'Temple',    cost: 7, def: 0 }
+    T:  { name: 'Temple',    cost: 7, def: 0 },
+    A:  { name: 'Ambassade',  cost: 4, def: 0 }
   };
-  FOF.BUILDING_ORDER = ['C', 'F', 'P', 'Ci', 'T'];
+  FOF.BUILDING_ORDER = ['C', 'F', 'P', 'Ci', 'T', 'A'];
 
   // Unités d'élite : dépl, puissance [P,F,M,Ma], entretien, condition
   FOF.ELITES = {

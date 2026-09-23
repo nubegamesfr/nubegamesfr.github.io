@@ -251,6 +251,8 @@
         else if (k === 'F') v = (t.id === p.capital ? 3.6 : enemyNear(t) ? 2.6 : 1.4) + (forts < 3 ? 0.8 : 0);
         else if (k === 'C') v = camps < 5 ? 2.6 - camps * 0.25 : 1;
         else if (k === 'P') v = ports === 0 ? 2.2 : 0.6;
+        // l'Ambassade : uniquement dans la capitale, et d'autant plus intéressante qu'on avance en diplomatie
+        else if (k === 'A') { var prog = p.dip / st.victory.dip; v = (p.tyran || t.id !== p.capital) ? 0 : 4.4 + 2.4 * prog; }
         if (k === 'T' || k === 'Ci') v += enemyNear(t) ? -0.8 : 0.4;
         // garder de quoi viser un temple quand on en approche
         if (k !== 'T' && temples >= 3 && p.gold - cost < FOF.bldCost(st, p, 'T')) v -= 1;
@@ -281,7 +283,7 @@
     if (st.pending.length) return resolveFor(st);
     var p = FOF.cur(st), a = null;
     if (st.phase === 'collect') {
-      if (p.leader === 'edouard' && !p.flags.edouard && p.dip <= 3 && p.gold >= 6 && !p.tyran) a = { type: 'edouard' };
+      if (p.leader === 'edouard' && !p.edouardUsed && p.dip <= 3 && p.gold >= 7 && !p.tyran && !p.attackedLast && !p.raidedLast) a = { type: 'edouard' };
       if (!a) FOF.army(st, p.id).forEach(function (u) { if (!a && u.key === 'exploratrice' && FOF.effectAvailable(st, u)) a = { type: 'effect', uid: u.uid }; });
     } else if (st.phase === 'recruit') a = recruitAct(st, p);
     else if (st.phase === 'military') a = militaryAct(st, p);

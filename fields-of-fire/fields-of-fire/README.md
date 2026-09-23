@@ -109,6 +109,20 @@ Limites du prototype : pas de comptes, quiconque a le code d'un salon peut y éc
   ne compte plus que les parties postérieures. Rien n'est supprimé dans la base : le tableau des
   dirigeants est simplement recalculé côté page à partir des parties retenues, au lieu de lire la
   vue `leader_stats` qui agrège tout depuis toujours.
-- Aucune règle du jeu n'a changé. Les correctifs d'équilibrage (Ambassade, seuils de victoire,
-  Edouard, Mathilde) restent en attente de validation — voir `claude/06_analyse_equilibrage.md`
-  §14 et §15 dans le projet.
+- **Équilibrage appliqué** (validé par le créateur le 23/09/2026, premier correctif de règles depuis
+  le début du projet) :
+  - correction d'un défaut : le plafond de diplomatie suivait la valeur figée 10 alors que le seuil
+    de victoire est une variable, donc tout seuil au-dessus de 10 était inatteignable ;
+  - nouvel aménagement **Ambassade** (4 or, capitale uniquement, hors limite des 2 aménagements) :
+    aucune diplomatie passive, mais **+1 sur chaque gain obtenu par une action**, à condition de
+    n'avoir ni attaqué ni été attaqué depuis son tour précédent. Nouveau drapeau `raidedNow` /
+    `raidedLast` sur le joueur, tourné en début de tour comme `attackedNow` / `attackedLast` ;
+  - **Edouard** : 4 or, une seule fois par partie (`p.edouardUsed`), et seulement en paix ;
+  - **Mathilde** : plus de bonus de défense ; la remise ne vaut que pour sa première cité ;
+  - **Odon** (bonus d'élites indépendant de sa présence), **Hugues** (remise limitée aux campements,
+    forts et ports), **Gustave** (cités à 5 or), **Aliénor** (plus de revenu de port, embarquement
+    ramené au port) ;
+  - **seuils de victoire** : militaire 8 + joueurs, religieuse 6 + joueurs, diplomatique 4 + joueurs.
+  Vérifié par 1 600 parties simulées sur les fichiers livrés : répartition des victoires
+  36/35/29 à 3 joueurs, 36/38/26 à 4, 27/37/36 à 5, 20/38/42 à 6. La voie militaire reste faible à
+  6 joueurs — voir `claude/06_analyse_equilibrage.md` §16.3.

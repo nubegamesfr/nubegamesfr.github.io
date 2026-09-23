@@ -565,7 +565,7 @@
     var blocked = mode && mode.kind === 'deploy';
     if (blocked) hint = ['Déployez d’abord votre unité (territoire qui clignote) ou annulez l’achat.', hint[1]];
     h.push('<div class="cta"><div class="hint">' + hint[0] + '</div><button class="btn primary go" data-next="1" ' + (st.pending.length || st.winner || !myTurn() || blocked ? 'disabled' : '') + '>' + hint[1] + '</button>' +
-      (p.leader === 'edouard' && st.phase === 'collect' ? '<button class="btn small gold" data-act="edouard" ' + (p.flags.edouard || p.dip > 3 || p.gold < 3 || p.tyran ? 'disabled' : '') + '>Edouard : 3 or → +1 diplomatie</button>' : '') + '</div>');
+      (p.leader === 'edouard' && st.phase === 'collect' ? '<button class="btn small gold" data-act="edouard" ' + (p.edouardUsed || p.dip > 3 || p.gold < 4 || p.tyran || p.attackedLast || p.raidedLast ? 'disabled' : '') + '>Edouard : 4 or → +1 diplomatie</button>' : '') + '</div>');
     $('mat').innerHTML = h.join('');
   }
 
@@ -627,13 +627,13 @@
         '<button class="btn danger" data-surrender="1">Abandonner maintenant</button></div></div>';
     }
     else if (modal && modal.kind === 'edouardc') {
-      var ep = FOF.cur(st), after = ep.gold - 3;
+      var ep = FOF.cur(st), after = ep.gold - 4;
       h = '<div class="modal edouardc"><h2>' + FOF.ic('branch', 20) + ' Acheter 1 diplomatie ?</h2>' +
-        '<p>Le pouvoir d’Edouard le Sage vous coûtera <b class="num">3</b> or et vous fera passer de <b class="num">' + ep.dip + '</b> à <b class="num">' + (ep.dip + 1) + '</b> en diplomatie.</p>' +
+        '<p>Le pouvoir d’Edouard le Sage vous coûtera <b class="num">4</b> or et vous fera passer de <b class="num">' + ep.dip + '</b> à <b class="num">' + (ep.dip + 1) + '</b> en diplomatie' + (FOF.countBld(st, ep.id, 'A') ? ', <b>+2 avec votre Ambassade</b>' : '') + '.</p><p class="warn-line">Ce pouvoir ne sert qu’<b>une seule fois par partie</b>.</p>' +
         '<div class="ed-ledger"><span>Trésor</span><b class="num">' + ep.gold + ' <i class="coin"></i></b><span>Après l’achat</span><b class="num' + (after < 2 ? ' low' : '') + '">' + after + ' <i class="coin"></i></b></div>' +
         (st.round <= 1 ? '<p class="warn-line">Nous sommes au <b>tour 1</b> : avec ' + after + ' or il vous restera peu de quoi recruter. La plupart des unités coûtent 1 à 3 or.</p>'
           : after < 2 ? '<p class="warn-line">Il ne vous restera que ' + after + ' or pour ce tour.</p>' : '') +
-        '<div class="actions"><button class="btn" data-close="1">Annuler</button><button class="btn gold" data-act="edouardgo">Oui, payer 3 or</button></div></div>';
+        '<div class="actions"><button class="btn" data-close="1">Annuler</button><button class="btn gold" data-act="edouardgo">Oui, payer 4 or</button></div></div>';
     }
     else if (modal && modal.kind === 'confirmNew') h = '<div class="modal"><h2>' + (net ? 'Quitter la partie en ligne ?' : 'Nouvelle partie ?') + '</h2><p>' + (net ? 'Vous pourrez la rejoindre à nouveau avec le code <b>' + net.code + '</b>.' : 'La partie en cours sera perdue.') + '</p><div class="actions"><button class="btn" data-close="1">Annuler</button><button class="btn danger" data-act="newgame">' + (net ? 'Quitter' : 'Recommencer') + '</button></div></div>';
     var html = h ? '<div class="modal-bg">' + h + '</div>' : '';
@@ -658,7 +658,7 @@
     FOF.army(st, cp.id).forEach(function (u) { row('Solde : ' + esc(FOF.unitDef(u.key).name), -FOF.unitDef(u.key).upkeep, 'minus'); });
     var net = c ? c.net : inc.total - inc.upkeep;
     var acts = [];
-    if (cp.leader === 'edouard') acts.push('<button class="btn gold" data-act="edouard" ' + (cp.flags.edouard || cp.dip > 3 || cp.gold < 3 || cp.tyran ? 'disabled' : '') + '>Edouard : 3 or → +1 diplomatie</button>');
+    if (cp.leader === 'edouard') acts.push('<button class="btn gold" data-act="edouard" ' + (cp.edouardUsed || cp.dip > 3 || cp.gold < 4 || cp.tyran || cp.attackedLast || cp.raidedLast ? 'disabled' : '') + '>Edouard : 4 or → +1 diplomatie</button>');
     FOF.army(st, cp.id).forEach(function (u) { if (u.key === 'exploratrice') { var eff = FOF.effectAvailable(st, u); acts.push('<button class="btn" data-effect="' + u.uid + '" ' + (eff ? '' : 'disabled title="Elle doit être sur un territoire neutre d’un autre continent"') + '>Exploratrice : ' + (eff ? 'revendiquer ' + esc(FOF.locName(st, u.pos)) : 'rien à revendiquer ici') + '</button>'); } });
     return '<div class="modal collect"><div class="pass" style="background:' + color(cp.id) + '33;border:1px solid ' + color(cp.id) + '">' + (net ? 'À vous de jouer, <b>' + esc(cp.name) + '</b> !' : 'Passez l’écran à <b>' + esc(cp.name) + '</b>') + '</div>' +
       '<div class="collect-top">' + FOF.heroImg(cp.leader) + '<div><div class="ribbon" style="background:' + color(cp.id) + ';color:#fff">' + esc(cp.name) + '</div><div class="muted">' + esc(FOF.LEADERS[cp.leader].name) + ' · tour ' + st.round + '</div></div></div>' +
