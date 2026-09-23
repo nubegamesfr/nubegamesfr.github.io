@@ -362,7 +362,7 @@ button.hero:disabled { cursor: not-allowed; }
 .market.row1 .slot .why { font-size: 10px; }
 
 /* v1.8 : marché réduit — les cartes restent visibles, en vignettes, pour dégager la carte du jeu. */
-.market.compact { padding: 10px 16px 8px; }
+.market.compact { padding: 10px 16px 8px; margin-top: 0; }   /* le retrait de -10px mordait sur le bas de la carte */
 .market.compact h3 { font-size: 14px; margin-bottom: 5px; }
 /* La largeur du marché suit celle de son contenu : rétrécir les cartes écrase toute la barre et le
    titre part sur huit lignes. On garde donc la largeur d'origine et on ne réduit que la hauteur. */
@@ -857,3 +857,93 @@ header.bar { position: relative; z-index: 96; }
      finissaient par recouvrir une carte sur les écrans bas. */
   .board-tools { position: absolute; top: 8px; right: 8px; bottom: auto; margin: 0; z-index: 6; }
 }
+
+/* ==================== v1.8 : mise en page téléphone ====================
+   Constat de l'essai sur 390×844 : l'en-tête occupait deux rangées, la barre des joueurs était
+   coupée, la carte tombait à 366×275 pendant que le tapis en prenait 400, et le menu radial
+   couvrait un tiers de la carte. On redonne la place à la carte. */
+@media (max-width: 620px) {
+
+  /* En-tête : une seule rangée qui défile, libellés masqués sur les boutons qui ont une icône. */
+  header.bar { flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; gap: 6px; padding: 5px 8px;
+               scrollbar-width: none; -ms-overflow-style: none; }
+  header.bar::-webkit-scrollbar { display: none; }
+  header.bar > * { flex: 0 0 auto; }
+  header.bar .brand { display: none; }
+  header.bar .btn { padding: 6px 9px; min-height: 36px; }
+  header.bar #logBtn, header.bar #deckBtn, header.bar #glossBtn,
+  header.bar #helpBtn, header.bar #newBtn { font-size: 0; gap: 0; }
+  header.bar #logBtn svg, header.bar #deckBtn svg, header.bar #glossBtn svg,
+  header.bar #helpBtn svg, header.bar #newBtn svg { width: 18px; height: 18px; }
+  header.bar .phases { order: 0; flex: 0 0 auto; margin: 0; }
+  header.bar .music input[type=range] { width: 44px; }
+
+  /* Ordre des commandes : les plus utiles d'abord, l'ambiance et le signalement de bug à la fin.
+     L'en-tête défile latéralement, autant que ce qui sert en jeu soit visible sans geste. */
+  header.bar .round-chip { order: 0; }
+  header.bar .phases { order: 1; }
+  header.bar #logBtn { order: 2; }
+  header.bar #helpBtn { order: 3; }
+  header.bar #deckBtn { order: 4; }
+  header.bar #glossBtn { order: 5; }
+  header.bar #setBtn { order: 6; }
+  header.bar #flagBtn { order: 7; }
+  header.bar #newBtn { order: 9; }
+  header.bar [data-music-slot] { order: 10; }
+  header.bar #chatBtn { order: 12; }
+  header.bar #bugBtn { order: 13; }
+
+  /* Voile au bord droit : sans lui rien n'indique que l'en-tête continue. */
+  #game::before { content: ''; position: fixed; top: 0; right: 0; width: 26px; height: 47px;
+                  z-index: 97; pointer-events: none;
+                  background: linear-gradient(to left, #18171a 30%, rgba(24, 23, 26, 0)); }
+
+  /* Barre des joueurs : une rangée qui défile au doigt, une fiche par écran. */
+  aside.left { display: flex; overflow-x: auto; gap: 8px; padding: 6px 8px;
+               scroll-snap-type: x mandatory; scrollbar-width: none; }
+  aside.left::-webkit-scrollbar { display: none; }
+  aside.left .opp { flex: 0 0 86%; scroll-snap-align: center; margin: 0; min-width: 0; }
+  aside.left .section-title { display: none; }
+
+  /* La carte prend la moitié de l'écran. */
+  #board { height: 52vh; }
+
+  /* Tapis : les pistes passent en compteurs chiffrés, sans leurs rangées de cases. */
+  .mat { grid-template-columns: 1fr; gap: 6px; padding: 6px 10px 0; }
+  .me { grid-template-columns: 46px auto; gap: 10px; }
+  .me .pwrap .portrait, .me .pwrap img { width: 46px; height: 46px; }
+  .me .ribbon { font-size: 15px; padding: 2px 8px; }
+  .me .purse { font-size: 15px; }
+  .tracks { flex-direction: row; flex-wrap: wrap; gap: 6px 14px; }
+  .track { font-size: 13px; gap: 5px; }
+  .track .boxes { display: none; }
+  .track .lbl { display: inline-flex; align-items: center; gap: 4px; }
+  .army { gap: 6px; }
+  .army .mini { width: 78px; }
+
+  /* Menu radial : boutons plus petits pour ne pas manger la carte. */
+  #radial .rbtn { width: 50px; height: 50px; }
+  #radial .rbtn b { font-size: 17px; }
+  #radial .rbtn span { font-size: 9.5px; }
+  #radial .rbtn.close { width: 34px; height: 34px; }
+
+  /* La légende des terrains prend une rangée entière pour une information déjà lisible
+     sur la carte et dans l'infobulle. */
+  .legend { display: none; }
+
+  /* Bandeau de phase : il recouvrait les cartes du marché. */
+  .fx-banner { padding: 9px 0 8px; top: 14%; }
+  .fx-banner b { font-size: 22px; }
+  .fx-banner small { font-size: 11px; letter-spacing: .2em; }
+}
+
+/* v1.8 : fenêtre de réglages (style de carte, vitesse des bots, animations). */
+.modal.settings .set-row { display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+  padding: 12px 0; border-top: 1px solid var(--line); }
+.modal.settings .set-row:first-of-type { border-top: 0; }
+.modal.settings .set-lbl { flex: 1 1 190px; min-width: 0; }
+.modal.settings .set-lbl b { display: block; font-size: 16px; color: var(--bone); }
+.modal.settings .set-lbl small { display: block; font-size: 13.5px; color: var(--muted); margin-top: 2px; }
+.modal.settings .set-opts { display: flex; gap: 8px; flex-wrap: wrap; }
+.modal.settings .set-opts .btn { min-height: 38px; }
+@media (max-width: 620px) { .modal.settings .set-row { gap: 8px; } .modal.settings .set-opts { width: 100%; } .modal.settings .set-opts .btn { flex: 1 1 auto; } }

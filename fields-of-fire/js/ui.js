@@ -71,7 +71,7 @@
   /* ================= rendu ================= */
   function render() {
     if (!st) return;
-    var viewModal = modal && (modal.kind === 'gloss' || modal.kind === 'deck' || modal.kind === 'help' || modal.kind === 'endstats' || modal.kind === 'hero' || modal.kind === 'edouardc');
+    var viewModal = modal && (modal.kind === 'gloss' || modal.kind === 'deck' || modal.kind === 'help' || modal.kind === 'endstats' || modal.kind === 'hero' || modal.kind === 'edouardc' || modal.kind === 'settings');
     if (st.turnNo !== lastTurnShown && !st.winner && !viewModal && !modal) { lastTurnShown = st.turnNo; if ((!net || net.seatIndex() === st.cur) && !st.players[st.cur].bot) modal = { kind: 'turn' }; }
     if (st.winner && !viewModal) modal = { kind: 'victory' };
     var before = FOF.FX ? FOF.FX.before() : null;
@@ -174,11 +174,18 @@
     var b = FOF.Board.bounds();
     var board = $('board'), wrap = $('boardWrap');
     if (!b) return;
-    var fit = Math.min((board.clientWidth - 24) / b.w, (board.clientHeight - 24) / b.h);
+    // v1.8 : le marché est dessiné d'abord, car sa hauteur décide de la place laissée à la carte.
+    renderMarket();
+    var mkt = $('market');
+    // en mode réduit, la carte doit tenir entièrement au-dessus des vignettes : sinon son bas
+    // reste caché derrière, ce qui est exactement ce qu'on cherchait à éviter en la réduisant.
+    var mh = (mkt && !mkt.hidden && mkt.classList.contains('compact')) ? mkt.offsetHeight : 0;
+    var dispoH = Math.max(80, board.clientHeight - 24 - (mh ? mh + 14 : 0));   // 14 px : le dégradé qui coiffe le marché
+    var fit = Math.min((board.clientWidth - 24) / b.w, dispoH / b.h);
     if (!(fit > 0)) fit = 1;
     var sc = fit * zoom;
     wrap.style.width = Math.round(b.w * sc) + 'px'; wrap.style.height = Math.round(b.h * sc) + 'px';
-    wrap.style.marginTop = zoom === 1 ? Math.max(12, (board.clientHeight - b.h * sc) / 2) + 'px' : '12px';
+    wrap.style.marginTop = zoom === 1 ? Math.max(12, (board.clientHeight - mh - b.h * sc) / 2) + 'px' : '12px';
     wrap.dataset.scale = sc;
     var picks = pickTargets();
     FOF.Board.overlay(st, $('ovCv'), { sel: sel, picks: picks }, color);
@@ -193,7 +200,6 @@
     renderRadial(sc, b);
     var ban = banner();
     $('banner').hidden = !ban; if (ban) $('banner').innerHTML = '<span>' + ban + '</span>' + (mode ? '<button class="btn small" data-cancel="1">Annuler</button>' : '');
-    renderMarket();
   }
   function tokensSVG() {
     var out = ['<defs>'], m = st.map, p = FOF.cur(st);
@@ -291,6 +297,51 @@
     if (!st || !e.target.closest || !e.target.closest('#boardWrap') || e.target.closest('#popover')) return;
     e.preventDefault(); setZoom(zoom * (e.deltaY < 0 ? 1.15 : 1 / 1.15), e.clientX, e.clientY);
   }, { passive: false });
+  /* v1.8 : tactile. Le zoom n'existait qu'à la molette et le déplacement qu'à la souris : sur
+     téléphone on ne pouvait ni pincer pour zoomer, ni tirer la carte de façon fiable. */
+  var tDrag = null, tPinch = null, tMoved = false;
+  function surCarte(e) {
+    var t = e.target;
+    return st && t && t.closest && t.closest('#boardWrap') && !t.closest('#popover') && !t.closest('#radial');
+  }
+  function ecart(e) {
+    var a = e.touches[0], b2 = e.touches[1];
+    return Math.hypot(a.clientX - b2.clientX, a.clientY - b2.clientY);
+  }
+  document.addEventListener('touchstart', function (e) {
+    if (!surCarte(e)) return;
+    if (e.touches.length === 2) {
+      var a = e.touches[0], b2 = e.touches[1];
+      tPinch = { d: ecart(e), z: zoom, cx: (a.clientX + b2.clientX) / 2, cy: (a.clientY + b2.clientY) / 2 };
+      tDrag = null; tMoved = true;
+    } else if (e.touches.length === 1 && zoom > 1) {
+      var bd = $('board');
+      tDrag = { x: e.touches[0].clientX, y: e.touches[0].clientY, sl: bd.scrollLeft, stp: bd.scrollTop };
+      tMoved = false;
+    }
+  }, { passive: false });
+  document.addEventListener('touchmove', function (e) {
+    if (tPinch && e.touches.length === 2) {
+      e.preventDefault();
+      var d = ecart(e); if (!tPinch.d) return;
+      setZoom(tPinch.z * (d / tPinch.d), tPinch.cx, tPinch.cy);
+      return;
+    }
+    if (!tDrag || e.touches.length !== 1) return;
+    var dx = e.touches[0].clientX - tDrag.x, dy = e.touches[0].clientY - tDrag.y;
+    if (!tMoved && Math.abs(dx) + Math.abs(dy) < 8) return;
+    tMoved = true; e.preventDefault();
+    var bd2 = $('board');
+    bd2.scrollLeft = tDrag.sl - dx; bd2.scrollTop = tDrag.stp - dy;
+  }, { passive: false });
+  document.addEventListener('touchend', function (e) {
+    if (e.touches.length === 0) { tPinch = null; tDrag = null; }
+  });
+  // un glissement ne doit pas être pris pour un appui sur une case
+  document.addEventListener('click', function (e) {
+    if (tMoved && surCarte(e)) { tMoved = false; e.stopPropagation(); e.preventDefault(); }
+  }, true);
+
   document.addEventListener('mousedown', function (e) {
     if (!st || e.button !== 0 || !e.target.closest('#boardWrap') || e.target.closest('#popover') || zoom <= 1) return;
     var b = $('board'); drag = { x: e.clientX, y: e.clientY, sl: b.scrollLeft, stp: b.scrollTop }; dragMoved = false;
@@ -407,7 +458,8 @@
     }
     if (FOF.attackTargets(st, radial.loc).length) items.push('<button class="rbtn attack" data-attack="' + radial.loc + '"><b>' + FOF.ic('swords', 22) + '</b><span>Attaquer</span></button>');
     items.push('<button class="rbtn close" data-closeradial="1"><b>' + FOF.ic('close', 18) + '</b><span>Fermer</span></button>');
-    var n = items.length, R = 78;
+    // rayon réduit sur téléphone : à 78 px le menu couvrait un tiers de la carte
+    var n = items.length, R = window.innerWidth <= 620 ? 54 : 78;
     el.innerHTML = items.map(function (h, i) { var ang = -Math.PI / 2 + i * 2 * Math.PI / n; return h.replace('class="rbtn', 'style="left:' + Math.round(Math.cos(ang) * R) + 'px;top:' + Math.round(Math.sin(ang) * R) + 'px" class="rbtn'); }).join('') + '<div class="rhint">' + esc(FOF.LEADERS[p.leader].name) + '</div>';
     el.style.left = ((radial.x - b.x) * sc) + 'px'; el.style.top = ((radial.y - b.y) * sc) + 'px';
     el.hidden = false;
@@ -605,6 +657,25 @@
     if (modal && modal.kind !== kind) prevModal = modal; else if (!modal) prevModal = null;
     modal = { kind: kind }; render();
   }
+  // v1.8 : réglages regroupés. Le style de carte, la vitesse des bots et les animations
+  // occupaient chacun un bouton dans un en-tête déjà très chargé.
+  function settingsHTML() {
+    function chx(attr, val, cur, lbl) {
+      return '<button class="btn' + (val === cur ? ' primary' : '') + '" data-' + attr + '="' + val + '">' + esc(lbl) + '</button>';
+    }
+    var cur = FOF.mapStyle ? FOF.mapStyle() : '';
+    var styles = (FOF.MAP_STYLES || []).map(function (x) { return chx('setstyle', x.id, cur, x.name); }).join('');
+    var vit = SPEEDS.map(function (k) { return chx('setspeed', k, botSpeed, SPEED_LBL[k].replace('Bots : ', '')); }).join('');
+    var anim = FOF.animOn !== false;
+    var avecBots = st && st.players.some(function (q) { return q.bot; });
+    return '<div class="modal settings"><h2>' + FOF.ic('gear', 20) + ' Réglages</h2>' +
+      '<div class="set-row"><div class="set-lbl"><b>Style de la carte</b><small>Le rendu du plateau.</small></div><div class="set-opts">' + styles + '</div></div>' +
+      (avecBots ? '<div class="set-row"><div class="set-lbl"><b>Vitesse des bots</b><small>Délai entre leurs actions.</small></div><div class="set-opts">' + vit + '</div></div>' : '') +
+      '<div class="set-row"><div class="set-lbl"><b>Animations</b><small>Déplacements, bandeaux et effets.</small></div><div class="set-opts">' +
+        '<button class="btn' + (anim ? ' primary' : '') + '" data-setanim="1">Activées</button>' +
+        '<button class="btn' + (anim ? '' : ' primary') + '" data-setanim="0">Réduites</button></div></div>' +
+      '<div class="actions"><button class="btn primary" data-close="1">Fermer</button></div></div>';
+  }
   function renderModal() {
     var el = $('modal'), pd = st.pending[0], h = null;
     if (st.winner) {
@@ -624,6 +695,7 @@
         FOF.army(st, p.id).map(function (u) { var a = FOF.unitArt(u.key); return '<div class="pc-row" style="--pc:' + color(p.id) + '">' + (a ? '<img src="' + a + '" alt="">' : '') + '<div class="t"><b>' + esc(FOF.unitDef(u.key).name) + '</b><small>réserve ' + u.gold + ' / entretien ' + FOF.unitDef(u.key).upkeep + '</small></div><button class="btn small" data-take="' + u.uid + '" ' + (u.gold <= 0 ? 'disabled' : '') + '>Reprendre 1 or</button></div>'; }).join('') + '</div>';
     } else if (modal && modal.kind === 'attack') h = attackHTML(modal);
     else if (modal && modal.kind === 'turn') h = collectHTML();
+    else if (modal && modal.kind === 'settings') h = settingsHTML();
     else if (modal && modal.kind === 'help') h = helpHTML();
     else if (modal && modal.kind === 'gloss') h = glossHTML();
     else if (modal && modal.kind === 'deck') h = deckHTML();
@@ -808,10 +880,10 @@
     if (!st) return;
     if (radial && !e.target.closest('#radial')) radial = null;
     if (e.target.closest('#boardWrap') && !e.target.closest('#popover') && !e.target.closest('#radial')) { if (!dragMoved) boardClick(e); return; }
-    var el = e.target.closest('[data-pause],[data-surrender],[data-endstats],[data-closestats],[data-closeradial],[data-act],[data-buy],[data-discard],[data-move],[data-conquer],[data-pacify],[data-effect],[data-build],[data-replace],[data-capital],[data-cede],[data-attack],[data-close],[data-resolve],[data-take],[data-tsel],[data-treb],[data-go],[data-next],[data-closepop],[data-cancel],[data-mini],[data-hidemarket],[data-showmarket],[data-heroinfo],[data-collectgo]');
+    var el = e.target.closest('[data-setstyle],[data-setspeed],[data-setanim],[data-pause],[data-surrender],[data-endstats],[data-closestats],[data-closeradial],[data-act],[data-buy],[data-discard],[data-move],[data-conquer],[data-pacify],[data-effect],[data-build],[data-replace],[data-capital],[data-cede],[data-attack],[data-close],[data-resolve],[data-take],[data-tsel],[data-treb],[data-go],[data-next],[data-closepop],[data-cancel],[data-mini],[data-hidemarket],[data-showmarket],[data-heroinfo],[data-collectgo]');
     if (!el) return;
     var ds = el.dataset, p = FOF.cur(st);
-    var VIEW = ds.pause || ds.surrender || ds.closeradial || ds.closepop || ds.cancel || ds.hidemarket || ds.showmarket || ds.close || ds.heroinfo || ds.endstats || ds.closestats || ds.act === 'newgame';
+    var VIEW = ds.setstyle !== undefined || ds.setspeed !== undefined || ds.setanim !== undefined || ds.pause || ds.surrender || ds.closeradial || ds.closepop || ds.cancel || ds.hidemarket || ds.showmarket || ds.close || ds.heroinfo || ds.endstats || ds.closestats || ds.act === 'newgame';
     if (FOF.sfx) FOF.sfx(clickSound(ds));
     if (ds.surrender) {
       var sid = net ? net.seatIndex() : st.cur;
@@ -820,7 +892,7 @@
     }
     if (ds.endstats) { modal = { kind: 'endstats' }; return render(); }
     if (ds.closestats) { modal = null; return render(); }
-    if (ds.close && modal && (modal.kind === 'gloss' || modal.kind === 'deck' || modal.kind === 'edouardc')) { modal = prevModal; prevModal = null; return render(); }
+    if (ds.close && modal && (modal.kind === 'gloss' || modal.kind === 'deck' || modal.kind === 'edouardc' || modal.kind === 'settings')) { modal = prevModal; prevModal = null; return render(); }
     if (ds.heroinfo) { modal = { kind: 'hero' }; return render(); }
     if (ds.closeradial) { radial = null; return render(); }
     if (radial && (ds.move || ds.conquer || ds.attack)) radial = null;
@@ -832,6 +904,21 @@
     if (ds.act === 'spy') return dispatch({ type: 'spy' });
     // v1.8 : pause — on quitte l'écran de jeu sans rien abandonner. La sauvegarde locale et le
     // salon en ligne restent en place ; la règle des 48 h existante ferme la partie si personne ne revient.
+    if (ds.setstyle !== undefined) {
+      FOF.setMapStyle(ds.setstyle);
+      if (st) FOF.Board.prepare(st, $('baseCv'), function () { render(); });
+      return render();
+    }
+    if (ds.setspeed !== undefined) {
+      botSpeed = ds.setspeed; try { localStorage.setItem('fof-botspeed', botSpeed); } catch (e2) {}
+      return render();
+    }
+    if (ds.setanim !== undefined) {
+      FOF.animOn = ds.setanim === '1';
+      try { localStorage.setItem('fof-anim', FOF.animOn ? '1' : '0'); } catch (e3) {}
+      document.body.classList.toggle('no-anim', !FOF.animOn);
+      return render();
+    }
     if (ds.pause) {
       if (net) { net.stop(); net = null; }
       document.body.classList.remove('online');
@@ -899,29 +986,9 @@
     $('flagBtn').addEventListener('click', function () { if (!st || st.winner) return; modal = { kind: 'surrender' }; render(); });
     $('glossBtn').addEventListener('click', function () { if (!st) return; openOver('gloss'); });
     $('deckBtn').addEventListener('click', function () { if (!st) return; openOver('deck'); });
-    $('speedBtn').addEventListener('click', function () { botSpeed = SPEEDS[(SPEEDS.indexOf(botSpeed) + 1) % SPEEDS.length]; try { localStorage.setItem('fof-botspeed', botSpeed); } catch (e) {} updateSpeedBtn(); });
-    updateSpeedBtn();
     $('newBtn').addEventListener('click', function () { if (!st) return; modal = { kind: 'confirmNew' }; render(); });
-    // v1.8 : bascule du style de la carte (enluminure ↔ estampe sur bois)
-    var sb = $('styleBtn');
-    function updateStyleBtn() {
-      if (!sb) return;
-      var cur = FOF.mapStyle(), d = (FOF.MAP_STYLES || []).filter(function (x) { return x.id === cur; })[0];
-      var other = (FOF.MAP_STYLES || []).filter(function (x) { return x.id !== cur; })[0];
-      sb.innerHTML = FOF.ic('spark', 17) + ' ' + esc(d ? d.name : cur);
-      sb.title = other ? 'Style de la carte : ' + (d ? d.name : cur) + ' — cliquez pour passer à « ' + other.name + ' »' : '';
-    }
-    if (sb) {
-      updateStyleBtn();
-      sb.addEventListener('click', function () {
-        var list = FOF.MAP_STYLES || [], cur = FOF.mapStyle(), i = 0;
-        for (var k = 0; k < list.length; k++) if (list[k].id === cur) i = k;
-        FOF.setMapStyle(list[(i + 1) % list.length].id);
-        updateStyleBtn();
-        // le terrain est un calque mis en cache : il faut le redemander pour qu'il soit retraité
-        if (st) FOF.Board.prepare(st, $('baseCv'), function () { render(); });
-      });
-    }
+    var setB = $('setBtn');
+    if (setB) setB.addEventListener('click', function () { if (!st) return; openOver('settings'); });
     $('zoomIn').addEventListener('click', function () { zoom = Math.min(3.2, zoom * 1.25); render(); });
     $('zoomOut').addEventListener('click', function () { zoom = Math.max(1, zoom / 1.25); render(); });
   };

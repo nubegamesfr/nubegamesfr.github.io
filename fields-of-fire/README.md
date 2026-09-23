@@ -161,3 +161,40 @@ Défauts réels trouvés et corrigés :
 Faux positifs volontairement ignorés par l'audit : éléments du plateau recouverts par une fenêtre
 ouverte (c'est le but), et éléments sous la ligne de flottaison de l'accueil, qui est un formulaire
 défilant.
+
+## v1.8c — jouabilité sur téléphone (23/09/2026)
+
+Essai réel d'un tour complet en 390×844 : l'en-tête occupait deux rangées de onze boutons, la barre
+des joueurs était coupée au bord de l'écran, la carte tombait à 366×275 pendant que le tapis en
+prenait 400, le menu radial couvrait un tiers de la carte, et la page défilait. Mise en page
+téléphone ajoutée sous 620 px :
+
+- en-tête sur une seule rangée qui défile latéralement, libellés masqués sur les boutons à icône ;
+- barre des joueurs en rangée défilante avec accroche (`scroll-snap`), une fiche par écran ;
+- tapis compacté : pistes en compteurs chiffrés (`1/11`) au lieu des rangées de cases, portrait et
+  textes réduits — la carte passe de 351 à 439 px de haut et la page ne défile plus ;
+- menu radial resserré (boutons 50 px, rayon 54 au lieu de 78) ;
+- légende des terrains masquée, bandeau de phase réduit et remonté au-dessus des cartes ;
+- commandes de l'en-tête réordonnées (chronique, règles, deck, glossaire, style d'abord ; ambiance
+  et signalement de bug à la fin) avec un voile au bord droit pour signaler que la rangée continue.
+
+**Tactile** (`ui.js`) : le zoom n'existait qu'à la molette et le déplacement de la carte qu'à la
+souris. Ajout du pincement à deux doigts (mesuré : ×2 à l'écartement, retour au resserrement) et du
+glissement à un doigt quand la carte est zoomée (150 px de glissement → 150 px de défilement), avec
+suppression du clic parasite en fin de glissement.
+
+Limite connue : en portrait la carte est bornée par la largeur de l'écran (366 px), quelle que soit
+la hauteur disponible. Les territoires font une quarantaine de pixels — jouable, mais le zoom et le
+pincement sont utiles. Le paysage reste plus confortable.
+
+## v1.8d — retours de playtest (23/09/2026)
+
+- **Le bas de la carte restait caché par le marché réduit.** La carte était dimensionnée sur toute
+  la hauteur du plateau alors que les vignettes en recouvrent le bas : 450 px de carte masqués en
+  1500×950. `renderBoard` dessine maintenant le marché d'abord et retranche sa hauteur de la place
+  disponible quand il est réduit ; le retrait `margin-top: -10px` est annulé dans cet état.
+  Mesuré : 0 px masqué en 1500×950, 1366×768 et 390×844 (contre 450, 425 et 273).
+- **Réglages regroupés.** Le style de carte, la vitesse des bots et les animations occupaient chacun
+  un bouton dans un en-tête déjà chargé. Un seul bouton `Réglages` (engrenage) ouvre une fenêtre qui
+  porte les trois, avec le choix courant mis en évidence ; elle reste ouverte pendant qu'on bascule,
+  ce qui permet de comparer les deux styles de carte. L'en-tête passe de 14 à 11 boutons.
