@@ -506,7 +506,8 @@
     var el = $('market'), p = FOF.cur(st);
     // v1.8 : pendant le recrutement le marché ne se ferme plus jamais. Il se réduit seulement,
     // pour laisser voir la carte sans perdre de vue les cinq cartes en vitrine.
-    if (st.phase !== 'recruit' || st.pending.length) { el.hidden = true; return; }
+    var bd0 = $('board');
+    if (st.phase !== 'recruit' || st.pending.length) { el.hidden = true; if (bd0) bd0.style.setProperty('--mh', '0px'); return; }
     var mini = !marketOpen;
     el.className = 'market' + (mini ? ' compact' : '');
     var spy = FOF.army(st, p.id).some(function (u) { return u.key === 'espion'; });
@@ -526,6 +527,21 @@
     });
     h.push('</div>');
     el.innerHTML = h.join(''); el.hidden = false;
+    if (!mini) fitMarket(el);
+    if (bd0) bd0.style.setProperty('--mh', el.offsetHeight + 'px');   // pour décaler les boutons de zoom
+  }
+  // v1.8 : sur un écran court, les cartes débordaient du plateau et il fallait faire défiler pour
+  // voir les dernières (et parfois pour atteindre le bouton Acheter). On resserre par paliers.
+  function fitMarket(el) {
+    var bd = $('board'); if (!bd) return;
+    el.classList.remove('tight', 'tighter', 'row1');
+    var avail = bd.clientHeight - 48;                 // on garde un bandeau de carte visible
+    if (el.offsetHeight <= avail) return;
+    el.classList.add('tight');
+    if (el.offsetHeight <= avail) return;
+    el.classList.add('tighter');
+    if (el.offsetHeight <= avail) return;
+    el.classList.add('row1');                         // dernier recours : les cinq sur une rangée
   }
 
   /* ---------- tapis du joueur actif ---------- */

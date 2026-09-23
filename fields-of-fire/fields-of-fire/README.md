@@ -101,6 +101,12 @@ Limites du prototype : pas de comptes, quiconque a le code d'un salon peut y éc
   « Voir la zone de recrutement » devient inutile et a été retiré.
   *Note technique : la classe de réduction s'appelle `compact` et non `mini` — `.mini` est déjà
   la vignette d'unité du tapis et imposait sa largeur de 112 px à toute la barre.*
+- **Le marché tient toujours à l'écran** (`fitMarket` dans `ui.js`) : après chaque rendu, si les
+  cinq cartes dépassent la hauteur du plateau, la barre est resserrée par paliers — `tight`
+  (illustration et texte réduits), puis `tighter` (texte et pied de carte masqués), puis `row1`
+  (les cinq sur une seule rangée, plafond de hauteur et défilement annulés). Mesuré sur douze
+  formats de 1920×1080 à 390×844 : aucune carte ni bouton « Acheter » coupé, contre 5 cartes et
+  3 boutons inaccessibles auparavant sur téléphone. Les grands écrans gardent la carte pleine.
 - **Quitter ≠ abandonner.** Le drapeau blanc ouvre désormais trois choix : continuer,
   **mettre en pause 48 h** (la partie et le salon sont conservés, on reprend avec le même code ;
   sans action pendant 48 h elle est abandonnée par la règle existante) ou abandonner tout de suite.
@@ -126,3 +132,32 @@ Limites du prototype : pas de comptes, quiconque a le code d'un salon peut y éc
   Vérifié par 1 600 parties simulées sur les fichiers livrés : répartition des victoires
   36/35/29 à 3 joueurs, 36/38/26 à 4, 27/37/36 à 5, 20/38/42 à 6. La voie militaire reste faible à
   6 joueurs — voir `claude/06_analyse_equilibrage.md` §16.3.
+
+## v1.8b — audit d'interface (23/09/2026)
+
+Un contrôle automatisé (`audit_ui.js`, hors dépôt) parcourt 7 formats d'écran × 12 états de
+l'interface (accueil, création de partie, collecte, recrutement, marché plein et réduit, militaire,
+construction, glossaire, deck, règles, fenêtre de départ) et vérifie, pour chaque élément
+cliquable : présence à l'écran, atteignabilité réelle au clic (`elementFromPoint`), taille minimale
+de cible tactile, débordement horizontal de la page, fenêtres plus hautes que l'écran, textes
+tronqués. **524 signalements au départ, 0 à l'arrivée.**
+
+Défauts réels trouvés et corrigés :
+
+- **Boutons de zoom inaccessibles pendant toute la phase de recrutement, à toutes les tailles**
+  y compris 1920×1080 : le marché (`z-index: 5`) passait devant `.board-tools` (`z-index: 3`).
+  Ils passent devant et se décalent de la hauteur du marché, publiée dans `--mh` par `renderMarket` ;
+  sous 900 px de large ils remontent en haut du plateau.
+- **Marché réduit à 238 px de large sur une tablette de 768 px**, avec des cartes de 38 px et des
+  boutons de 22 : la largeur du marché suivait son contenu. Ancrée à celle du plateau
+  (`.market { width: 100% }`), plus colonnes en `1fr` sous 900 px.
+- **Bouton « Fermer » des Règles sous le bord de l'écran** en 1366×768 et plus bas : la barre
+  d'actions des fenêtres est désormais collante en bas de la fenêtre.
+- **Bouton de phase hors écran sur téléphone et tablette** — le bouton le plus utilisé du jeu se
+  trouvait en bas d'une page défilante. Ancré au bas de l'écran sous 900 px.
+- Cibles tactiles sous 30 px (contrôles audio, case du didacticiel, pastille de couleur, boutons
+  des cartes) : plancher de 34 px sous 820 px de large, et boutons de carte empilés.
+
+Faux positifs volontairement ignorés par l'audit : éléments du plateau recouverts par une fenêtre
+ouverte (c'est le but), et éléments sous la ligne de flottaison de l'accueil, qui est un formulaire
+défilant.
