@@ -25,10 +25,13 @@ img { max-width: 100%; }
 .btn { border: 1px solid var(--line); background: var(--panel-2); color: var(--bone); border-radius: 8px; padding: 7px 12px; transition: background .15s, border-color .15s; }
 .btn:hover:not(:disabled) { border-color: var(--gold-deep); background: #36353c; }
 .btn:disabled { opacity: .4; cursor: not-allowed; }
-.btn.primary { background: linear-gradient(#e6c776, #b88f37); color: #21190b; border-color: #efd188; font-weight: 800; }
-.btn.primary:hover:not(:disabled) { background: linear-gradient(#f0d58c, #c89d45); }
+.btn.primary { background: linear-gradient(#2a4f86, #16294c); color: var(--gold-hi); border: 1px solid var(--gold); font-weight: 800; box-shadow: inset 0 1px 0 rgba(255,255,255,.12); }
+.btn.primary:hover:not(:disabled) { background: linear-gradient(#35619f, #1c3460); border-color: var(--gold-hi); color: #fff3cd; }
 .btn.danger { border-color: #7a3a33; color: #f3bcb2; }
 .btn.small { padding: 4px 9px; font-size: 15px; }
+/* tout ce qui coûte de l'or est doré ; le reste est bleu et or (ou rouge et or pour l'assaut) */
+.btn.gold { background: linear-gradient(#e6c776, #b88f37); color: #21190b; border-color: #efd188; font-weight: 800; }
+.btn.gold:hover:not(:disabled) { background: linear-gradient(#f0d58c, #c89d45); border-color: #fff0bd; }
 .btn.ghost { background: transparent; }
 
 /* ---------- éléments « cartes à jouer » ---------- */
@@ -147,7 +150,10 @@ aside.right { border-left: 1px solid var(--line); display: flex; flex-direction:
 .tlabel { font-family: var(--f-display); font-size: 8.4px; font-weight: 700; fill: #2a2218; text-anchor: middle; paint-order: stroke; stroke: rgba(245,236,212,.85); stroke-width: 2.6px; letter-spacing: .03em; }
 .slabel { font-family: var(--f-display); font-size: 7.2px; fill: rgba(36,52,58,.7); text-anchor: middle; letter-spacing: .16em; }
 .mvbadge { font-family: var(--f-body); font-weight: 800; font-size: 7px; fill: #1d160a; text-anchor: middle; dominant-baseline: central; }
-.board-tools { position: sticky; float: right; right: 10px; bottom: 10px; margin: -52px 10px 10px 0; display: flex; gap: 6px; z-index: 3; }
+/* v1.8 : le marché (z-index 5) recouvrait les boutons de zoom pendant toute la phase de
+   recrutement, à toutes les tailles d'écran. Ils passent devant et se décalent de la hauteur
+   du marché, que renderMarket publie dans --mh. */
+.board-tools { position: sticky; float: right; right: 10px; bottom: calc(10px + var(--mh, 0px)); margin: -52px 10px 10px 0; display: flex; gap: 6px; z-index: 6; }
 .banner { position: sticky; top: 10px; margin: 10px auto -44px; width: fit-content; max-width: calc(100% - 32px); z-index: 4; background: rgba(24,23,26,.94); border: 1px solid var(--gold); color: var(--bone); padding: 8px 10px 8px 16px; border-radius: 999px; font-size: 16px; display: flex; gap: 10px; align-items: center; box-shadow: 0 10px 30px -10px #000; }
 .popover { position: absolute; z-index: 6; width: 290px; background: #242328; border: 1px solid #5c5543; border-radius: 12px; padding: 12px; box-shadow: 0 24px 50px -16px #000; }
 .popover h4 { font-family: var(--f-display); margin: 0 0 2px; font-size: 18.5px; }
@@ -157,7 +163,7 @@ aside.right { border-left: 1px solid var(--line); display: flex; flex-direction:
 .pc-row img { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; border: 2px solid var(--pc); flex: none; }
 .pc-row .t { flex: 1; min-width: 0; font-size: 15.5px; } .pc-row .t small { display: block; color: var(--muted); font-size: 14px; }
 .bgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); gap: 6px; }
-.bbtn { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 7px 4px 6px; border-radius: 8px; border: 1px solid #b49c69; font-size: 14.5px; line-height: 1.15; }
+.bbtn { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 7px 4px 6px; border-radius: 8px; border: 2px solid #cfa94e; font-size: 14.5px; line-height: 1.15; }
 .bbtn img { height: 26px; }
 .bbtn .price { display: inline-flex; align-items: center; gap: 3px; font-weight: 800; font-family: var(--f-num); }
 .bbtn .price .coin { width: 12px; height: 12px; }
@@ -203,8 +209,8 @@ aside.right { border-left: 1px solid var(--line); display: flex; flex-direction:
 .mini .mv { position: absolute; top: 3px; right: 3px; background: var(--arrow); color: #fff; font-weight: 800; border-radius: 10px; padding: 0 6px; font-size: 12.5px; }
 .cta { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; max-width: 330px; }
 .cta .hint { font-size: 15px; color: var(--bone-dim); text-align: right; }
-.cta .go { font-size: 19.5px; padding: 12px 22px; border-radius: 12px; font-family: var(--f-display); letter-spacing: .03em; box-shadow: 0 0 0 0 rgba(241,212,136,.6); animation: glow 2.2s ease-in-out infinite; }
-@keyframes glow { 50% { box-shadow: 0 0 0 8px rgba(241,212,136,0); } 0% { box-shadow: 0 0 0 0 rgba(241,212,136,.55); } }
+.cta .go { font-size: 19.5px; padding: 12px 22px; border-radius: 12px; font-family: var(--f-display); letter-spacing: .03em; box-shadow: 0 0 0 0 rgba(120,170,240,.55); animation: glow 2.2s ease-in-out infinite; }
+@keyframes glow { 50% { box-shadow: 0 0 0 8px rgba(120,170,240,0); } 0% { box-shadow: 0 0 0 0 rgba(120,170,240,.5); } }
 
 /* panneau droit */
 .box { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px; }
@@ -271,15 +277,27 @@ button.mode-card:hover { transform: translateY(-2px); border-color: var(--gold);
 .share p { margin: 0 0 8px; color: var(--bone-dim); font-size: 16px; }
 .linkbox { display: flex; gap: 8px; }
 .linkbox input { font-size: 15px; }
-.seats .prow { grid-template-columns: 30px minmax(120px, 190px) 1fr; }
+.seats .prow { grid-template-columns: 30px minmax(120px, 190px) auto 1fr; }
+.seats .prow.empty { grid-template-columns: 30px 1fr; }
 .seat.mine { box-shadow: 0 0 0 1px var(--gold) inset; }
 .seat.empty { border-style: dashed; opacity: .55; min-height: 56px; }
 .seat-name { display: flex; flex-direction: column; } .seat-name small { color: var(--gold); letter-spacing: .1em; text-transform: uppercase; font-size: 12.5px; }
 .waiting { color: var(--bone-dim); align-self: center; animation: pulse 1.6s ease-in-out infinite; }
+/* pastilles « prêt » du salon en ligne */
+.seat .rdy { display: inline-flex; align-items: center; gap: 6px; justify-self: end; padding: 5px 11px; border-radius: 999px; font-size: 13px; letter-spacing: .04em; white-space: nowrap;
+  border: 1px solid rgba(214,196,150,.28); background: rgba(0,0,0,.22); color: var(--bone-dim); }
+.seat .rdy .ic { opacity: .85; }
+.seat .rdy.on { border-color: rgba(120,190,120,.55); background: rgba(70,130,70,.22); color: #b9e6b0; }
+.seat button.rdy { cursor: pointer; font-family: inherit; transition: transform .12s, background .18s, border-color .18s; }
+.seat button.rdy:hover { transform: translateY(-1px); border-color: rgba(214,196,150,.6); }
+.seat button.rdy.on:hover { border-color: rgba(120,190,120,.85); }
+.seat span.rdy:not(.on) .ic { animation: hg 2.4s ease-in-out infinite; }
+@keyframes hg { 0%,70%,100% { transform: rotate(0); } 80%,95% { transform: rotate(180deg); } }
+@media (max-width: 620px) { .seat .rdy { font-size: 12px; padding: 4px 8px; } .seat .rdy .lbl { display: none; } }
 @keyframes pulse { 50% { opacity: .45; } }
 .room-code { font-family: var(--f-num); letter-spacing: .15em; color: var(--gold); }
 button.hero:disabled { cursor: not-allowed; }
-@media (max-width: 700px) { .lobby-head { grid-template-columns: 1fr; } .big-code { font-size: 36px; } .seats .prow { grid-template-columns: 30px 1fr; } .seats .prow .hero { grid-column: 1 / -1; } }
+@media (max-width: 700px) { .lobby-head { grid-template-columns: 1fr; } .big-code { font-size: 36px; } .seats .prow { grid-template-columns: 30px 1fr auto; } .seats .prow.empty { grid-template-columns: 30px 1fr; } .seats .prow .hero { grid-column: 1 / -1; } }
 .legend .chip { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 4px; vertical-align: -2px; border: 1px solid rgba(0,0,0,.4); }
 #tokens .bic { pointer-events: none; }
 
@@ -308,6 +326,59 @@ button.hero:disabled { cursor: not-allowed; }
 #tokens .tk:hover .tki { filter: brightness(1.15) drop-shadow(0 0 3px #fff8); }
 .market .slot.deal .ucard { animation: deal .6s cubic-bezier(.2,.8,.2,1); }
 @keyframes deal { 0% { transform: translateX(-160px) rotate(-14deg) scale(.7); opacity: 0; } 100% { transform: none; opacity: 1; } }
+
+/* v1.8 : paliers de resserrement du marché quand le plateau est trop court pour 5 cartes entières.
+   Objectif : voir les cinq cartes ET leur bouton Acheter sans faire défiler. */
+.market.tight { padding: 12px 16px 8px; }
+.market.tight h3 { font-size: 14px; margin-bottom: 4px; }
+.market.tight .ucard .art { height: 78px; max-height: 78px; object-fit: cover; }
+.market.tight .ucard .txt { font-size: 11.5px; line-height: 1.25; max-height: 42px; overflow: hidden; }
+.market.tight .deckpile { display: none; }
+.market.tighter { padding: 8px 12px 6px; }
+.market.tighter h3 { font-size: 13px; margin-bottom: 3px; }
+.market.tighter .market-inner { gap: 7px; }
+.market.tighter .ucard { padding: 3px 4px 4px; border-width: 3px; }
+.market.tighter .ucard .art { height: 52px; max-height: 52px; }
+.market.tighter .ucard .txt { display: none; }
+.market.tighter .ucard .ft { display: none; }
+.market.tighter .ucard .uh .ribbon { font-size: 12px; }
+.market.tighter .ucard .acts .btn { font-size: 11.5px; padding: 3px; }
+.market.tighter .slot .why { font-size: 10.5px; }
+
+
+/* Dernier palier : les cinq cartes sur une seule rangée, plafond de hauteur et défilement annulés.
+   Déclenché par la mesure (voir fitMarket), pas par la largeur : il sert aussi bien au téléphone
+   qu'à une fenêtre de bureau très basse. Les cartes rétrécissent, mais elles restent toutes visibles. */
+.market.row1 { max-height: none; overflow: visible; padding: 8px 8px 6px; }
+.market.row1 .market-inner { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 5px; }
+.market.row1 .deckpile { display: none; }
+.market.row1 .ucard { padding: 2px 3px 3px; border-width: 2px; }
+.market.row1 .ucard .art { height: 42px; max-height: 42px; object-fit: cover; }
+.market.row1 .ucard .uh .ribbon { font-size: 10px; letter-spacing: 0; }
+.market.row1 .ucard .uh .arrow { width: 15px; height: 15px; font-size: 10px; }
+.market.row1 .ucard .txt, .market.row1 .ucard .biomes, .market.row1 .ucard .ft { display: none; }
+.market.row1 .ucard .acts { gap: 3px; }
+.market.row1 .ucard .acts .btn { font-size: 10px; padding: 5px 1px; min-height: 30px; }
+.market.row1 .slot .why { font-size: 10px; }
+
+/* v1.8 : marché réduit — les cartes restent visibles, en vignettes, pour dégager la carte du jeu. */
+.market.compact { padding: 10px 16px 8px; }
+.market.compact h3 { font-size: 14px; margin-bottom: 5px; }
+/* La largeur du marché suit celle de son contenu : rétrécir les cartes écrase toute la barre et le
+   titre part sur huit lignes. On garde donc la largeur d'origine et on ne réduit que la hauteur. */
+.market.compact .market-inner { gap: 8px; align-items: start; cursor: pointer; }
+.market.compact .deckpile { visibility: hidden; }
+.market.compact .slot .why, .market.compact .ucard .txt, .market.compact .ucard .biomes,
+.market.compact .ucard .ft, .market.compact .ucard .acts { display: none; }
+.market.compact .ucard { border-width: 3px; padding: 3px 4px 4px; }
+.market.compact .ucard .uh .ribbon { font-size: 11.5px; letter-spacing: 0; }
+.market.compact .ucard .uh .arrow { width: 17px; height: 17px; font-size: 11px; }
+.market.compact .ucard .art { height: 62px; max-height: 62px; object-fit: cover; }
+.market.compact .ucard .art.none { display: grid; place-items: center; }
+.market.compact .ucard .art.none img { width: 30px; height: 30px; }
+.market.compact .ucard:hover { transform: translateY(-3px); }
+@media (max-width: 900px) { .market.compact .market-inner { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
+
 .market .ucard { transition: transform .18s ease, box-shadow .18s ease; }
 .market .ucard:hover { transform: translateY(-6px) rotate(-.6deg); box-shadow: 0 18px 30px -14px #000; }
 .modal-bg { animation: fadeIn .2s ease; } .modal { animation: popIn .28s cubic-bezier(.2,1.2,.4,1); }
@@ -452,8 +523,8 @@ header.bar .phase + .phase::before { width: 10px; margin-right: 6px; }
 @keyframes rIn { from { opacity: 0; transform: translate(-50%, -50%) scale(.3); } }
 
 /* attaque */
-.btn.attack-cta, .btn.attack-go { background: linear-gradient(#b8412f, #7e2519); border-color: #e0715f; color: #fff; font-weight: 700; box-shadow: 0 0 0 0 rgba(224,113,95,.7); animation: atkPulse 1.6s ease-out infinite; }
-.btn.attack-cta:hover:not(:disabled), .btn.attack-go:hover:not(:disabled) { background: linear-gradient(#d24d38, #922b1d); border-color: #ffb09f; }
+.btn.attack-cta, .btn.attack-go { background: linear-gradient(#a8352a, #6d1c14); border: 1px solid var(--gold); color: var(--gold-hi); font-weight: 700; box-shadow: 0 0 0 0 rgba(224,113,95,.7); animation: atkPulse 1.6s ease-out infinite; }
+.btn.attack-cta:hover:not(:disabled), .btn.attack-go:hover:not(:disabled) { background: linear-gradient(#c8432f, #8c261a); border-color: var(--gold-hi); color: #fff3cd; }
 .btn.attack-go { font-size: 18px; padding: 10px 20px; }
 @keyframes atkPulse { 0% { box-shadow: 0 0 0 0 rgba(224,113,95,.7); } 70% { box-shadow: 0 0 0 12px rgba(224,113,95,0); } 100% { box-shadow: 0 0 0 0 rgba(224,113,95,0); } }
 .modal.attack { border-color: #a8453b; box-shadow: 0 0 60px -14px rgba(201,69,58,.6), 0 30px 80px -20px #000; }
@@ -592,6 +663,43 @@ header.bar .music { flex: none; }
 .bot-think i { font-style: normal; animation: think 1.2s infinite; opacity: .2; } .bot-think i:nth-child(3) { animation-delay: .2s; } .bot-think i:nth-child(4) { animation-delay: .4s; }
 @keyframes think { 50% { opacity: 1; } }
 
+.modal.edouardc .ed-ledger { display: grid; grid-template-columns: 1fr auto; gap: 6px 14px; margin: 12px 0; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: rgba(0,0,0,.2); }
+.modal.edouardc .ed-ledger b { text-align: right; font-family: var(--f-num); }
+.modal.edouardc .ed-ledger b.low { color: #e0a36a; }
+.modal.edouardc .ed-ledger .coin { width: 12px; height: 12px; vertical-align: -1px; }
+
+/* ---- attente d'un autre joueur : l'interface reste vivante ---- */
+.wdot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 6px; vertical-align: 0; box-shadow: 0 0 0 0 currentColor; animation: wdot 1.8s ease-out infinite; }
+@keyframes wdot { 0% { box-shadow: 0 0 0 0 rgba(255,255,255,.45); } 70%, 100% { box-shadow: 0 0 0 7px rgba(255,255,255,0); } }
+.wsec { font-size: 12.5px; color: var(--bone-dim); opacity: .75; margin-left: 6px; letter-spacing: .03em; }
+.wbar { display: block; height: 3px; margin-top: 7px; border-radius: 3px; overflow: hidden; background: rgba(255,255,255,.07); }
+.wbar i { display: block; height: 100%; width: 34%; border-radius: 3px; opacity: .85; animation: wslide 2.2s cubic-bezier(.45,0,.55,1) infinite; }
+@keyframes wslide { 0% { transform: translateX(-110%); } 100% { transform: translateX(310%); } }
+
+.opp.thinking { position: relative; overflow: hidden; }
+.opp > div { min-width: 0; }
+.opp.thinking::after { content: ''; position: absolute; inset: 0; pointer-events: none; border-radius: 10px;
+  background: linear-gradient(105deg, transparent 38%, rgba(255,255,255,.09) 50%, transparent 62%); background-size: 260% 100%; animation: shimmer 2.6s linear infinite; }
+@keyframes shimmer { 0% { background-position: 170% 0; } 100% { background-position: -70% 0; } }
+.opp .thinking-row { display: flex; align-items: center; gap: 4px; margin-top: 4px; font-size: 12.5px; color: var(--pc); letter-spacing: .02em; white-space: nowrap; min-width: 0; }
+.opp .thinking-row > span:first-of-type { margin-right: 2px; overflow: hidden; text-overflow: ellipsis; }
+.opp .thinking-row .ic { flex: none; }
+.opp .thinking-row .d { width: 4px; height: 4px; border-radius: 50%; background: var(--pc); opacity: .25; animation: think 1.2s infinite; }
+.opp .thinking-row .d:nth-of-type(2) { animation-delay: .18s; } .opp .thinking-row .d:nth-of-type(3) { animation-delay: .36s; }
+
+/* halo doux sous le pion du joueur actif pendant qu'on l'attend */
+body.waiting #tokens .tk.cur .tki { animation: tokBob 2.6s ease-in-out infinite, curGlow 2.2s ease-in-out infinite; }
+@keyframes curGlow { 0%, 100% { filter: none; } 50% { filter: drop-shadow(0 0 7px var(--wc, #e2b448)); } }
+/* liseré discret autour de la carte, à la couleur du joueur qu'on attend */
+body.waiting #boardWrap::after { content: ''; position: absolute; inset: 0; pointer-events: none; border-radius: inherit;
+  box-shadow: inset 0 0 0 2px var(--wc, #e2b448); opacity: .18; animation: wpulse 2.6s ease-in-out infinite; }
+@keyframes wpulse { 0%, 100% { opacity: .1; } 50% { opacity: .34; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .wdot, .wbar i, .opp.thinking::after, .opp .thinking-row .d, body.waiting #boardWrap::after { animation: none; }
+  body.waiting #tokens .tk.cur .tki { animation: none; }
+}
+
 /* v1.5 : un peu plus de vie dans l'interface */
 .opp.active { animation: oppGlow 2.4s ease-in-out infinite; }
 @keyframes oppGlow { 0%, 100% { box-shadow: 0 0 0 0 transparent; } 50% { box-shadow: 0 0 16px -2px var(--pc); } }
@@ -657,4 +765,95 @@ table.stats tr.out { opacity: .55; }
 @media (max-width: 900px) { #tutoBox { right: 10px; left: 10px; width: auto; bottom: 10px; } }
 /* l'en-tête reste cliquable par-dessus les fenêtres (deck, glossaire, règles à tout moment) */
 header.bar { position: relative; z-index: 96; }
-#tutoBox { z-index: 97; }
+/* v1.8 : le didacticiel passe au-dessus de tout (fenêtres, marché, effets) et reste cliquable. */
+#tutoBox { z-index: 200; pointer-events: auto; }
+
+/* téléphone : en-tête compact (icônes seules), marché plus dense */
+@media (max-width: 820px) {
+  header.bar { gap: 6px; padding: 5px 8px; }
+  header.bar .btn { font-size: 0; padding: 5px 6px; }
+  header.bar .btn .ic { width: 16px; height: 16px; }
+  header.bar .btn .ic { margin: 0; }
+  header.bar .music input[type=range], header.bar .music [data-mskip], header.bar .music .mtitle { display: none; }
+  header.bar .round-chip { font-size: 13px; }
+  header.bar .phases { order: 5; flex: 1 0 100%; }
+  header.bar .phase { padding: 2px 6px; font-size: 14px; }
+  .hdr-speed .lbl { display: none; }
+  .market { padding: 10px 8px 6px; max-height: 64vh; overflow: auto; }
+  .market h3 { font-size: 14px; }
+  .market-inner { gap: 8px; }
+  .market .ucard { border-width: 3px; padding: 4px 5px 5px; }
+  .market .ucard .ribbon { font-size: 14px; }
+  .market .ucard .txt, .market .ucard .acts .btn { font-size: 12px; }
+  .modal { padding: 14px 14px 12px; }
+  #tutoBox { max-height: 42vh; overflow: auto; }
+}
+@media (max-width: 700px) {
+  .legend { position: static; float: none; margin: 6px 0 2px 4px; width: fit-content; }
+  .board-tools { bottom: auto; }
+}
+/* phase de construction : les pions laissent passer le clic vers le territoire */
+#tokens.nohit .tk { pointer-events: none; }
+/* abandon : bouton discret mais visible, confirmation obligatoire */
+.hdr-flag { opacity: .55; }
+.hdr-flag:hover { opacity: 1; border-color: #a8453b; color: #f2a79c; }
+.modal.surrender { max-width: 480px; border-color: #a8453b; }
+.modal.surrender .btn.danger { background: linear-gradient(#a8352a, #6d1c14); border: 1px solid var(--gold); color: var(--gold-hi); font-weight: 700; }
+
+/* v1.8 : cibles tactiles. Sur écran étroit, aucun contrôle cliquable ne descend sous 32 px. */
+@media (max-width: 820px) {
+  header.bar .btn, .setup-form .btn, .music button, .board-tools .btn { min-height: 34px; min-width: 34px; }
+  .music input[type=range] { height: 32px; }
+  .tuto-check input { width: 22px; height: 22px; }
+  [data-swatch] { min-width: 34px; min-height: 34px; }
+  [data-bot] { min-height: 34px; }
+}
+
+/* ---- v1.8 : accessibilité des commandes, issues de l'audit d'interface ---- */
+
+/* La barre d'actions d'une fenêtre reste toujours atteignable : sur un écran bas, le bouton
+   « Fermer » des Règles tombait sous le bord de l'écran. */
+.modal .actions { position: sticky; bottom: -20px; z-index: 2; background: #212025; padding: 10px 0 0; margin-top: 10px; }
+.modal.surrender .actions, .modal.edouardc .actions { flex-wrap: wrap; }
+
+@media (max-width: 900px) {
+  /* Sur téléphone et tablette la mise en page s'empile et le bouton de phase — le plus utilisé du
+     jeu — se retrouvait en bas d'une page défilante. Il est désormais ancré au bas de l'écran. */
+  .cta { position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; max-width: none;
+         flex-direction: row; align-items: center; gap: 10px;
+         background: rgba(28, 27, 31, .97); border-top: 1px solid var(--line); padding: 8px 12px;
+         box-shadow: 0 -8px 20px -12px #000; }
+  .cta .hint { flex: 1 1 auto; text-align: left; font-size: 13px; max-height: 40px; overflow: hidden; }
+  .cta .go { flex: 0 0 auto; white-space: nowrap; min-height: 42px; }
+  .mat { padding-bottom: 72px; }
+}
+
+@media (max-width: 820px) {
+  /* cibles tactiles du marché */
+  .market .ucard .acts .btn, .market.row1 .ucard .acts .btn { min-height: 34px; }
+  .market h3 .btn { min-height: 34px; padding: 6px 12px; }
+}
+
+@media (max-width: 820px) {
+  /* Les deux boutons d'une carte côte à côte tombaient à 22 px de large : on les empile pour
+     qu'ils fassent toute la largeur de la carte. */
+  .market .ucard .acts { flex-direction: column; gap: 4px; }
+  .market .ucard .acts .btn { width: 100%; }
+}
+@media (max-width: 620px) {
+  /* La consigne de phase tenait sur une ligne coupée : on lui laisse deux lignes au-dessus du bouton. */
+  .cta { flex-direction: column; align-items: stretch; gap: 6px; padding: 8px 12px 10px; }
+  .cta .hint { max-height: none; font-size: 12.5px; line-height: 1.3; text-align: left; }
+  .mat { padding-bottom: 112px; }
+}
+
+/* v1.8 : la largeur du marché suivait son contenu. Sur tablette il tombait à 238 px pour un écran
+   de 768, avec des cartes de 38 px et des boutons de 22. On l'ancre à la largeur du plateau. */
+.market { width: 100%; box-sizing: border-box; }
+
+@media (max-width: 900px) {
+  .market-inner { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  /* Les boutons de zoom remontent en haut du plateau : décalés de la hauteur du marché, ils
+     finissaient par recouvrir une carte sur les écrans bas. */
+  .board-tools { position: absolute; top: 8px; right: 8px; bottom: auto; margin: 0; z-index: 6; }
+}

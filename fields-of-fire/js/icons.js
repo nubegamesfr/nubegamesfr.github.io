@@ -20,7 +20,7 @@
     cards: '<rect x="3" y="6.2" width="11" height="14.4" rx="1.6" transform="rotate(-9 8.5 13.4)"/><rect x="10.4" y="4.4" width="11" height="14.4" rx="1.6" transform="rotate(9 15.9 11.6)" opacity=".8"/>',
     coins: '<ellipse cx="12" cy="6.4" rx="8" ry="3.4"/><path d="M4 9.6c0 1.9 3.6 3.4 8 3.4s8-1.5 8-3.4v3.2c0 1.9-3.6 3.4-8 3.4s-8-1.5-8-3.4Z"/><path d="M4 15.4c0 1.9 3.6 3.4 8 3.4s8-1.5 8-3.4v2.8c0 1.9-3.6 3.4-8 3.4s-8-1.5-8-3.4Z" opacity=".8"/>',
     // diplomatie : rameau d'olivier
-    branch: '<path d="M4 20.4C6.8 12 11.4 6.4 20 3.2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M8.6 14.2c-1.8.3-3.4-.5-4-2 1.7-.9 3.5-.6 4.6.7Zm3.2-4c-1.5-.9-2.3-2.5-1.9-4 1.8.5 2.8 1.9 2.7 3.5Zm1 3.2c.3-1.8 1.6-3 3.3-3.2.2 1.8-.8 3.3-2.4 3.9Zm3.6-5.2c-1.2-1.3-1.4-3.1-.5-4.4 1.4 1.1 1.8 2.8 1.2 4.3Z"/>',
+    branch: '<path d="M2.4 10.2 6 7.6l3.4 2.2 2.6-.6 2.6.6L18 7.6l3.6 2.6-2.2 5.2-2.4-.6-3.1 2.4a2 2 0 0 1-2.5 0l-.9-.7 2.5-1.9-1-1.3-2.2 1.7a1.7 1.7 0 0 1-2.1-2.6l2.6-2-1.3-.3-2.6 2-1.5.4Z"/><path d="M4.6 15.2 6.9 16l-.9 2.2-2.9-1Zm14.8 0L17.1 16l.9 2.2 2.9-1Z" opacity=".85"/>',
     // pacte rompu : bouclier fendu
     broken: '<path d="M12 2.4 20.4 5v6.4c0 4.6-3.3 8.4-8.4 10.2C6.9 19.8 3.6 16 3.6 11.4V5Z" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="m12 4.6-1.6 5.2 2.6 1.6-2.4 5.6" fill="none" stroke="currentColor" stroke-width="1.8"/>',
     flame: '<path d="M12 2.2c3.6 3.6 6.8 6 6.8 10.4A6.8 6.8 0 0 1 12 21.8a6.8 6.8 0 0 1-6.8-9.2c.7 1.2 1.6 2 2.8 2.2-.4-4 2-6.6 4-12.6Z"/>',
@@ -45,6 +45,10 @@
     gear: '<path d="M12 8.4a3.6 3.6 0 1 0 0 7.2 3.6 3.6 0 0 0 0-7.2Zm9.2 5.2-2.1-.4a7.4 7.4 0 0 0-.7-1.7l1.2-1.8-2.3-2.3-1.8 1.2c-.5-.3-1.1-.6-1.7-.7l-.4-2.1h-3.2l-.4 2.1c-.6.1-1.2.4-1.7.7L6.3 7.4 4 9.7l1.2 1.8c-.3.5-.6 1.1-.7 1.7l-2.1.4v3.2l2.1.4c.1.6.4 1.2.7 1.7L4 20.7l2.3 2.3 1.8-1.2c.5.3 1.1.6 1.7.7l.4 2.1h3.2l.4-2.1c.6-.1 1.2-.4 1.7-.7l1.8 1.2 2.3-2.3-1.2-1.8c.3-.5.6-1.1.7-1.7l2.1-.4Z" transform="translate(0 -2.4) scale(1)"/>',
     eye: '<path d="M12 4.6c5.2 0 9.2 3.4 10.6 7.4-1.4 4-5.4 7.4-10.6 7.4S2.8 16 1.4 12C2.8 8 6.8 4.6 12 4.6Z" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="3.4"/>',
     check: '<path d="m4.6 12.6 4.8 4.8 10-11" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>',
+    help: '<circle cx="12" cy="12" r="9.4" fill="none" stroke="currentColor" stroke-width="1.9"/><path d="M9.3 9.2c.2-1.6 1.3-2.6 2.9-2.6 1.7 0 2.9 1 2.9 2.5 0 1.3-.7 1.9-1.8 2.6-.9.6-1.2 1-1.2 2v.4" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/><circle cx="12" cy="17.4" r="1.3"/>',
+    flag: '<path d="M5.2 2.4v19.2" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/><path d="M6.6 3.6c3.2-1.6 5.8 1 8.8-.4l2-.9v9.4l-2.2.9c-2.8 1.2-5.2-1.2-8.2.2-.2.1-.4.1-.4.1Z" fill="#f4f1e6" stroke="currentColor" stroke-width="1.2"/>',
+    hourglass: '<path d="M6.4 2.6h11.2M6.4 21.4h11.2" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/><path d="M7.4 2.6c0 4.2 4.6 5.6 4.6 9.4 0 3.8-4.6 5.2-4.6 9.4M16.6 2.6c0 4.2-4.6 5.6-4.6 9.4 0 3.8 4.6 5.2 4.6 9.4" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/><path d="M9.2 18.6c.6-2 2-2.6 2.8-2.6s2.2.6 2.8 2.6Z"/>',
+    restart: '<path d="M12 4.4a7.6 7.6 0 1 0 7.3 5.5" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"/><path d="M12 1.4v6.2l5-3.1Z"/>',
     arrow: '<path d="M3.6 12h15.2M13 6.2 19.4 12 13 17.8" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>'
   };
   FOF.ic = function (name, size, cls) {

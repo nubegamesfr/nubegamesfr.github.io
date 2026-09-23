@@ -34,7 +34,7 @@ button:hover { border-color:var(--gold); }
 <body>
 <main>
   <h1>Fields of Fire · statistiques</h1>
-  <p class="lead">Chaque partie lancée sur le site est enregistrée anonymement (une ligne par partie, mise à jour à chaque tour). « Inachevée » = pas de vainqueur et plus d’activité depuis 2 h.</p>
+  <p class="lead">Chaque partie lancée sur le site est enregistrée anonymement (une ligne par partie, mise à jour à chaque tour). « Inachevée » = pas de vainqueur et plus d’activité depuis 2 h. <b>Compteurs remis à zéro le 23/09/2026</b> : seules les parties commencées après cette date sont affichées.</p>
   <div class="bar-row"><button id="reload">Actualiser</button><button data-csv="games">Télécharger les parties (CSV)</button><button data-csv="leaders">Télécharger les dirigeants (CSV)</button><button data-csv="players">Télécharger les joueurs (CSV)</button><a class="btn" href="./">← Retour au jeu</a></div>
   <p class="err" id="err"></p>
   <div class="kpis" id="kpis"></div>
@@ -46,6 +46,10 @@ button:hover { border-color:var(--gold); }
 <script src="js/data.js"></script>
 <script>
 (function () {
+  // Remise à zéro du tableau de bord : seules les parties commencées après cette date sont comptées.
+  // Les anciennes lignes restent dans la base (rien n'est supprimé) ; pour repartir de zéro plus tard,
+  // il suffit de changer cette date.
+  var SINCE = '2026-09-23T16:47:30Z';
   var C = FOF.CONFIG, games = [], leaders = [], raw = [];
   var LN = function (k) { return FOF.LEADERS[k] ? FOF.LEADERS[k].name : (k || '—'); };
   var VT = { mil: 'Militaire', rel: 'Religieuse', dip: 'Diplomatique', survie: 'Dernier debout' };
@@ -54,9 +58,34 @@ button:hover { border-color:var(--gold); }
   function avg(a) { return a.length ? a.reduce(function (s, x) { return s + x; }, 0) / a.length : 0; }
   function load() {
     document.getElementById('err').textContent = '';
-    Promise.all([get('game_summary?select=*&limit=2000'), get('leader_stats?select=*'), get('game_stats?select=id,started_at,mode,n_players,finished,abandoned,victory_type,rounds,players&order=started_at.desc&limit=2000')]).then(function (r) {
-      games = r[0]; leaders = r[1]; raw = r[2]; render();
+    var f = '&started_at=gte.' + SINCE;
+    Promise.all([get('game_summary?select=*&limit=2000' + f), get('game_stats?select=id,started_at,mode,n_players,finished,abandoned,victory_type,rounds,players&order=started_at.desc&limit=2000' + f)]).then(function (r) {
+      games = r[0]; raw = r[1]; leaders = buildLeaders(raw); render();
     }).catch(function (e) { document.getElementById('err').textContent = 'Impossible de charger les données : ' + e.message; });
+  }
+  // Le tableau des dirigeants est recalculé ici à partir des parties retenues, et non lu dans la vue
+  // leader_stats, sinon il continuerait d'agréger les parties d'avant la remise à zéro.
+  function buildLeaders(rows) {
+    var by = {};
+    rows.forEach(function (g) {
+      (g.players || []).forEach(function (p) {
+        var l = by[p.leader] || (by[p.leader] = { leader: p.leader, parties: 0, parties_terminees: 0, victoires: 0, fois_tyran: 0, _gold: [], _terr: [] });
+        l.parties++;
+        if (g.finished) l.parties_terminees++;
+        if (p.winner) l.victoires++;
+        if (p.tyran) l.fois_tyran++;
+        if (p.avg_gold != null) l._gold.push(+p.avg_gold);
+        if (p.max_territories != null) l._terr.push(+p.max_territories);
+      });
+    });
+    return Object.keys(by).map(function (k) {
+      var l = by[k];
+      l.taux_victoire_pct = l.parties_terminees ? Math.round(100 * l.victoires / l.parties_terminees) : null;
+      l.or_moyen = l._gold.length ? +avg(l._gold).toFixed(1) : null;
+      l.territoires_max_moyen = l._terr.length ? +avg(l._terr).toFixed(1) : null;
+      delete l._gold; delete l._terr;
+      return l;
+    }).sort(function (a, b) { return (b.taux_victoire_pct || 0) - (a.taux_victoire_pct || 0); });
   }
   function render() {
     var fin = games.filter(function (g) { return g.issue === 'terminée'; });

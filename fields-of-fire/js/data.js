@@ -9,12 +9,15 @@
     F:  { name: 'Fort',      cost: 3, def: 3 },
     P:  { name: 'Port',      cost: 3, def: 1 },
     Ci: { name: 'Cité',      cost: 5, def: 0 },
-    T:  { name: 'Temple',    cost: 7, def: 0 }
+    T:  { name: 'Temple',    cost: 7, def: 0 },
+    A:  { name: 'Ambassade',  cost: 4, def: 0 }
   };
-  FOF.BUILDING_ORDER = ['C', 'F', 'P', 'Ci', 'T'];
+  FOF.BUILDING_ORDER = ['C', 'F', 'P', 'Ci', 'T', 'A'];
 
   // Unités d'élite : dépl, puissance [P,F,M,Ma], entretien, condition
   FOF.ELITES = {
+    milice:     { name: 'Milice paysanne', move: 1, pow: [1,1,1,1], upkeep: 1, req: ['C', 1] },
+    frondeurs:  { name: 'Frondeurs', move: 2, pow: [1,1,0,1], upkeep: 1, req: ['C', 1] },
     pillards:   { name: 'Pillards', move: 1, pow: [0,1,1,1], upkeep: 1, req: ['C', 2] },
     ecumeurs:   { name: 'Écumeurs', move: 2, pow: [1,1,1,2], upkeep: 1, req: ['C', 3] },
     brigands:   { name: 'Brigands', move: 2, pow: [1,1,2,1], upkeep: 1, req: ['C', 3] },
@@ -33,6 +36,7 @@
 
   // Unités spéciales : dépl, entretien, condition ('D' = diplomatie), texte
   FOF.SPECIALS = {
+    charpentier: { name: 'Charpentier', move: 1, upkeep: 1, req: ['C', 1], text: 'Le territoire où il se trouve gagne +1 en défense quand vous le défendez. Il reste en jeu.' },
     corbeau:     { name: 'Corbeau messager', move: 4, upkeep: 1, req: ['Ci', 1], text: 'Prend la mer sans port. Sur une capitale adverse : +1 diplomatie, puis défausse.' },
     emissaire:   { name: 'Émissaire', move: 1, upkeep: 2, req: ['Ci', 2], text: 'Sur une capitale adverse : +2 diplomatie, puis défausse.' },
     pelerin:     { name: 'Pèlerin', move: 1, upkeep: 2, req: ['T', 2], text: "Sur un temple adverse : +1 diplomatie pour vous et pour son propriétaire, puis défausse." },

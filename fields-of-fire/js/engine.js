@@ -13,7 +13,7 @@
       return { id: i, name: p.name, color: p.color, leader: p.leader, bot: !!p.bot, mod: FOF.LEADERS[p.leader].mod, gold: 3, dip: 3, tyran: false, tyranStamp: null,
         alive: true, capital: null, lpos: null, lArr: 0, lMoved: false, lConq: false, lFought: false, pact: null,
         tally: { gold: 3, recruit: 0, build: 0, battles: 0, wins: 0, losses: 0, conquest: 0, lost: 0, peak: 1 },
-        attackedLast: false, attackedNow: false, flags: {} };
+        attackedLast: false, attackedNow: false, raidedLast: false, raidedNow: false, edouardUsed: false, flags: {} };
     });
     // v1.5 : dirigeants placés au hasard n'importe où, jamais sur deux cases voisines
     // (on garde, parmi plusieurs tirages, celui qui les écarte le plus)
@@ -30,7 +30,7 @@
     FOF.shuffle(st, st.deck); st.discard = [];
     st.zone = [draw(st), draw(st), draw(st), draw(st), draw(st)];
     st.turnNo = 1; st.round = 1; st.cur = 0; st.phase = 'collect'; st.log = []; st.pending = []; st.winner = null;
-    st.victory = { mil: 7 + st.n, rel: st.n === 3 ? 7 : 8, dip: 10 };
+    st.victory = { mil: 8 + st.n, rel: 6 + st.n, dip: 4 + st.n };
     log(st, 'Ainsi s’ouvre la chronique : ' + st.players.length + ' seigneurs se disputent ' + st.map.terr.length + ' terres.', undefined, 'start');
     startTurn(st);
     return st;
@@ -57,11 +57,11 @@
 
   FOF.bldCost = function (st, p, type) {
     var c = B[type].cost;
-    if (type === 'Ci' && p.leader === 'gustave') c = 6;
-    if (type === 'Ci' && p.leader === 'mathilde') c = 4;
+    if (type === 'Ci' && p.leader === 'gustave') c = 5;
+    if (type === 'Ci' && p.leader === 'mathilde' && FOF.countBld(st, p.id, 'Ci') === 0) c = 4;
     if (type === 'T' && p.leader === 'adele') c = 6;
     if (type === 'P' && p.leader === 'alienor') c = 2;
-    if (p.leader === 'hugues') c = Math.max(1, c - 1);
+    if (p.leader === 'hugues' && (type === 'C' || type === 'F' || type === 'P')) c = Math.max(1, c - 1);
     return c;
   };
   FOF.defBonus = function (st, p, t) {
@@ -70,15 +70,16 @@
       if (b.o !== p.id) return;
       d += B[b.t].def;
       if (p.leader === 'gustave' && (b.t === 'C' || b.t === 'F' || b.t === 'P')) d += 1;
-      if (p.leader === 'mathilde' && b.t === 'Ci') d += 1;
+      
       if (p.leader === 'adele' && b.t === 'T') d += 1;
     });
     if (t.id === p.capital && t.ctrl === p.id) d += 2;
+    if (st.units.some(function (u) { return u.owner === p.id && u.key === 'charpentier' && u.pos === 't' + t.id; })) d += 1;   // charpentier : +1 en défense
     return d;
   };
   FOF.income = function (st, p) {
     var inc = { terr: FOF.terrOf(st, p.id).length, cities: FOF.countBld(st, p.id, 'Ci'), ports: 0, trade: 0 };
-    if (p.leader === 'alienor') inc.ports = FOF.countBld(st, p.id, 'P');
+    
     FOF.army(st, p.id).forEach(function (u) {
       if ((u.key === 'caboteur' || u.key === 'caravanier') && u.pos[0] === 't') {
         var typ = u.key === 'caboteur' ? 'P' : 'Ci';
@@ -101,9 +102,7 @@
     if (!t.seas.length) return false;
     if (piece !== 'L' && piece.key === 'corbeau') return true;
     if (t.blds.some(function (b) { return b.t === 'P'; })) return true;
-    if (piece !== 'L' && p.leader === 'alienor') {
-      return t.adj.some(function (a) { return T(st, a).blds.some(function (b) { return b.t === 'P' && b.o === p.id; }); });
-    }
+    
     return false;
   }
   function neighbors(st, loc, piece, p) {
@@ -142,7 +141,11 @@
   }
   function gainDip(st, p, n, why) {
     if (p.tyran || !p.alive || n <= 0) return;
-    var g = Math.min(10, p.dip + n) - p.dip; p.dip += g;
+    // l'Ambassade relaie : +1 sur un gain obtenu par une action, jamais de revenu passif,
+    // et seulement si le joueur n'a ni attaqué ni été attaqué depuis son dernier tour.
+    if (why !== 'Ambassade' && !p.attackedLast && !p.raidedLast && FOF.countBld(st, p.id, 'A')) { n += 1; why += ' + Ambassade'; }
+    // le plafond suivait la valeur figée 10 : tout seuil au-dessus était inatteignable.
+    var g = Math.min(st.victory.dip, p.dip + n) - p.dip; p.dip += g;
     if (g) log(st, p.name + ' gagne ' + g + ' de diplomatie (' + why + ') ; son nom s’élève dans les cours.', p.id, 'dip+');
   }
   function breakPactQuiet(st, p) {
@@ -169,6 +172,7 @@
   function startTurn(st) {
     var p = FOF.cur(st);
     p.attackedLast = p.attackedNow; p.attackedNow = false;
+    p.raidedLast = p.raidedNow; p.raidedNow = false;
     p.flags = {}; p.lMoved = false; p.lConq = false; p.lFought = false; p.lFromSea = false;
     FOF.army(st, p.id).forEach(function (u) { u.fromSea = false; });
     FOF.army(st, p.id).forEach(function (u) { u.moved = 0; u.fought = false; u.pacif = false; u.movesLeft = FOF.unitMove(st, u); });
@@ -278,7 +282,8 @@
     var A, D, detA = [], detD = [];
     if (t) {
       A = elitePower(st, att, t.biome); detA.push(['Élites (' + FOF.BIOME_NAMES[t.biome] + ')', A]);
-      if (lead) { A += p.mod; detA.push(['Dirigeant', p.mod]); if (p.leader === 'odon') { A += att.length; detA.push(['Odon : +1 par élite', att.length]); } }
+      if (lead) { A += p.mod; detA.push(['Dirigeant', p.mod]); }
+      if (p.leader === 'odon') { A += att.length; detA.push(['Odon : +1 par élite', att.length]); }
       var ep = elitePower(st, du, t.biome); D = ep; detD.push(['Élites (' + FOF.BIOME_NAMES[t.biome] + ')', ep]);
       if (dl) { D += d.mod; detD.push(['Dirigeant', d.mod]); }
       var db = FOF.defBonus(st, d, t); D += db; if (db) detD.push(['Aménagements' + (t.id === d.capital ? ' + capitale' : ''), db]);
@@ -319,7 +324,7 @@
     if (!pv.att.length && !pv.lead) throw new Error('Aucune unité ne peut attaquer ici.');
     var t = loc[0] === 't' ? T(st, +loc.slice(1)) : null;
     // coûts
-    p.attackedNow = true;
+    p.attackedNow = true; d.raidedNow = true;
     if (p.pact === d.id) breakPact(st, p, d);
     if (!d.tyran) loseDip(st, p, 1, 'attaque');
     var treb = a.treb ? st.units.filter(function (u) { return u.uid === a.treb; })[0] : null;
@@ -447,9 +452,12 @@
     var p = FOF.cur(st), t = T(st, tid);
     if (st.phase !== 'build') return 'Pas en phase de construction.';
     if (t.ctrl !== p.id) return 'Ce territoire ne vous appartient pas.';
-    if (t.blds.length >= 2) return 'Déjà 2 aménagements.';
+    // l'Ambassade ne compte pas dans la limite : sinon la capitale a toujours ses 2 places prises
+    if (type !== 'A' && t.blds.filter(function (b) { return b.t !== 'A'; }).length >= 2) return 'Déjà 2 aménagements.';
     if (type !== 'C' && t.blds.some(function (b) { return b.t === type; })) return 'Déjà un ' + B[type].name.toLowerCase() + ' ici.';
     if (type === 'P' && !t.seas.length) return 'Un port doit être sur la côte.';
+    if (type === 'A' && tid !== p.capital) return 'Une ambassade ne se bâtit que dans votre capitale.';
+    if (type === 'A' && p.tyran) return 'Un tyran n’a plus de cour étrangère.';
     if (p.gold < FOF.bldCost(st, p, type)) return 'Pas assez d’or.';
     return null;
   };
@@ -460,7 +468,7 @@
     st.tLast = Date.now();
     var p = FOF.cur(st);
     var pend = st.pending[0];
-    if (pend && a.type !== 'resolve' && a.type !== 'deficitTake') throw new Error('Une décision est en attente.');
+    if (pend && a.type !== 'resolve' && a.type !== 'deficitTake' && a.type !== 'surrender') throw new Error('Une décision est en attente.');
     switch (a.type) {
       case 'deficitTake': {
         var u = st.units.filter(function (x) { return x.uid === a.uid; })[0];
@@ -478,10 +486,13 @@
         break;
       }
       case 'edouard':
-        if (p.leader !== 'edouard' || st.phase !== 'collect' || p.flags.edouard || p.dip > 3 || p.gold < 3 || p.tyran) throw new Error('Pouvoir indisponible.');
-        p.gold -= 3; p.flags.edouard = true; gainDip(st, p, 1, 'Edouard le Sage'); checkWin(st); break;
+        if (p.leader !== 'edouard' || st.phase !== 'collect' || p.edouardUsed || p.dip > 3 || p.gold < 4 || p.tyran) throw new Error('Pouvoir indisponible.');
+        if (p.attackedLast || p.raidedLast) throw new Error('Les cours étrangères se ferment après les armes : ni attaque ni agression depuis votre dernier tour.');
+        p.gold -= 4; p.flags.edouard = true; p.edouardUsed = true; gainDip(st, p, 1, 'Edouard le Sage'); checkWin(st); break;
       case 'discardZone':
-        if (st.phase !== 'recruit' || p.flags.discarded || p.flags.bought) throw new Error('Défausse impossible.');
+        // v1.6 : l'achat et la défausse sont indépendants (1 de chaque par tour) — avant, acheter bloquait la défausse.
+        if (st.phase !== 'recruit' || p.flags.discarded) throw new Error('Vous avez déjà défaussé une carte ce tour-ci.');
+        if (!st.zone[a.slot]) throw new Error('Cet emplacement du marché est vide.');
         st.discard.push(st.zone[a.slot]); st.zone[a.slot] = draw(st); p.flags.discarded = true;
         log(st, p.name + ' congédie un mercenaire du marché.', p.id, 'card'); break;
       case 'spy':
@@ -566,6 +577,14 @@
         cdt.blds.forEach(function (b) { if (b.o === p.id) b.o = cdt.ctrl; });
         log(st, p.name + ' remet ses bâtisses de ' + cdt.name + ' à ' + st.players[cdt.ctrl].name + ', en gage de paix.', p.id, 'cede');
         gainDip(st, p, 1, 'cession'); checkWin(st); break;
+      }
+      case 'surrender': {
+        var sp = a.pid === undefined ? p : st.players[a.pid];
+        if (!sp || !sp.alive || st.winner) throw new Error('Abandon impossible.');
+        log(st, sp.name + ' hisse le drapeau blanc et quitte la guerre.', sp.id, 'elim');
+        eliminate(st, sp);
+        if (!st.winner && sp.id === st.cur) nextPlayer(st);   // on passe au joueur suivant
+        break;
       }
       default: throw new Error('Action inconnue : ' + a.type);
     }

@@ -13,6 +13,8 @@
     try {
       var raw = localStorage.getItem(SAVE), o = raw ? JSON.parse(raw) : null;
       if (o && FOF.expired && FOF.expired(o)) { FOF.statsAbandon(o); FOF.clearSaved(); return null; }  // abandon automatique après 48 h
+      // v1.8 : les parties locales d'avant la remise à zéro sont retirées elles aussi
+      if (o && FOF.PURGE_BEFORE && o.t0 < FOF.PURGE_BEFORE) { FOF.statsAbandon(o); FOF.clearSaved(); return null; }
       return o;
     } catch (e) { return null; }
   };
@@ -69,10 +71,16 @@
   /* ================= rendu ================= */
   function render() {
     if (!st) return;
-    if (st.turnNo !== lastTurnShown && !st.winner && !modal) { lastTurnShown = st.turnNo; if ((!net || net.seatIndex() === st.cur) && !st.players[st.cur].bot) modal = { kind: 'turn' }; }
-    if (st.winner && !(modal && (modal.kind === 'endstats' || modal.kind === 'gloss' || modal.kind === 'deck'))) modal = { kind: 'victory' };
+    var viewModal = modal && (modal.kind === 'gloss' || modal.kind === 'deck' || modal.kind === 'help' || modal.kind === 'endstats' || modal.kind === 'hero' || modal.kind === 'edouardc');
+    if (st.turnNo !== lastTurnShown && !st.winner && !viewModal && !modal) { lastTurnShown = st.turnNo; if ((!net || net.seatIndex() === st.cur) && !st.players[st.cur].bot) modal = { kind: 'turn' }; }
+    if (st.winner && !viewModal) modal = { kind: 'victory' };
     var before = FOF.FX ? FOF.FX.before() : null;
     renderHeader(); renderOpponents(); renderBoard(); renderMat(); renderRight(); renderModal();
+    var waiting = !st.winner && !myTurn();
+    document.body.classList.toggle('waiting', waiting);
+    document.body.style.setProperty('--wc', color(actor()));
+    if (waiting) startWaitClock();
+    tickWait();
     if (FOF.FX) FOF.FX.after(st, before, { color: color, myTurn: myTurn(), online: !!net, seat: net ? net.seatIndex() : null });
     // musique épique pendant les combats
     if (FOF.musicMode) {
@@ -122,6 +130,23 @@
   }
 
   var PHASES = [['collect', 'Collecte'], ['recruit', 'Recrutement'], ['military', 'Militaire'], ['build', 'Construction']];
+  var PHASE_ING = { collect: 'compte ses revenus', recruit: 'parcourt le marché', military: 'manœuvre ses troupes', build: 'bâtit son royaume' };
+  var PHASE_SHORT = { collect: 'compte', recruit: 'recrute', military: 'manœuvre', build: 'bâtit' };
+
+  /* horloge d'attente : rafra\u00eechit les « depuis X » sans re-rendre toute l'interface */
+  function sinceTxt(t) {
+    var s = Math.max(0, Math.round((Date.now() - t) / 1000));
+    if (s < 5) return '';
+    if (s < 60) return 'depuis ' + s + ' s';
+    var m = Math.floor(s / 60);
+    return 'depuis ' + m + ' min' + (m > 1 ? '' : '') + (s % 60 >= 30 ? ' 30' : '');
+  }
+  var waitTimer = null;
+  function tickWait() {
+    var l = document.querySelectorAll('.wsec');
+    for (var i = 0; i < l.length; i++) l[i].textContent = sinceTxt(+l[i].dataset.since);
+  }
+  function startWaitClock() { if (!waitTimer) waitTimer = setInterval(tickWait, 1000); }
   function renderHeader() {
     var pi = PHASES.map(function (x) { return x[0]; }).indexOf(st.phase);
     $('phases').innerHTML = PHASES.map(function (x, i) { if (x[0] === 'collect') return ''; return '<span class="phase ' + (i === pi ? 'on' : i < pi ? 'done' : '') + '"><span class="n">' + i + '</span><span class="t">' + x[1] + '</span></span>'; }).join('');
@@ -132,12 +157,15 @@
     $('players').innerHTML = '<div class="section-title">Dirigeants</div>' + st.players.map(function (p) {
       var terr = FOF.terrOf(st, p.id).length, tem = FOF.countBld(st, p.id, 'T');
       var pills = (p.tyran ? '<span class="pill tyran">Tyran</span>' : '') + (p.pact !== null ? '<span class="pill pact">Pacte</span>' : '') + (!p.alive ? '<span class="pill">Éliminé</span>' : '');
-      return '<div class="opp ' + (p.id === st.cur ? 'active ' : '') + (!p.alive ? 'dead' : '') + '" style="--pc:' + color(p.id) + '">' + FOF.heroImg(p.leader) +
+      var busy = p.id === actor() && p.alive && !st.winner && !myTurn();
+      return '<div class="opp ' + (p.id === st.cur ? 'active ' : '') + (busy ? 'thinking ' : '') + (!p.alive ? 'dead' : '') + '" style="--pc:' + color(p.id) + '">' + FOF.heroImg(p.leader) +
         '<div><div class="nm"><span>' + esc(p.name) + (p.bot ? ' <small title="Ordinateur" class="botmark">' + FOF.ic('helm', 13) + '</small>' : '') + '</span>' + pills + '</div><div class="ld">' + esc(FOF.LEADERS[p.leader].name) + '</div>' +
         '<div class="st"><span title="Or"><span class="coin" style="width:11px;height:11px;vertical-align:-1px"></span> <b>' + p.gold + '</b></span>' +
         '<span title="Diplomatie">' + FOF.ic('branch', 13) + ' <b>' + (p.tyran ? '—' : p.dip) + '</b></span>' +
         '<span title="Territoires"><img class="icn" src="assets/icons/terr.svg" alt=""> <b>' + terr + '/' + st.victory.mil + '</b></span>' +
-        '<span title="Temples"><img class="icn" src="assets/icons/bld-T.png" alt=""> <b>' + tem + '/' + st.victory.rel + '</b></span></div></div></div>';
+        '<span title="Temples"><img class="icn" src="assets/icons/bld-T.png" alt=""> <b>' + tem + '/' + st.victory.rel + '</b></span></div>' +
+        (busy ? '<div class="thinking-row">' + FOF.ic(p.bot ? 'helm' : 'crown', 13) + ' <span>' + (p.bot ? 'réfléchit' : PHASE_SHORT[st.phase]) + '</span><i class="d"></i><i class="d"></i><i class="d"></i></div>' : '') +
+        '</div></div>';
     }).join('');
   }
 
@@ -173,6 +201,7 @@
     out.push('<clipPath id="clu"><circle r="8"/></clipPath></defs>');
     // drapeaux de capitale, aménagements, marteaux de construction
     var canBuildHere = st.phase === 'build' && myTurn() && !st.pending.length && !st.winner;
+    $('tokens').classList.toggle('nohit', st.phase === 'build');
     var mallets = [];
     // pions par case (calculés d'abord : drapeau + aménagements + pions doivent tenir dans la case)
     var byLoc = {};
@@ -371,12 +400,12 @@
     if (!radial || !st || st.phase !== 'military' || !myTurn() || st.pending.length || modal) { el.hidden = true; return; }
     var p = FOF.cur(st), t = radial.loc[0] === 't' ? st.map.terr[+radial.loc.slice(1)] : null, items = [];
     var canMove = !(p.lConq || p.lFought || p.lMovesLeft <= 0);
-    items.push('<button class="rbtn move" data-move="L" ' + (canMove ? '' : 'disabled') + '><b>' + FOF.ic('move', 26) + '</b><span>Se déplacer</span></button>');
+    items.push('<button class="rbtn move" data-move="L" ' + (canMove ? '' : 'disabled') + '><b>' + FOF.ic('move', 20) + '</b><span>Se déplacer</span></button>');
     if (t && t.ctrl === null) {
       var ok = p.lArr < st.turnNo && !p.lMoved && !p.lFought && !p.lConq;
-      items.push('<button class="rbtn conquer" data-conquer="1" ' + (ok ? '' : 'disabled title="Il doit être ici depuis votre tour précédent, sans avoir bougé"') + '><b>' + FOF.ic('banner', 25) + '</b><span>Conquérir</span></button>');
+      items.push('<button class="rbtn conquer" data-conquer="1" ' + (ok ? '' : 'disabled title="Il doit être ici depuis votre tour précédent, sans avoir bougé"') + '><b>' + FOF.ic('banner', 22) + '</b><span>Conquérir</span></button>');
     }
-    if (FOF.attackTargets(st, radial.loc).length) items.push('<button class="rbtn attack" data-attack="' + radial.loc + '"><b>' + FOF.ic('swords', 25) + '</b><span>Attaquer</span></button>');
+    if (FOF.attackTargets(st, radial.loc).length) items.push('<button class="rbtn attack" data-attack="' + radial.loc + '"><b>' + FOF.ic('swords', 22) + '</b><span>Attaquer</span></button>');
     items.push('<button class="rbtn close" data-closeradial="1"><b>' + FOF.ic('close', 18) + '</b><span>Fermer</span></button>');
     var n = items.length, R = 78;
     el.innerHTML = items.map(function (h, i) { var ang = -Math.PI / 2 + i * 2 * Math.PI / n; return h.replace('class="rbtn', 'style="left:' + Math.round(Math.cos(ang) * R) + 'px;top:' + Math.round(Math.sin(ang) * R) + 'px" class="rbtn'); }).join('') + '<div class="rhint">' + esc(FOF.LEADERS[p.leader].name) + '</div>';
@@ -468,28 +497,51 @@
         return '<button class="bbtn parch" data-replace="' + b + '" data-idx="' + x[1] + '" data-tid="' + t.id + '" ' + (bad ? 'disabled' : '') + '>' + bIcon(b, 20) + '<span class="price">' + FOF.bldCost(st, p, b) + '<span class="coin"></span></span></button>';
       }).join('') + '</div>');
     });
-    if (t.id !== p.capital) h.push('<div style="margin-top:10px"><button class="btn small" data-capital="' + t.id + '" ' + (p.gold < 10 ? 'disabled' : '') + '>' + FOF.ic('crown', 14) + ' Installer la capitale ici · 10 or</button></div>');
+    if (t.id !== p.capital) h.push('<div style="margin-top:10px"><button class="btn small gold" data-capital="' + t.id + '" ' + (p.gold < 10 ? 'disabled' : '') + '>' + FOF.ic('crown', 14) + ' Installer la capitale ici · 10 or</button></div>');
     return h.join('');
   }
 
   /* ---------- marché ---------- */
   function renderMarket() {
     var el = $('market'), p = FOF.cur(st);
-    if (st.phase !== 'recruit' || !marketOpen || st.pending.length) { el.hidden = true; $('marketToggle').hidden = st.phase !== 'recruit'; return; }
-    $('marketToggle').hidden = true;
+    // v1.8 : pendant le recrutement le marché ne se ferme plus jamais. Il se réduit seulement,
+    // pour laisser voir la carte sans perdre de vue les cinq cartes en vitrine.
+    var bd0 = $('board');
+    if (st.phase !== 'recruit' || st.pending.length) { el.hidden = true; if (bd0) bd0.style.setProperty('--mh', '0px'); return; }
+    var mini = !marketOpen;
+    el.className = 'market' + (mini ? ' compact' : '');
     var spy = FOF.army(st, p.id).some(function (u) { return u.key === 'espion'; });
-    var h = ['<h3>Zone de recrutement · 1 achat et 1 défausse par tour <button class="btn small ghost" data-hidemarket="1">Masquer ▾</button></h3><div class="market-inner">'];
+    var toggle = mini
+      ? '<button class="btn small ghost" data-showmarket="1" title="Réafficher les cartes en entier">Agrandir les cartes ▴</button>'
+      : '<button class="btn small ghost" data-hidemarket="1" title="Réduire les cartes pour regarder la carte">Regarder la carte ▾</button>';
+    var h = ['<h3>Zone de recrutement · 1 achat et 1 défausse par tour ' + toggle + '</h3>' +
+      '<div class="market-inner"' + (mini && !(mode && mode.kind === 'deploy') ? ' data-showmarket="1" title="Cliquez pour revoir les cartes en entier"' : '') + '>'];
     h.push('<div class="deckpile"><img src="assets/cardback.jpg" alt="Deck"><span>Deck : <b class="num">' + st.deck.length + '</b><br>Défausse : <b class="num">' + st.discard.length + '</b></span>' +
-      (spy ? '<button class="btn small" data-act="spy" ' + (p.flags.spied || p.gold < 1 ? 'disabled' : '') + '>Espion (1 or)</button>' : '') +
+      (spy ? '<button class="btn small gold" data-act="spy" ' + (p.flags.spied || p.gold < 1 ? 'disabled' : '') + '>Espion (1 or)</button>' : '') +
       (st.spy && st.spy.pid === p.id ? '<span>Dessus : <b>' + esc(FOF.unitDef(st.spy.key).name) + '</b></span>' : '') + '</div>');
     st.zone.forEach(function (k, i) {
       if (!k) { h.push('<div></div>'); return; }
       var why = FOF.canBuy(st, k), d = FOF.unitDef(k);
-      var acts = '<div class="acts"><button class="btn buy" data-buy="' + i + '" ' + (why ? 'disabled' : '') + '>Acheter · ' + d.upkeep + ' or</button><button class="btn" data-discard="' + i + '" ' + (p.flags.discarded || p.flags.bought ? 'disabled' : '') + '>Défausser</button></div><div class="why">' + esc(why || '') + '</div>';
+      var acts = '<div class="acts"><button class="btn buy" data-buy="' + i + '" ' + (why ? 'disabled' : '') + '>Acheter · ' + d.upkeep + ' or</button><button class="btn" data-discard="' + i + '" ' + (p.flags.discarded || (mode && mode.kind === 'deploy') ? 'disabled' : '') + '>Défausser</button></div><div class="why">' + esc(why || '') + '</div>';
       h.push('<div class="slot' + (why || !myTurn() ? '' : ' can-buy') + '" data-slotkey="' + i + ':' + k + ':' + st.deck.length + '">' + FOF.cardHTML(k, { actions: acts }) + '</div>');
     });
     h.push('</div>');
     el.innerHTML = h.join(''); el.hidden = false;
+    if (!mini) fitMarket(el);
+    if (bd0) bd0.style.setProperty('--mh', el.offsetHeight + 'px');   // pour décaler les boutons de zoom
+  }
+  // v1.8 : sur un écran court, les cartes débordaient du plateau et il fallait faire défiler pour
+  // voir les dernières (et parfois pour atteindre le bouton Acheter). On resserre par paliers.
+  function fitMarket(el) {
+    var bd = $('board'); if (!bd) return;
+    el.classList.remove('tight', 'tighter', 'row1');
+    var avail = bd.clientHeight - 48;                 // on garde un bandeau de carte visible
+    if (el.offsetHeight <= avail) return;
+    el.classList.add('tight');
+    if (el.offsetHeight <= avail) return;
+    el.classList.add('tighter');
+    if (el.offsetHeight <= avail) return;
+    el.classList.add('row1');                         // dernier recours : les cinq sur une rangée
   }
 
   /* ---------- tapis du joueur actif ---------- */
@@ -519,12 +571,17 @@
           (st.phase === 'military' && !done ? '<span class="mv">' + u.movesLeft + '</span>' : '') + '<div class="mn">' + esc(FOF.unitDef(u.key).name) + '</div><div class="ms">' + esc(FOF.locName(st, u.pos)) + ' · réserve ' + u.gold + '</div></div>';
       }).join('') : '<span class="muted" style="font-size:13px">Aucune unité. Recrutez-en pendant la phase de recrutement.</span>') + '</div></div>');
     var hint = HINTS[st.phase];
-    if (!myTurn()) { var ap = st.players[actor()]; hint = ap.bot ? ['<span class="bot-think">' + FOF.ic('helm', 16) + ' <b>' + esc(ap.name) + '</b> réfléchit<i>.</i><i>.</i><i>.</i></span>', 'Tour de ' + esc(ap.name) + '…'] : ['Les autres joueurs voient la partie en direct. Vous pouvez consulter la carte.', 'Tour de ' + esc(ap.name) + '…']; }
+    if (!myTurn()) {
+      var ap = st.players[actor()];
+      var who = '<span class="wdot" style="background:' + color(ap.id) + '"></span><b>' + esc(ap.name) + '</b>';
+      hint = ap.bot
+        ? ['<span class="bot-think">' + FOF.ic('helm', 16) + ' ' + who + ' réfléchit<i>.</i><i>.</i><i>.</i></span>', 'Tour de ' + esc(ap.name) + '…']
+        : ['<span class="bot-think">' + FOF.ic('crown', 16) + ' ' + who + ' ' + PHASE_ING[st.phase] + '<i>.</i><i>.</i><i>.</i> <span class="wsec" data-since="' + (st.tLast || Date.now()) + '"></span></span><span class="wbar" aria-hidden="true"><i style="background:' + color(ap.id) + '"></i></span>', 'Tour de ' + esc(ap.name) + '…'];
+    }
     var blocked = mode && mode.kind === 'deploy';
     if (blocked) hint = ['Déployez d’abord votre unité (territoire qui clignote) ou annulez l’achat.', hint[1]];
     h.push('<div class="cta"><div class="hint">' + hint[0] + '</div><button class="btn primary go" data-next="1" ' + (st.pending.length || st.winner || !myTurn() || blocked ? 'disabled' : '') + '>' + hint[1] + '</button>' +
-      (st.phase === 'recruit' && myTurn() && !marketOpen ? '<button class="btn small" data-showmarket="1">' + FOF.ic('market', 15) + ' Ouvrir le marché</button>' : '') +
-      (p.leader === 'edouard' && st.phase === 'collect' ? '<button class="btn small" data-act="edouard" ' + (p.flags.edouard || p.dip > 3 || p.gold < 3 || p.tyran ? 'disabled' : '') + '>Edouard : 3 or → +1 diplomatie</button>' : '') + '</div>');
+      (p.leader === 'edouard' && st.phase === 'collect' ? '<button class="btn small gold" data-act="edouard" ' + (p.edouardUsed || p.dip > 3 || p.gold < 4 || p.tyran || p.attackedLast || p.raidedLast ? 'disabled' : '') + '>Edouard : 4 or → +1 diplomatie</button>' : '') + '</div>');
     $('mat').innerHTML = h.join('');
   }
 
@@ -571,8 +628,33 @@
     else if (modal && modal.kind === 'gloss') h = glossHTML();
     else if (modal && modal.kind === 'deck') h = deckHTML();
     else if (modal && modal.kind === 'hero') { var hp = FOF.cur(st); h = '<div class="modal"><h2>' + esc(hp.name) + '</h2>' + FOF.heroHTML(hp.leader) + '<div class="actions"><button class="btn primary" data-close="1">Fermer</button></div></div>'; }
+    else if (modal && modal.kind === 'surrender') {
+      var me = net ? st.players[net.seatIndex()] : FOF.cur(st);
+      // v1.8 : quitter ne veut pas forcément dire abandonner. On propose d'abord la mise en pause.
+      h = '<div class="modal surrender"><h2>' + FOF.ic('flag', 22) + ' Quitter la partie ?</h2>' +
+        '<p><b>' + esc(me.name) + '</b> s’apprête à quitter. Deux possibilités :</p>' +
+        '<p><b>Mettre en pause 48 h</b> — la partie est conservée telle quelle. ' +
+        (net ? 'Reprenez-la quand vous voulez avec le code <b>' + net.code + '</b>. ' : 'Vous la retrouverez depuis l’accueil. ') +
+        'Si personne n’y touche pendant 48 heures, elle est abandonnée automatiquement.</p>' +
+        '<p><b>Abandonner maintenant</b> — vos territoires redeviennent neutres, vos aménagements sont détruits et vos unités défaussées.</p>' +
+        '<p class="warn-line">L’abandon est irréversible.</p>' +
+        '<div class="actions"><button class="btn" data-close="1">Continuer la partie</button>' +
+        '<button class="btn primary" data-pause="1">Mettre en pause 48 h</button>' +
+        '<button class="btn danger" data-surrender="1">Abandonner maintenant</button></div></div>';
+    }
+    else if (modal && modal.kind === 'edouardc') {
+      var ep = FOF.cur(st), after = ep.gold - 4;
+      h = '<div class="modal edouardc"><h2>' + FOF.ic('branch', 20) + ' Acheter 1 diplomatie ?</h2>' +
+        '<p>Le pouvoir d’Edouard le Sage vous coûtera <b class="num">4</b> or et vous fera passer de <b class="num">' + ep.dip + '</b> à <b class="num">' + (ep.dip + 1) + '</b> en diplomatie' + (FOF.countBld(st, ep.id, 'A') ? ', <b>+2 avec votre Ambassade</b>' : '') + '.</p><p class="warn-line">Ce pouvoir ne sert qu’<b>une seule fois par partie</b>.</p>' +
+        '<div class="ed-ledger"><span>Trésor</span><b class="num">' + ep.gold + ' <i class="coin"></i></b><span>Après l’achat</span><b class="num' + (after < 2 ? ' low' : '') + '">' + after + ' <i class="coin"></i></b></div>' +
+        (st.round <= 1 ? '<p class="warn-line">Nous sommes au <b>tour 1</b> : avec ' + after + ' or il vous restera peu de quoi recruter. La plupart des unités coûtent 1 à 3 or.</p>'
+          : after < 2 ? '<p class="warn-line">Il ne vous restera que ' + after + ' or pour ce tour.</p>' : '') +
+        '<div class="actions"><button class="btn" data-close="1">Annuler</button><button class="btn gold" data-act="edouardgo">Oui, payer 4 or</button></div></div>';
+    }
     else if (modal && modal.kind === 'confirmNew') h = '<div class="modal"><h2>' + (net ? 'Quitter la partie en ligne ?' : 'Nouvelle partie ?') + '</h2><p>' + (net ? 'Vous pourrez la rejoindre à nouveau avec le code <b>' + net.code + '</b>.' : 'La partie en cours sera perdue.') + '</p><div class="actions"><button class="btn" data-close="1">Annuler</button><button class="btn danger" data-act="newgame">' + (net ? 'Quitter' : 'Recommencer') + '</button></div></div>';
-    el.hidden = !h; el.innerHTML = h ? '<div class="modal-bg">' + h + '</div>' : '';
+    var html = h ? '<div class="modal-bg">' + h + '</div>' : '';
+    if (el.dataset.sig !== html) { el.innerHTML = html; el.dataset.sig = html; }
+    el.hidden = !h;
   }
   function passHTML(pid) { return pid !== st.cur ? '<div class="pass" style="background:' + color(pid) + '33;border:1px solid ' + color(pid) + '">Décision de <b>' + esc(st.players[pid].name) + '</b></div>' : ''; }
   function winProb(delta) { var w = 0, l = 0; for (var a = 1; a <= 6; a++) for (var b = 1; b <= 6; b++) { if (a + delta > b) w++; else if (a + delta < b) l++; } return w + l ? w / (w + l) : 0.5; }
@@ -592,7 +674,7 @@
     FOF.army(st, cp.id).forEach(function (u) { row('Solde : ' + esc(FOF.unitDef(u.key).name), -FOF.unitDef(u.key).upkeep, 'minus'); });
     var net = c ? c.net : inc.total - inc.upkeep;
     var acts = [];
-    if (cp.leader === 'edouard') acts.push('<button class="btn" data-act="edouard" ' + (cp.flags.edouard || cp.dip > 3 || cp.gold < 3 || cp.tyran ? 'disabled' : '') + '>Edouard : 3 or → +1 diplomatie</button>');
+    if (cp.leader === 'edouard') acts.push('<button class="btn gold" data-act="edouard" ' + (cp.edouardUsed || cp.dip > 3 || cp.gold < 4 || cp.tyran || cp.attackedLast || cp.raidedLast ? 'disabled' : '') + '>Edouard : 4 or → +1 diplomatie</button>');
     FOF.army(st, cp.id).forEach(function (u) { if (u.key === 'exploratrice') { var eff = FOF.effectAvailable(st, u); acts.push('<button class="btn" data-effect="' + u.uid + '" ' + (eff ? '' : 'disabled title="Elle doit être sur un territoire neutre d’un autre continent"') + '>Exploratrice : ' + (eff ? 'revendiquer ' + esc(FOF.locName(st, u.pos)) : 'rien à revendiquer ici') + '</button>'); } });
     return '<div class="modal collect"><div class="pass" style="background:' + color(cp.id) + '33;border:1px solid ' + color(cp.id) + '">' + (net ? 'À vous de jouer, <b>' + esc(cp.name) + '</b> !' : 'Passez l’écran à <b>' + esc(cp.name) + '</b>') + '</div>' +
       '<div class="collect-top">' + FOF.heroImg(cp.leader) + '<div><div class="ribbon" style="background:' + color(cp.id) + ';color:#fff">' + esc(cp.name) + '</div><div class="muted">' + esc(FOF.LEADERS[cp.leader].name) + ' · tour ' + st.round + '</div></div></div>' +
@@ -726,22 +808,35 @@
     if (!st) return;
     if (radial && !e.target.closest('#radial')) radial = null;
     if (e.target.closest('#boardWrap') && !e.target.closest('#popover') && !e.target.closest('#radial')) { if (!dragMoved) boardClick(e); return; }
-    var el = e.target.closest('[data-endstats],[data-closestats],[data-closeradial],[data-act],[data-buy],[data-discard],[data-move],[data-conquer],[data-pacify],[data-effect],[data-build],[data-replace],[data-capital],[data-cede],[data-attack],[data-close],[data-resolve],[data-take],[data-tsel],[data-treb],[data-go],[data-next],[data-closepop],[data-cancel],[data-mini],[data-hidemarket],[data-showmarket],[data-heroinfo],[data-collectgo]');
+    var el = e.target.closest('[data-pause],[data-surrender],[data-endstats],[data-closestats],[data-closeradial],[data-act],[data-buy],[data-discard],[data-move],[data-conquer],[data-pacify],[data-effect],[data-build],[data-replace],[data-capital],[data-cede],[data-attack],[data-close],[data-resolve],[data-take],[data-tsel],[data-treb],[data-go],[data-next],[data-closepop],[data-cancel],[data-mini],[data-hidemarket],[data-showmarket],[data-heroinfo],[data-collectgo]');
     if (!el) return;
     var ds = el.dataset, p = FOF.cur(st);
-    var VIEW = ds.closeradial || ds.closepop || ds.cancel || ds.hidemarket || ds.showmarket || ds.close || ds.heroinfo || ds.endstats || ds.closestats || ds.act === 'newgame';
+    var VIEW = ds.pause || ds.surrender || ds.closeradial || ds.closepop || ds.cancel || ds.hidemarket || ds.showmarket || ds.close || ds.heroinfo || ds.endstats || ds.closestats || ds.act === 'newgame';
     if (FOF.sfx) FOF.sfx(clickSound(ds));
+    if (ds.surrender) {
+      var sid = net ? net.seatIndex() : st.cur;
+      modal = null;
+      return dispatch({ type: 'surrender', pid: sid }, false, true);
+    }
     if (ds.endstats) { modal = { kind: 'endstats' }; return render(); }
     if (ds.closestats) { modal = null; return render(); }
-    if (ds.close && modal && (modal.kind === 'gloss' || modal.kind === 'deck')) { modal = prevModal; prevModal = null; return render(); }
+    if (ds.close && modal && (modal.kind === 'gloss' || modal.kind === 'deck' || modal.kind === 'edouardc')) { modal = prevModal; prevModal = null; return render(); }
     if (ds.heroinfo) { modal = { kind: 'hero' }; return render(); }
     if (ds.closeradial) { radial = null; return render(); }
     if (radial && (ds.move || ds.conquer || ds.attack)) radial = null;
     if (ds.collectgo) { modal = null; if (st.phase === 'collect' && !st.pending.length) return dispatch({ type: 'nextPhase' }); return render(); }
     if (!VIEW && !myTurn()) { err = 'Ce n’est pas à vous de jouer.'; pop = null; return render(); }
     if (ds.next) { if (mode && mode.kind === 'deploy') { err = 'Déployez votre unité ou annulez l’achat.'; return render(); } mode = null; pop = null; return dispatch({ type: 'nextPhase' }); }
-    if (ds.act === 'edouard') return dispatch({ type: 'edouard' });
+    if (ds.act === 'edouard') { openOver('edouardc'); return; }
+    if (ds.act === 'edouardgo') { modal = prevModal; prevModal = null; return dispatch({ type: 'edouard' }); }
     if (ds.act === 'spy') return dispatch({ type: 'spy' });
+    // v1.8 : pause — on quitte l'écran de jeu sans rien abandonner. La sauvegarde locale et le
+    // salon en ligne restent en place ; la règle des 48 h existante ferme la partie si personne ne revient.
+    if (ds.pause) {
+      if (net) { net.stop(); net = null; }
+      document.body.classList.remove('online');
+      st = null; modal = null; $('modal').hidden = true; $('game').hidden = true; FOF.showSetup(); return;
+    }
     if (ds.act === 'newgame') { if (net) { net.stop(); net = null; FOF.clearOnline(); } else { FOF.statsAbandon(st); FOF.clearSaved(); } document.body.classList.remove('online'); st = null; modal = null; $('modal').hidden = true; $('game').hidden = true; FOF.showSetup(); return; }
     if (ds.closepop) { pop = null; err = ''; return render(); }
     if (ds.cancel) { var wasDeploy = mode && mode.kind === 'deploy'; mode = null; if (wasDeploy) marketOpen = true; return render(); }
@@ -781,7 +876,7 @@
     if (ds.buy !== undefined) return 'coins';
     if (ds.discard !== undefined) return 'card';
     if (ds.build || ds.replace || ds.capital) return 'mallet';
-    if (ds.cede || ds.pacify || ds.act === 'edouard') return 'dip';
+    if (ds.cede || ds.pacify || ds.act === 'edouard' || ds.act === 'edouardgo') return 'dip';
     if (ds.move || ds.mini) return 'select';
     if (ds.conquer) return 'flag';
     if (ds.effect) return 'magic';
@@ -801,11 +896,32 @@
     setLog(open);
     lb.addEventListener('click', function () { setLog(g.classList.contains('no-right')); });
     $('helpBtn').addEventListener('click', function () { if (!st) return; modal = { kind: 'help' }; render(); });
+    $('flagBtn').addEventListener('click', function () { if (!st || st.winner) return; modal = { kind: 'surrender' }; render(); });
     $('glossBtn').addEventListener('click', function () { if (!st) return; openOver('gloss'); });
     $('deckBtn').addEventListener('click', function () { if (!st) return; openOver('deck'); });
     $('speedBtn').addEventListener('click', function () { botSpeed = SPEEDS[(SPEEDS.indexOf(botSpeed) + 1) % SPEEDS.length]; try { localStorage.setItem('fof-botspeed', botSpeed); } catch (e) {} updateSpeedBtn(); });
     updateSpeedBtn();
     $('newBtn').addEventListener('click', function () { if (!st) return; modal = { kind: 'confirmNew' }; render(); });
+    // v1.8 : bascule du style de la carte (enluminure ↔ estampe sur bois)
+    var sb = $('styleBtn');
+    function updateStyleBtn() {
+      if (!sb) return;
+      var cur = FOF.mapStyle(), d = (FOF.MAP_STYLES || []).filter(function (x) { return x.id === cur; })[0];
+      var other = (FOF.MAP_STYLES || []).filter(function (x) { return x.id !== cur; })[0];
+      sb.innerHTML = FOF.ic('spark', 17) + ' ' + esc(d ? d.name : cur);
+      sb.title = other ? 'Style de la carte : ' + (d ? d.name : cur) + ' — cliquez pour passer à « ' + other.name + ' »' : '';
+    }
+    if (sb) {
+      updateStyleBtn();
+      sb.addEventListener('click', function () {
+        var list = FOF.MAP_STYLES || [], cur = FOF.mapStyle(), i = 0;
+        for (var k = 0; k < list.length; k++) if (list[k].id === cur) i = k;
+        FOF.setMapStyle(list[(i + 1) % list.length].id);
+        updateStyleBtn();
+        // le terrain est un calque mis en cache : il faut le redemander pour qu'il soit retraité
+        if (st) FOF.Board.prepare(st, $('baseCv'), function () { render(); });
+      });
+    }
     $('zoomIn').addEventListener('click', function () { zoom = Math.min(3.2, zoom * 1.25); render(); });
     $('zoomOut').addEventListener('click', function () { zoom = Math.max(1, zoom / 1.25); render(); });
   };

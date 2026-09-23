@@ -2,8 +2,8 @@
 (function (FOF) {
   'use strict';
   var esc = FOF.esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
-  var HAS_ART = ['corbeau','partisan','predicateur','colonie','emissaire','caboteur','caravanier','trebuchets','exploratrice','gouverneur','pretresse','pillards','ecumeurs','brigands','bandits','nomades','fantassins','cuirassiers','archmontes','inflourde','arbaletriers','archers','garde','chevaliers','piquiers'];
-  var HERO_ART = ['odon','gustave','edouard','mathilde','adele','henri'];
+  var HAS_ART = ['corbeau','partisan','predicateur','colonie','emissaire','caboteur','caravanier','trebuchets','exploratrice','gouverneur','pretresse','pillards','ecumeurs','brigands','bandits','nomades','fantassins','cuirassiers','archmontes','inflourde','arbaletriers','archers','garde','chevaliers','piquiers','espion','heraut','ambassadeur','pelerin','milice','frondeurs','charpentier'];
+  var HERO_ART = ['odon','gustave','edouard','mathilde','adele','henri','hugues','alienor'];
   FOF.unitArt = function (key) { return HAS_ART.indexOf(key) >= 0 ? 'assets/units/' + key + '.jpg' : null; };
   FOF.heroArt = function (key) { return HERO_ART.indexOf(key) >= 0 ? 'assets/heroes/' + key + '.jpg' : null; };
   FOF.heroImg = function (key, cls) {

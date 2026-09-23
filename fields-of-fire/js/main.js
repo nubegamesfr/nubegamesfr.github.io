@@ -51,25 +51,37 @@
   }
 
   /* ---------- salon en ligne ---------- */
+  // L'hôte et les bots comptent toujours comme prêts : l'hôte se déclare en lançant la partie.
+  function seatReady(s, row) { return !!(s.bot || s.cid === row.host_id || s.ready); }
   function renderLobby() {
     if (!room || !room.row) return;
     var row = room.row, me = room.seatIndex(), n = row.seats.length, host = room.isHost();
+    var nRdy = row.seats.filter(function (s) { return seatReady(s, row); }).length, allRdy = nRdy === n;
     var link = location.origin + location.pathname + '?salon=' + row.code;
     var h = ['<div class="lobby-head"><div><div class="section-title">Code du salon</div><div class="big-code" id="roomCode">' + row.code + '</div></div>' +
       '<div class="share"><p>Donnez ce code aux autres joueurs (bouton « Rejoindre une partie »), ou envoyez-leur le lien :</p><div class="linkbox"><input readonly value="' + esc(link) + '" id="roomLink"><button class="btn small" type="button" data-copy="1">Copier le lien</button></div></div></div>'];
     h.push('<div class="seats">');
     row.seats.forEach(function (s, i) {
       var mine = i === me, hex = colorHex(s.color);
+      var rdy = seatReady(s, row);
+      var badge = '<span class="rdy' + (rdy ? ' on' : '') + '">' + FOF.ic(rdy ? 'check' : 'hourglass', 13) + ' ' + (rdy ? 'pr\u00eat' : 'pas pr\u00eat') + '</span>';
+      if (mine && !host) badge = '<button type="button" class="rdy btn-rdy' + (rdy ? ' on' : '') + '" data-oready="' + (rdy ? '0' : '1') + '">' + FOF.ic(rdy ? 'check' : 'hourglass', 13) + ' ' + (rdy ? 'je suis pr\u00eat' : 'se d\u00e9clarer pr\u00eat') + '</button>';
       h.push('<div class="prow seat' + (mine ? ' mine' : '') + '" style="border-left:4px solid ' + hex + '">' +
         (mine ? '<button type="button" class="swatch" data-oswatch="1" style="background:' + hex + '" aria-label="Changer de couleur"></button>' : '<span class="swatch" style="background:' + hex + '"></span>') +
         (mine ? '<input id="seatName" value="' + esc(s.name) + '" maxlength="16" aria-label="Votre nom">' : '<div class="seat-name"><b>' + esc(s.name) + '</b>' + (s.cid === row.host_id ? '<small>hôte</small>' : s.bot ? '<small>' + FOF.ic('helm', 12) + ' ordinateur' + (host ? ' · <button type="button" class="linkbtn" data-rmbot="' + esc(s.cid) + '">retirer</button>' : '') + '</small>' : '') + '</div>') +
+        badge +
         (mine ? FOF.heroHTML(s.leader, { button: true, attrs: 'type="button" data-opick="1" title="Changer de dirigeant"', note: 'vous · changer ▾' }) : FOF.heroHTML(s.leader, { note: 'joueur ' + (i + 1) })) + '</div>');
     });
     for (var k = n; k < 6; k++) h.push('<div class="prow seat empty"><span class="swatch"></span><div class="seat-name muted">Place libre' + (k < 3 ? ' · minimum 3 joueurs' : '') + '</div></div>');
     h.push('</div><p class="note">' + winText(Math.max(3, n)) + '</p><div class="setup-actions">');
     if (host && n < 6) h.push('<button class="btn" type="button" data-addbot="1">' + FOF.ic('helm', 15) + ' Ajouter un bot</button>');
-    if (host) h.push('<button class="btn primary" type="button" data-ostart="1" ' + (n < 3 ? 'disabled' : '') + '>' + (n < 3 ? 'En attente de joueurs (' + n + '/3 minimum)' : 'Lancer la partie à ' + n + ' joueurs') + '</button>');
-    else h.push('<span class="waiting">En attente du lancement par l’hôte…</span>');
+    if (host) {
+      var lock = n < 3 || !allRdy;
+      var lbl = n < 3 ? 'En attente de joueurs (' + n + '/3 minimum)'
+        : !allRdy ? 'En attente des joueurs prêts (' + nRdy + '/' + n + ')'
+        : 'Lancer la partie à ' + n + ' joueurs';
+      h.push('<button class="btn primary" type="button" data-ostart="1" ' + (lock ? 'disabled' : '') + '>' + lbl + '</button>');
+    } else h.push('<span class="waiting">' + (allRdy ? 'Tout le monde est prêt — en attente du lancement par l’hôte…' : 'Déclarez-vous prêt quand vous êtes installé (' + nRdy + '/' + n + ' prêts).') + '</span>');
     h.push('<button class="btn" type="button" data-oleave="1">Quitter le salon</button></div>');
     $('lobby').innerHTML = h.join('');
   }
@@ -138,7 +150,7 @@
     FOF.bindBar();
     try { $('myName').value = localStorage.getItem('fof-name') || ''; } catch (e) {}
     $('setup').addEventListener('click', function (e) {
-      var b = e.target.closest('[data-mode],[data-resume],[data-back],[data-count],[data-swatch],[data-pickhero],[data-copy],[data-oswatch],[data-opick],[data-ostart],[data-oleave],[data-bot],[data-addbot],[data-rmbot],[data-allbots]'); if (!b) return;
+      var b = e.target.closest('[data-mode],[data-resume],[data-back],[data-count],[data-swatch],[data-pickhero],[data-copy],[data-oswatch],[data-opick],[data-ostart],[data-oready],[data-oleave],[data-bot],[data-addbot],[data-rmbot],[data-allbots]'); if (!b) return;
       var d = b.dataset; setErr('');
       if (d.mode === 'local') return show('local');
       if (d.mode === 'create' || d.mode === 'join') {
@@ -187,10 +199,12 @@
         return false;
       });
       if (d.opick) { picking = { online: true }; return renderPicker(); }
+      if (d.oready !== undefined) { var want = d.oready === '1'; return mySeatUpdate(function (s) { s.ready = want; }); }
       if (d.ostart) {
         b.disabled = true;
         room.mutate(function (row) {
           if (row.status !== 'lobby' || row.seats.length < 3) return null;
+          if (!row.seats.every(function (s) { return seatReady(s, row); })) return null;
           var st = FOF.newGame({ players: row.seats.map(function (s, i) { return { name: s.name || 'Joueur ' + (i + 1), color: s.color, leader: s.leader, bot: !!s.bot }; }) });
           FOF.statsInit(st, 'online', row.code);
           FOF.statsTick(st);
