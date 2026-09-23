@@ -141,7 +141,11 @@ aside.right { border-left: 1px solid var(--line); display: flex; flex-direction:
 /* carte */
 #board { position: relative; overflow: auto; background: #20242a; }
 #boardWrap { position: relative; margin: 0 auto; }
-#boardWrap canvas, #boardWrap svg { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
+/* v1.9 — LA cause du « svg qui recouvre les constructions » : cette règle visait les calques du
+   plateau, mais elle attrapait AUSSI toutes les icônes SVG des fenêtres ouvertes au-dessus de la
+   carte (le panneau de construction est dans #boardWrap). Chaque icône était étirée sur tout le
+   plateau et avalait les clics. Restreinte aux enfants directs. */
+#boardWrap > canvas, #boardWrap > svg { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
 #baseCv { image-rendering: auto; border-radius: 6px; box-shadow: 0 20px 50px -20px #000; }
 #ovCv { opacity: .95; mix-blend-mode: multiply; pointer-events: none; }
 #tokens { pointer-events: none; }

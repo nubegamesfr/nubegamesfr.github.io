@@ -17,7 +17,6 @@
   // Unités d'élite : dépl, puissance [P,F,M,Ma], entretien, condition
   FOF.ELITES = {
     milice:     { name: 'Milice paysanne', move: 1, pow: [1,1,1,1], upkeep: 2, req: ['C', 1] },
-    frondeurs:  { name: 'Frondeurs', move: 2, pow: [1,1,0,1], upkeep: 1, req: ['C', 1] },
     pillards:   { name: 'Pillards', move: 1, pow: [0,1,1,1], upkeep: 1, req: ['C', 2] },
     ecumeurs:   { name: 'Écumeurs', move: 2, pow: [1,1,1,2], upkeep: 1, req: ['C', 3] },
     brigands:   { name: 'Brigands', move: 2, pow: [1,1,2,1], upkeep: 1, req: ['C', 3] },

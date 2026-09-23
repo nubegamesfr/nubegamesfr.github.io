@@ -36,7 +36,7 @@
 <body>
 <main>
   <h1>Signalements de bugs</h1>
-  <p class="lead">Les signalements envoyés depuis le bouton « Signaler un bug » du jeu. <b>Ils ne partent pas par e-mail</b> : ils sont écrits dans la table <code>bug_reports</code> de la base, et cette page les lit.</p>
+  <p class="lead">Les signalements envoyés depuis le bouton « Signaler un bug » du jeu <b>et</b> les messages du formulaire de nubegames.fr (étiquette « site nubegames.fr »). <b>Ils ne partent pas par e-mail</b> : ils sont écrits dans la table <code>bug_reports</code> de la base, et cette page les lit.</p>
   <div class="bar-row">
     <button id="reload">Actualiser</button>
     <button id="csv">Télécharger en CSV</button>
@@ -82,7 +82,7 @@
     document.getElementById('list').innerHTML = rows.length ? rows.map(function (r) {
       var c = r.context || {};
       var quand = r.created_at ? new Date(r.created_at).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' }) : '—';
-      var tags = [c.version && ('v' + c.version), c.mode, c.phase && ('phase ' + c.phase),
+      var tags = [c.source === 'site' ? 'site nubegames.fr' : null, c.motif, c.version && ('v' + c.version), c.mode, c.phase && ('phase ' + c.phase),
                   c.round && ('tour ' + c.round), c.room && ('salon ' + c.room), c.screen]
                  .filter(Boolean).map(function (t) { return '<span class="tag">' + esc(t) + '</span>'; }).join(' ');
       return '<article class="rep">' +

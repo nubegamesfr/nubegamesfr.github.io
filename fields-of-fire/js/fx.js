@@ -112,7 +112,11 @@
         g.classList.add('fx-moved');
       });
       // 2) nouveau tour / nouvelle phase
-      if (!cur.winner && anim) {
+      // v1.9 : ces bandeaux sont larges et sombres. Joués pour chaque phase de chaque adversaire
+      // (jusqu'à douze par tour de table), ils faisaient clignoter tout l'écran pendant qu'on
+      // attendait. Ils ne s'affichent plus que pour le joueur assis devant l'écran.
+      var aMoi = !FOF.myTurn || FOF.myTurn();
+      if (!cur.winner && anim && aMoi) {
         if (cur.turnNo !== prev.turnNo) {
           var p = st.players[st.cur];
           banner('<small>Tour ' + st.round + '</small><b>' + FOF.esc(p.name) + '</b><span>' + FOF.esc(FOF.LEADERS[p.leader].name) + '</span>', o.color(p.id));

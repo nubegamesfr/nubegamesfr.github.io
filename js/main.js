@@ -1,252 +1,93 @@
-/* Nube Games · main.js · vanilla, no library, no tracker */
+/* Nube Games · main.js · vanilla, sans bibliothèque, sans tracker */
 
 /* =========================================================
    CONFIGURATION : les seules lignes à modifier au quotidien
    ========================================================= */
 const SITE = {
-  // Formulaire : identifiant FormSubmit (chaîne aléatoire, l'adresse e-mail n'apparaît jamais dans le code)
-  formId: 'FORM_ID',
-  // URL du jeu en ligne. Vide = bouton « Bientôt disponible ».
-  playUrl: '/fields-of-fire/',
-  // Mettre true pour afficher le jeu directement dans la page (iframe) au lieu d'un lien.
-  playEmbed: false,
-  // Lien GitHub (affiché dans le footer seulement s'il est renseigné).
-  github: ''
+  // Le formulaire écrit directement dans la table `bug_reports` du projet Supabase du jeu,
+  // avec `context.source = 'site'`. Les messages sont donc lisibles au même endroit que les
+  // signalements du jeu : /fields-of-fire/bugs.html
+  supabaseUrl: 'https://wucrnsmogswphekitodw.supabase.co',
+  supabaseKey: 'sb_publishable_1ah4C-mmBA8nhFTRGsx1LQ_qPzUB_eM',
+  // Adresse affichée en secours si l'envoi échoue. Vide = rien n'est proposé.
+  contactMail: 'nubegamesfr@gmail.com',
+  // URL du jeu en ligne.
+  playUrl: '/fields-of-fire/'
 };
 
 (() => {
+  'use strict';
   const doc = document.documentElement;
   doc.classList.add('js');
   const $ = (s, r = document) => r.querySelector(s);
-  const $$ = (s, r = document) => [...r.querySelectorAll(s)];
-  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const fine = matchMedia('(hover: hover) and (pointer: fine)').matches;
-  const EN = doc.lang === 'en';
-  const T = EN ? {
-    missing: 'A card is missing: check the fields in red.', ok: 'Got it. Your seat is saved.', soon: 'The table opens very soon: come back in a few days.',
-    sending: 'Sending…', send: 'Send', done: 'Got it. Your seat is saved, we\'ll get back to you.', fail: 'The die fell off the table. Please try again in a moment.',
-    noMsg: '(no message)', play: 'Play', frame: 'Fields of Fire, online version'
-  } : {
-    missing: 'Il manque une carte : vérifiez les champs en rouge.', ok: 'C\'est reçu. Votre place est gardée.', soon: 'La table ouvre très bientôt : revenez dans quelques jours.',
-    sending: 'Envoi…', send: 'Envoyer', done: 'C\'est reçu. Votre place est gardée, on revient vers vous.', fail: 'Le dé est tombé de la table. Réessayez dans un instant.',
-    noMsg: '(pas de message)', play: 'Jouer', frame: 'Fields of Fire, version en ligne'
-  };
+  const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
 
-  /* ---------- Intro ---------- */
-  const start = () => requestAnimationFrame(() => doc.classList.add('ready'));
-  if (document.fonts && document.fonts.ready) {
-    Promise.race([document.fonts.ready, new Promise(r => setTimeout(r, 900))]).then(start);
-  } else start();
-
-  /* ---------- Contact form (FormSubmit, AJAX) ---------- */
-  const form = $('#contact');
-  if (form) {
-    const status = $('#form-status'), send = $('.form-send', form), label = $('.send-label', form);
-    const say = (msg, cls) => { status.textContent = msg; status.className = 'form-status ' + (cls || ''); };
-    form.addEventListener('submit', async e => {
-      e.preventDefault();
-      let ok = true;
-      ['f-name', 'f-email'].forEach(id => {
-        const f = document.getElementById(id);
-        const bad = !f.value.trim() || (f.type === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.value.trim()));
-        f.classList.toggle('bad', bad); f.setAttribute('aria-invalid', bad ? 'true' : 'false');
-        if (bad && ok) { f.focus(); ok = false; }
-      });
-      if (!ok) return say(T.missing, 'err');
-      if (form._honey.value) return say(T.ok, 'ok');
-      if (!SITE.formId || SITE.formId === 'FORM_ID') return say(T.soon, 'err');
-      const d = new FormData(form);
-      const payload = {
-        _subject: `[nubegames.fr${EN ? ' EN' : ''}] ${d.get('motif')} · ${d.get('name')}`,
-        _template: 'table',
-        _captcha: 'false',
-        Motif: d.get('motif'), name: d.get('name'), email: d.get('email'), message: d.get('message') || T.noMsg
-      };
-      send.disabled = true; form.classList.add('rolling'); label.textContent = T.sending; say('');
-      try {
-        const r = await fetch(`https://formsubmit.co/ajax/${SITE.formId}`, {
-          method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify(payload)
-        });
-        const j = await r.json().catch(() => ({}));
-        if (!r.ok || String(j.success) !== 'true') throw new Error(j.message || r.status);
-        form.reset(); say(T.done, 'ok');
-      } catch (err) {
-        say(T.fail, 'err');
-      } finally {
-        send.disabled = false; form.classList.remove('rolling'); label.textContent = T.send;
-      }
-    });
+  /* ---------- barre de navigation collante ---------- */
+  const nav = $('#nav');
+  if (nav) {
+    const onScroll = () => nav.classList.toggle('stuck', window.scrollY > 8);
+    onScroll();
+    addEventListener('scroll', onScroll, { passive: true });
   }
-  if (SITE.github) { const li = $('[data-github]'); li.hidden = false; li.querySelector('a').href = SITE.github; }
-  const play = $('#play-btn');
-  if (SITE.playUrl) {
-    play.removeAttribute('aria-disabled'); play.removeAttribute('role');
-    play.href = SITE.playUrl;
-    $('.play-label', play).textContent = T.play;
-    if (SITE.playEmbed) {
-      const root = $('#game-root');
-      play.addEventListener('click', e => {
-        e.preventDefault();
-        if (!root.firstChild) {
-          const f = document.createElement('iframe');
-          f.src = SITE.playUrl; f.title = T.frame; f.allow = 'fullscreen';
-          root.appendChild(f);
-        }
-        root.hidden = false; root.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'center' });
-      });
-    }
+
+  /* ---------- apparition au défilement ---------- */
+  const reveals = $$('.reveal');
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reduced || !('IntersectionObserver' in window)) {
+    reveals.forEach(el => el.classList.add('in'));
   } else {
-    play.addEventListener('click', e => e.preventDefault());
-  }
-  $('#year').textContent = new Date().getFullYear();
-
-  /* ---------- Reveal on scroll (with stagger) ---------- */
-  const io = new IntersectionObserver(entries => {
-    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
-  }, { threshold: .14, rootMargin: '0px 0px -60px 0px' });
-  const stagger = (sel) => $$(sel).forEach((el, i) => el.style.setProperty('--d', (i * 0.1) + 's'));
-  stagger('.reveal-grid .locked'); stagger('.steps .step'); stagger('.pt-list li');
-  $$('.reveal, .step').forEach(el => io.observe(el));
-
-  /* ---------- Nav: solid after hero, hide on scroll down, active link ---------- */
-  const nav = $('#nav'); let lastY = scrollY;
-  const onNav = () => {
-    const y = scrollY;
-    nav.classList.toggle('solid', y > 40);
-    nav.classList.toggle('hide', y > lastY && y > innerHeight * .6 && !nav.contains(document.activeElement));
-    lastY = y;
-  };
-  addEventListener('scroll', onNav, { passive: true }); onNav();
-  const links = $$('.nav-links a');
-  const secIO = new IntersectionObserver(es => es.forEach(e => {
-    if (e.isIntersecting) links.forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#' + e.target.id));
-  }), { rootMargin: '-45% 0px -50% 0px' });
-  ['fields-of-fire', 'projet', 'jouer', 'roadmap', 'play', 'playtest'].forEach(id => { const s = document.getElementById(id); if (s) secIO.observe(s); });
-
-  /* ---------- Marquee: seamless loop, speeds up with scroll ---------- */
-  const mq = $('#marquee');
-  mq.innerHTML += mq.innerHTML;
-  if (!reduce) {
-    let x = 0, boost = 0, prevY = scrollY, mqVisible = true;
-    new IntersectionObserver(([e]) => { mqVisible = e.isIntersecting; }).observe(mq);
-    const tick = () => {
-      const dy = scrollY - prevY; prevY = scrollY;
-      boost += (Math.min(Math.abs(dy), 60) * .12 - boost) * .1;
-      if (mqVisible) {
-        x -= .45 + boost;
-        const half = mq.scrollWidth / 2;
-        if (-x >= half) x += half;
-        mq.style.transform = `translate3d(${x}px,0,0)`;
-      }
-      requestAnimationFrame(tick);
-    };
-    requestAnimationFrame(tick);
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+    }, { rootMargin: '0px 0px -8% 0px', threshold: 0.06 });
+    reveals.forEach(el => io.observe(el));
   }
 
-  if (reduce) return; // everything below is motion only
+  /* ---------- liens du jeu ---------- */
+  if (SITE.playUrl) $$('a[href="/fields-of-fire/"]').forEach(a => { a.href = SITE.playUrl; });
 
-  /* ---------- Hero: pointer parallax + spotlight ---------- */
-  const hero = $('.hero');
-  const layers = $$('[data-depth]', hero).map(el => ({ el, d: +el.dataset.depth }));
-  let px = 0, py = 0, cx = 0, cy = 0, heroVisible = true, sy = 0;
-  new IntersectionObserver(([e]) => { heroVisible = e.isIntersecting; }).observe(hero);
-  if (fine) {
-    hero.addEventListener('pointermove', e => {
-      const r = hero.getBoundingClientRect();
-      px = (e.clientX - r.left) / r.width - .5; py = (e.clientY - r.top) / r.height - .5;
-      hero.style.setProperty('--mx', e.clientX - r.left + 'px');
-      hero.style.setProperty('--my', e.clientY - r.top + 'px');
-    });
-  }
-  const heroInner = $('.hero-inner');
-  const heroLoop = () => {
-    if (heroVisible) {
-      cx += (px - cx) * .06; cy += (py - cy) * .06; sy = scrollY;
-      layers.forEach(({ el, d }) => {
-        el.style.transform = `translate3d(${cx * d * 40}px, ${cy * d * 40 + sy * d * .25}px, 0)`;
+  /* ---------- formulaire ---------- */
+  const form = $('#contact');
+  if (!form) return;
+  const msg = $('#form-msg');
+  const t = (fr, en) => (doc.lang === 'en' ? en : fr);
+
+  const say = (txt, cls) => { if (!msg) return; msg.textContent = txt; msg.className = 'form-msg ' + (cls || ''); };
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (form.querySelector('[name="_honey"]').value) return;       // piège à robots
+
+    const name = form.querySelector('[name="name"]');
+    const mail = form.querySelector('[name="email"]');
+    if (!name.value.trim() || !mail.checkValidity()) {
+      say(t('Un nom et un e-mail valide, et c’est parti.', 'A name and a valid e-mail, and we’re set.'), 'ko');
+      (!name.value.trim() ? name : mail).focus();
+      return;
+    }
+
+    const btn = form.querySelector('button[type="submit"]');
+    btn.disabled = true;
+    say(t('Envoi…', 'Sending…'));
+    try {
+      const d = Object.fromEntries(new FormData(form));
+      const r = await fetch(SITE.supabaseUrl + '/rest/v1/bug_reports', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', apikey: SITE.supabaseKey, Prefer: 'return=minimal' },
+        body: JSON.stringify({
+          message: (d.message || '').slice(0, 4000),
+          contact: [d.name, d.email].filter(Boolean).join(' · ').slice(0, 200),
+          context: { source: 'site', motif: d.motif || null, lang: doc.lang || 'fr', ua: navigator.userAgent.slice(0, 200) }
+        })
       });
-      heroInner.style.transform = `translate3d(0, ${sy * .18}px, 0)`;
-      heroInner.style.opacity = Math.max(0, 1 - sy / (innerHeight * .85));
+      if (!r.ok) throw new Error(r.status);
+      form.reset();
+      say(t('C’est parti. On vous répond vite.', 'Sent. We’ll get back to you shortly.'), 'ok');
+    } catch (err) {
+      say(SITE.contactMail
+        ? t('L’envoi a échoué. Écrivez-nous à ' + SITE.contactMail + '.', 'Sending failed. Write to ' + SITE.contactMail + '.')
+        : t('L’envoi a échoué. Réessayez dans un moment.', 'Sending failed. Please try again in a moment.'), 'ko');
+    } finally {
+      btn.disabled = false;
     }
-    requestAnimationFrame(heroLoop);
-  };
-  requestAnimationFrame(heroLoop);
-
-  /* ---------- Hero: embers (canvas) ---------- */
-  const cv = $('#embers'), ctx = cv.getContext('2d');
-  let W = 0, H = 0, dpr = 1, parts = [];
-  const COLORS = ['232,211,174', '240,107,196', '255,106,95', '169,139,255'];
-  const spawn = (init) => ({
-    x: Math.random() * W, y: init ? Math.random() * H : H + 10,
-    r: Math.random() * 1.6 + .4, v: Math.random() * .35 + .12,
-    w: Math.random() * Math.PI * 2, ws: Math.random() * .012 + .004,
-    a: Math.random() * .55 + .15, c: COLORS[(Math.random() * COLORS.length) | 0]
   });
-  const size = () => {
-    dpr = Math.min(devicePixelRatio || 1, 2);
-    W = cv.offsetWidth; H = cv.offsetHeight;
-    cv.width = W * dpr; cv.height = H * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    const n = W < 600 ? 28 : 64;
-    parts = Array.from({ length: n }, () => spawn(true));
-  };
-  size();
-  let rz; addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(size, 200); });
-  const draw = () => {
-    if (heroVisible && !document.hidden) {
-      ctx.clearRect(0, 0, W, H);
-      for (const p of parts) {
-        p.y -= p.v; p.w += p.ws; p.x += Math.sin(p.w) * .3 - cx * .4;
-        const fade = Math.min(1, p.y / (H * .5));
-        if (p.y < -10 || fade <= 0) Object.assign(p, spawn(false));
-        ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 6.283);
-        ctx.fillStyle = `rgba(${p.c},${p.a * fade})`; ctx.fill();
-      }
-    }
-    requestAnimationFrame(draw);
-  };
-  requestAnimationFrame(draw);
-
-  /* ---------- Scroll parallax outside hero ---------- */
-  const scrollers = $$('[data-scroll]').map(el => ({ el, k: +el.dataset.scroll, sec: el.closest('section') }));
-  const scrollLoop = () => {
-    scrollers.forEach(({ el, k, sec }) => {
-      const r = sec.getBoundingClientRect();
-      if (r.bottom < 0 || r.top > innerHeight) return;
-      const p = (r.top + r.height / 2 - innerHeight / 2);
-      el.style.transform = `translate3d(0, ${p * k}px, 0)`;
-    });
-  };
-  addEventListener('scroll', () => requestAnimationFrame(scrollLoop), { passive: true }); scrollLoop();
-
-  if (!fine) return; // below: pointer-only niceties
-
-  /* ---------- Cover card: 3D tilt + glare ---------- */
-  const card = $('#cover-card');
-  card.addEventListener('pointermove', e => {
-    const r = card.getBoundingClientRect();
-    const x = (e.clientX - r.left) / r.width, y = (e.clientY - r.top) / r.height;
-    card.style.transition = 'transform .12s linear';
-    card.style.transform = `rotateY(${(x - .5) * 14}deg) rotateX(${(.5 - y) * 12}deg) scale(1.02)`;
-    card.style.setProperty('--gx', x * 100 + '%'); card.style.setProperty('--gy', y * 100 + '%');
-  });
-  card.addEventListener('pointerleave', () => { card.style.transition = ''; card.style.transform = ''; });
-
-  /* ---------- Magnetic buttons ---------- */
-  $$('.magnetic').forEach(b => {
-    b.addEventListener('pointermove', e => {
-      const r = b.getBoundingClientRect();
-      b.style.transform = `translate(${(e.clientX - r.left - r.width / 2) * .18}px, ${(e.clientY - r.top - r.height / 2) * .3}px)`;
-    });
-    b.addEventListener('pointerleave', () => { b.style.transform = ''; });
-  });
-
-  /* ---------- Cursor ---------- */
-  const cur = document.createElement('div'); cur.className = 'cursor'; cur.setAttribute('aria-hidden', 'true');
-  document.body.appendChild(cur);
-  let tx = -100, ty = -100, kx = -100, ky = -100;
-  addEventListener('pointermove', e => { tx = e.clientX; ty = e.clientY; cur.style.opacity = 1; });
-  document.addEventListener('pointerleave', () => { cur.style.opacity = 0; });
-  document.addEventListener('pointerover', e => cur.classList.toggle('big', !!e.target.closest('a,button,.locked,.cover-card')));
-  const curLoop = () => { kx += (tx - kx) * .2; ky += (ty - ky) * .2; cur.style.transform = `translate3d(${kx}px,${ky}px,0) translate(-50%,-50%)`; requestAnimationFrame(curLoop); };
-  requestAnimationFrame(curLoop);
 })();

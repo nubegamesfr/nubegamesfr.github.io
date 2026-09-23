@@ -2,24 +2,23 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Fields of Fire · Nube Games, independent board game studio</title>
-<meta name="description" content="Nube Games is an independent board game studio. Its first game, Fields of Fire, is playable free online as a prototype: on one screen or remotely with a room code.">
-<link rel="canonical" href="https://nubegames.fr/en/">
-<link rel="alternate" hreflang="fr" href="https://nubegames.fr/">
-<link rel="alternate" hreflang="en" href="https://nubegames.fr/en/">
-<link rel="alternate" hreflang="x-default" href="https://nubegames.fr/">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Fields of Fire, a 3-to-6-player board game of conquest by Nube Games. Three roads to victory: the sword, the faith or diplomacy. The prototype plays free in your browser, on one screen or remotely.">
 <meta name="theme-color" content="#0b0712">
 <meta name="color-scheme" content="dark">
 <meta name="robots" content="index, follow, max-image-preview:large">
+<link rel="canonical" href="https://nubegames.fr/en/">
+<link rel="alternate" hreflang="fr" href="https://nubegames.fr/">
+<link rel="alternate" hreflang="en" href="https://nubegames.fr/en/">
 
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Nube Games">
 <meta property="og:locale" content="en_GB">
 <meta property="og:locale:alternate" content="fr_FR">
 <meta property="og:url" content="https://nubegames.fr/en/">
-<meta property="og:title" content="Fields of Fire · A board game in the making">
-<meta property="og:description" content="The Fields of Fire prototype is free to play in your browser, 3 to 6 players, locally or online.">
+<meta property="og:title" content="Fields of Fire · The sword, the faith or diplomacy">
+<meta property="og:description" content="A board game of conquest, 3 to 6 players. Prototype playable free in your browser.">
 <meta property="og:image" content="https://nubegames.fr/assets/images/og-image.jpg">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -31,268 +30,320 @@
 <link rel="apple-touch-icon" href="../assets/icons/apple-touch-icon.png">
 <link rel="manifest" href="../site.webmanifest">
 
-<link rel="preload" href="../assets/fonts/cinzel-700.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="../assets/fonts/unbounded.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="../css/style.css?v=1.3">
-
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@graph": [
-    {
-      "@type": "Organization",
-      "@id": "https://nubegames.fr/#org",
-      "name": "Nube Games",
-      "url": "https://nubegames.fr/",
-      "logo": "https://nubegames.fr/assets/icons/icon-512.png",
-      "description": "Independent board game studio."
-    },
-    {
-      "@type": "WebSite",
-      "@id": "https://nubegames.fr/en/#website",
-      "url": "https://nubegames.fr/en/",
-      "name": "Nube Games",
-      "inLanguage": "en",
-      "publisher": { "@id": "https://nubegames.fr/#org" }
-    },
-    {
-      "@type": "Game",
-      "@id": "https://nubegames.fr/en/#fields-of-fire",
-      "name": "Fields of Fire",
-      "description": "Board game by Nube Games, in prototype, free to play online in the browser (3 to 6 players).",
-      "numberOfPlayers": { "@type": "QuantitativeValue", "minValue": 3, "maxValue": 6 },
-      "url": "https://nubegames.fr/en/#fields-of-fire",
-      "image": "https://nubegames.fr/assets/images/fields-of-fire-prototype-cover.webp",
-      "creator": { "@id": "https://nubegames.fr/#org" },
-      "publisher": { "@id": "https://nubegames.fr/#org" }
-    }
-  ]
-}
-</script>
+<link rel="preload" href="../assets/fonts/manrope.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="../css/style.css?v=2.0">
 </head>
 <body>
-<a class="skip" href="#content">Skip to content</a>
+<a class="skip" href="#main">Skip to content</a>
 
 <header class="nav" id="nav">
-  <a class="nav-brand" href="#top" aria-label="Nube Games, back to top">
+  <a class="nav-brand" href="#top" aria-label="Nube Games, home">
     <img src="../assets/images/nube-games-lockup.svg" alt="Nube Games" width="132" height="32">
   </a>
-  <nav aria-label="Main navigation">
-    <ul class="nav-links">
-      <li><a href="#fields-of-fire">The game</a></li>
-      <li><a href="#roadmap">Roadmap</a></li>
-      <li><a href="#play">Play</a></li>
-      <li><a href="#playtest">Playtests</a></li>
-    </ul>
+  <nav class="nav-links" aria-label="Sections">
+    <a href="#the-game">The game</a>
+    <a href="#victory">Victory</a>
+    <a href="#turn">The turn</a>
+    <a href="#map">The map</a>
+    <a href="#lords">Lords</a>
+    <a href="#play">Play</a>
   </nav>
   <div class="nav-end">
-    <a class="lang" href="../" hreflang="fr" lang="fr" aria-label="Version française">FR</a>
+    <a class="lang" href="/" hreflang="fr" lang="fr">FR</a>
     <a class="btn btn-sm" href="/fields-of-fire/">Play</a>
   </div>
 </header>
 
-<main id="content">
-  <section class="hero" id="top" aria-label="Home">
-    <div class="hero-bg" aria-hidden="true">
-      <div class="glow glow-a" data-depth="0.15"></div>
-      <div class="glow glow-b" data-depth="0.25"></div>
-      <div class="glow glow-c" data-depth="0.1"></div>
-      <svg class="cloud-line cl-1" data-depth="0.5" viewBox="0 0 200 110"><use href="#cloud"/></svg>
-      <svg class="cloud-line cl-2" data-depth="0.8" viewBox="0 0 200 110"><use href="#cloud"/></svg>
-      <svg class="cloud-line cl-3" data-depth="0.35" viewBox="0 0 200 110"><use href="#cloud"/></svg>
-      <svg class="cloud-line cl-4" data-depth="1.1" viewBox="0 0 200 110"><use href="#cloud"/></svg>
-      <canvas class="embers" id="embers"></canvas>
-      <div class="spot"></div>
-      <div class="grain"></div>
+<main id="main">
+
+<section class="hero" id="top" aria-labelledby="hero-title">
+  <div class="hero-bg" aria-hidden="true">
+    <span class="glow glow-a"></span><span class="glow glow-b"></span><span class="glow glow-c"></span>
+    <span class="grain"></span>
+  </div>
+  <div class="wrap">
+    <p class="status"><span class="dot" aria-hidden="true"></span> Prototype · free to play online</p>
+    <p class="presents">Nube Games presents</p>
+    <h1 class="hero-title" id="hero-title">
+      <span class="line">Fields</span>
+      <span class="line grad">of Fire</span>
+    </h1>
+    <p class="hero-tag">A game of conquest won by the sword, by the faith or by diplomacy. Yours to choose.</p>
+    <div class="hero-cta">
+      <a class="btn" href="/fields-of-fire/">Play for free</a>
+      <a class="btn btn-ghost" href="#the-game">See the game</a>
     </div>
 
-    <div class="hero-inner">
-      <p class="status"><span class="dot"></span>Prototype · Playable online</p>
+    <figure class="hero-shot reveal">
+      <img src="../assets/images/fof-partie.webp" width="1600" height="950" fetchpriority="high"
+           alt="A four-player game of Fields of Fire: the archipelago map in the centre, the lords on the left, the five-card recruitment row below.">
+    </figure>
+    <p class="shot-cap">A four-lord game, running in the browser.</p>
+  </div>
+</section>
 
-      <div class="hero-crown" data-depth="-0.6">
-        <img src="../assets/images/fields-of-fire-crown.webp" alt="" width="420" height="459" fetchpriority="high">
-      </div>
-
-      <p class="presents">Nube Games presents</p>
-      <h1 class="hero-title" id="hero-title">
-        <span class="line"><span>Fields</span></span>
-        <span class="line"><span><em>of</em> Fire</span></span>
-      </h1>
-      <p class="hero-tag">The game is on. Your move.</p>
-      <div class="hero-cta">
-        <a class="btn magnetic" href="/fields-of-fire/">Play for free</a>
-        <a class="btn btn-ghost magnetic" href="#fields-of-fire">Discover the game</a>
-        <a class="btn btn-ghost magnetic" href="#contact">Join the table</a>
-      </div>
+<section class="section" id="the-game" aria-labelledby="t-game">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <p class="num">01 — The game</p>
+      <h2 id="t-game">Three ways to win, one game to choose</h2>
+      <p class="lead">Each player takes a lord and starts from a capital on an archipelago drawn afresh every game. You raise taxes, recruit, manoeuvre and build. Attacking costs diplomacy; building costs gold; and everyone watches whoever is closing in on their own victory condition.</p>
     </div>
-
-    <a class="scroll-cue" href="#fields-of-fire" aria-label="Scroll to the game"><span></span></a>
-
-    <svg class="cloud-edge" viewBox="0 0 1440 120" preserveAspectRatio="none" aria-hidden="true">
-      <path d="M0 120V70c40 0 70-30 120-30s70 34 120 34 60-46 130-46 80 40 130 40 70-24 120-24 70 30 120 30 60-52 140-52 80 44 130 44 70-20 120-20 70 26 120 26 60-36 110-36 50 22 80 22H1440V120H0Z"/>
-    </svg>
-  </section>
-  <div class="marquee" aria-hidden="true">
-    <div class="marquee-track" id="marquee">
-      <span>Fields of Fire</span><i></i><span>Setup</span><i></i><span>Your turn</span><i></i><span>Next round</span><i></i><span>Nube Games</span><i></i>
+    <div class="facts reveal">
+      <div class="fact"><b>3 to 6</b><span>players</span></div>
+      <div class="fact"><b>7</b><span>territories per player on the map</span></div>
+      <div class="fact"><b>8</b><span>lords with distinct powers</span></div>
+      <div class="fact"><b>3</b><span>roads to victory</span></div>
+      <div class="fact"><b>Free</b><span>and no sign-up</span></div>
     </div>
   </div>
-  <section class="section game" id="fields-of-fire" aria-labelledby="game-title">
-    <div class="wrap game-grid">
-      <figure class="cover reveal">
-        <div class="cover-card" id="cover-card">
-          <img src="../assets/images/fields-of-fire-prototype-cover.webp" width="620" height="846" loading="lazy" decoding="async" alt="Fields of Fire prototype cover: a white crown in an ornamental frame on a black background, marked Prototype.">
-          <span class="glare" aria-hidden="true"></span>
-        </div>
-        <figcaption>Prototype cover</figcaption>
+</section>
+
+<section class="section" id="victory" aria-labelledby="t-vic">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <p class="num">02 — Roads to victory</p>
+      <h2 id="t-vic">The sword, the faith, diplomacy</h2>
+      <p class="lead">All three are open to everyone from turn one, and their thresholds rise with the player count. Nothing forces an early choice: many games turn on the moment someone switches.</p>
+    </div>
+    <div class="cards reveal">
+      <article class="card card-hi">
+        <span class="kicker">Military</span>
+        <h3>Take the land</h3>
+        <p>Hold enough territories, capital included. Every assault costs diplomacy, except against a Tyrant — conquest isolates you as much as it enlarges you.</p>
+      </article>
+      <article class="card card-hi">
+        <span class="kicker">Religious</span>
+        <h3>Raise the temples</h3>
+        <p>Build enough temples, foreign soil included, or gain them by conversion and cession. A temple costs 7 gold, and razing one is never free.</p>
+      </article>
+      <article class="card card-hi">
+        <span class="kicker">Diplomatic</span>
+        <h3>Make a name</h3>
+        <p>Reach the diplomacy threshold by playing envoys, ceding land and keeping the peace. An Embassy in your capital amplifies every gain, as long as no one attacks you.</p>
+      </article>
+    </div>
+
+    <table class="tbl reveal">
+      <caption class="tiny" style="text-align:left;padding-bottom:10px">Victory thresholds by player count</caption>
+      <thead>
+        <tr><th scope="col">Road</th><th scope="col">3 players</th><th scope="col">4</th><th scope="col">5</th><th scope="col">6</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Military · territories</td><td>11</td><td>12</td><td>13</td><td>14</td></tr>
+        <tr><td>Religious · temples</td><td>9</td><td>10</td><td>11</td><td>12</td></tr>
+        <tr><td>Diplomatic · points</td><td>7</td><td>8</td><td>9</td><td>10</td></tr>
+      </tbody>
+    </table>
+    <p class="tiny reveal" style="margin-top:14px">These numbers are still moving: they are tuned playtest after playtest.</p>
+  </div>
+</section>
+
+<section class="section" id="turn" aria-labelledby="t-turn">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <p class="num">03 — The turn</p>
+      <h2 id="t-turn">Four phases, always in the same order</h2>
+    </div>
+    <div class="steps reveal">
+      <div class="step"><b>Collect</b><p>1 gold per territory, 1 more per city, minus your units’ upkeep. The breakdown is shown line by line.</p></div>
+      <div class="step"><b>Recruit</b><p>Five cards sit face up. You may buy one and discard one, in whichever order you like.</p></div>
+      <div class="step"><b>Military</b><p>Move your pieces, claim a neutral territory, or attack — at the price of one diplomacy point.</p></div>
+      <div class="step"><b>Build</b><p>Camp, fort, port, city, temple, embassy. Two buildings per tile, and as many builds as your gold allows.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="map" aria-labelledby="t-map">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <p class="num">04 — The map</p>
+      <h2 id="t-map">A different archipelago every game</h2>
+      <p class="lead">The map is drawn anew for each game: seven territories per player, four terrains — plains, forest, mountains, marsh — and sea zones parting the continents. Terrain matters: every elite unit has a different strength depending on where it fights.</p>
+    </div>
+    <div class="split reveal">
+      <figure class="fig">
+        <img src="../assets/images/fof-carte.webp" width="1200" height="830" loading="lazy" decoding="async"
+             alt="A generated Fields of Fire map: green and mountainous continents parted by a blue sea, capitals marked with coloured banners.">
       </figure>
-
-      <div class="game-text">
-        <p class="kicker reveal"><span>01</span> The box</p>
-        <h2 class="display reveal" id="game-title">Fields of Fire</h2>
-        <p class="lead reveal">The first Nube Games title. Conquer, build, and choose your path: the sword, the faith or diplomacy. The prototype is free to play in your browser (currently in French).</p>
-        <dl class="facts reveal">
-          <div><dt>Type</dt><dd>Board game</dd></div>
-          <div><dt>Status</dt><dd><span class="tag tag-live">Prototype</span></dd></div>
-          <div><dt>Players</dt><dd>3 to 6</dd></div>
-          <div><dt>Online</dt><dd>Free, no sign-up</dd></div>
-          <div><dt>Modes</dt><dd>Same screen or remote</dd></div>
-        </dl>
-      </div>
-    </div>
-    <div class="wrap">
-      <ul class="reveal-grid" aria-label="Visuals coming soon">
-        <li class="locked reveal"><span class="lock" aria-hidden="true"></span><strong>The board</strong><small>Revealed soon</small></li>
-        <li class="locked reveal"><span class="lock" aria-hidden="true"></span><strong>The components</strong><small>Revealed soon</small></li>
-        <li class="locked reveal"><span class="lock" aria-hidden="true"></span><strong>The rules</strong><small>Revealed soon</small></li>
-      </ul>
-    </div>
-  </section>
-  <section class="section project" id="roadmap" aria-labelledby="project-title">
-    <div class="wrap">
-      <p class="kicker reveal"><span>02</span> Roadmap</p>
-      <h2 class="h2 reveal" id="project-title">Turn by turn.</h2>
-
-      <ol class="steps">
-        <li class="step">
-          <span class="step-n">Turn 1</span>
-          <h3>Prototype</h3>
-          <p>Game design and first balancing, done in-house by our team.</p>
-          <span class="tag tag-live">In play</span>
-        </li>
-        <li class="step">
-          <span class="step-n">Turn 2</span>
-          <h3>Playtests</h3>
-          <p>Your games shape the rules.</p>
-          <span class="tag tag-live">In play</span>
-        </li>
-        <li class="step">
-          <span class="step-n">Turn 3</span>
-          <h3>Online</h3>
-          <p>Free to play in the browser, on one screen or remotely.</p>
-          <span class="tag tag-live">In play</span>
-        </li>
-        <li class="step">
-          <span class="step-n">Turn 4</span>
-          <h3>???</h3>
-          <p>???</p>
-          <span class="tag">Coming soon</span>
-        </li>
-      </ol>
-    </div>
-  </section>
-  <section class="play" id="play" aria-labelledby="play-title">
-    <svg class="cloud-edge cloud-edge-top" viewBox="0 0 1440 120" preserveAspectRatio="none" aria-hidden="true">
-      <path d="M0 0v50c50 0 80 34 140 34s70-40 130-40 70 30 120 30 80-50 150-50 70 44 130 44 60-22 120-22 70 36 130 36 60-44 130-44 70 30 120 30 60-20 110-20 60 30 90 30H1440V0H0Z"/>
-    </svg>
-    <div class="play-bg" aria-hidden="true">
-      <svg class="dino" viewBox="0 0 600 300" data-scroll="0.1">
-        <path d="M0 250C80 232 150 172 230 160C300 146 372 146 412 158C448 132 470 84 498 50C514 30 546 26 562 38C574 47 571 59 556 61C540 63 528 63 520 71C500 102 482 168 472 212L474 300H444L440 246C400 256 332 256 302 246L300 300H270L264 240C200 247 100 258 0 252Z"/>
-      </svg>
-      <svg class="cloud-line pl-1" viewBox="0 0 200 110" data-scroll="-0.15"><use href="#cloud"/></svg>
-      <svg class="cloud-line pl-2" viewBox="0 0 200 110" data-scroll="0.1"><use href="#cloud"/></svg>
-    </div>
-
-    <div class="wrap play-inner">
-      <p class="kicker kicker-light reveal"><span>03</span> Online game</p>
-      <h2 class="play-title reveal" id="play-title">Play<br>Fields of Fire</h2>
-      <p class="play-sub reveal">Free, in your browser, no sign-up. The game is currently in French.</p>
-      <ol class="play-how reveal">
-        <li><b>Create a room</b><span>or play together on one screen</span></li>
-        <li><b>Share the code</b><span>friends join from their own computer</span></li>
-        <li><b>Start the game</b><span>3 to 6 leaders</span></li>
-      </ol>
-      <div class="reveal">
-        <a class="play-btn" id="play-btn" role="link" aria-disabled="true">
-          <span class="play-ico" aria-hidden="true"></span>
-          <span class="play-label">Play</span>
-        </a>
-      </div>
-      <div id="game-root" class="game-root" hidden></div>
-    </div>
-  </section>
-  <section class="section playtest" id="playtest" aria-labelledby="playtest-title">
-    <div class="wrap playtest-grid">
       <div>
-        <p class="kicker reveal"><span>04</span> Playtests</p>
-        <h2 class="h2 reveal" id="playtest-title">Join<br>the <span class="grad-text">table</span></h2>
-        <p class="lead reveal">The prototype is looking for players. Your feedback shapes the game.</p>
-        <ol class="pt-list">
-          <li class="reveal"><span class="die d1" aria-hidden="true"><i></i></span><div><h3>Setup</h3><p>You take a seat.</p></div></li>
-          <li class="reveal"><span class="die d2" aria-hidden="true"><i></i><i></i></span><div><h3>Game</h3><p>You play the prototype.</p></div></li>
-          <li class="reveal"><span class="die d3" aria-hidden="true"><i></i><i></i><i></i></span><div><h3>Debrief</h3><p>You tell us everything. The rules evolve.</p></div></li>
-        </ol>
+        <h3 style="font-size:24px;margin-bottom:14px">Crossing the sea</h3>
+        <p class="lead" style="margin-bottom:10px"><b>Wider seas</b> — a checkbox before the game starts. The open water spreads and the sea zones multiply: ports, coasters and admirals start to matter more than land borders.</p>
+        <p class="lead">Sea zones cannot be walked across. You need a port, or one of the units that takes to the water without one. A well-read archipelago is worth an army: you choose your neighbours, and you choose the ones you will never see coming.</p>
       </div>
-
-      <form class="form reveal" id="contact" novalidate aria-labelledby="form-title">
-        <h3 class="form-title" id="form-title">Take a seat</h3>
-        <fieldset class="chips">
-          <legend>You want to…</legend>
-          <label><input type="radio" name="motif" value="Playtest" checked><span>Join a playtest</span></label>
-          <label><input type="radio" name="motif" value="Contact"><span>Write to us</span></label>
-        </fieldset>
-        <div class="field">
-          <label for="f-name">Name or nickname</label>
-          <input id="f-name" name="name" type="text" autocomplete="name" required maxlength="80">
-        </div>
-        <div class="field">
-          <label for="f-email">Email</label>
-          <input id="f-email" name="email" type="email" autocomplete="email" required maxlength="120">
-        </div>
-        <div class="field">
-          <label for="f-msg">Message <small>(optional)</small></label>
-          <textarea id="f-msg" name="message" rows="4" maxlength="2000"></textarea>
-        </div>
-        <input class="hp" type="text" name="_honey" tabindex="-1" autocomplete="off" aria-hidden="true">
-        <button class="btn form-send" type="submit"><span class="die die-sm" aria-hidden="true"><i></i><i></i><i></i></span><span class="send-label">Send</span></button>
-        <p class="form-status" id="form-status" role="status" aria-live="polite"></p>
-        <p class="form-note">Your details are only used to reply to you.</p>
-      </form>
     </div>
-  </section>
+
+    <div class="styles reveal" style="margin-top:clamp(30px,4vw,54px)">
+      <figure class="style-fig">
+        <img src="../assets/images/fof-carte-enluminure.webp" width="1300" height="898" loading="lazy" decoding="async"
+             alt="The game map in the Illumination style: deep lapis sea, jewel-toned lands, a gold rule around the board.">
+        <figcaption><b>Illumination</b> — lapis sea, gold rule, manuscript tones. The default look.</figcaption>
+      </figure>
+      <figure class="style-fig">
+        <img src="../assets/images/fof-carte-estampe.webp" width="1300" height="898" loading="lazy" decoding="async"
+             alt="The same map in the Woodcut style: reduced palette, ink-dark sea, terrains in engraved flats.">
+        <figcaption><b>Woodcut</b> — seven tones, ink sea, instant reading. Switchable in the settings.</figcaption>
+      </figure>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="units" aria-labelledby="t-units">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <p class="num">05 — The units</p>
+      <h2 id="t-units">You don’t recruit what you want, you recruit what turns up</h2>
+      <p class="lead">Five cards face up, one buy and one discard per turn. Elite units fight — their strength shifts with the terrain. Special units never fight: they convert a temple, carry word to a foreign court, scout the map or shore up a defence. Every card requires a building before it can be recruited, and draws upkeep at each collection.</p>
+    </div>
+    <figure class="fig reveal">
+      <img src="../assets/images/fof-cartes.webp" width="1200" height="535" loading="lazy" decoding="async"
+           alt="The recruitment row: five unit cards face up, with artwork, strength per terrain, upkeep and recruitment requirement.">
+    </figure>
+    <p class="fig-cap">The recruitment row, with deck and discard on the left.</p>
+  </div>
+</section>
+
+<section class="section" id="lords" aria-labelledby="t-lords">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <p class="num">06 — The lords</p>
+      <h2 id="t-lords">Eight lords, eight ways to play</h2>
+      <p class="lead">Your lord is a piece like any other: it moves, it claims, it can lead an assault and lose a territory doing so. Its power, though, shapes the whole game.</p>
+    </div>
+    <div class="lords reveal">
+      <div class="lord"><b>Odon the Brave</b><p>Each of his elite units in an assault gives him +1, whether or not he leads it.</p></div>
+      <div class="lord"><b>Gustave the Irascible</b><p>His camps, forts and ports gain +1 defence. His cities cost 5 gold.</p></div>
+      <div class="lord"><b>Edward the Wise</b><p>Once per game, in peacetime: 4 gold for 1 diplomacy point.</p></div>
+      <div class="lord"><b>Mathilda the Beloved</b><p>Her first city costs 4 gold; the rest are full price.</p></div>
+      <div class="lord"><b>Adele the Pious</b><p>Her temples cost 6 gold and give +1 defence.</p></div>
+      <div class="lord"><b>Henry the Strategist</b><p>All his elite units move one tile further.</p></div>
+      <div class="lord"><b>Hugh the Builder</b><p>His camps, forts and ports cost 1 gold less.</p></div>
+      <div class="lord"><b>Eleanor the Admiral</b><p>Her ports cost 2 gold.</p></div>
+    </div>
+    <figure class="fig reveal" style="margin-top:clamp(26px,3.4vw,44px)">
+      <img src="../assets/images/fof-dirigeants.webp" width="1000" height="810" loading="lazy" decoding="async"
+           alt="The lord selection screen: three cards with portrait, name, power and player colour.">
+    </figure>
+    <p class="fig-cap">Choosing lords, before starting a local game.</p>
+  </div>
+</section>
+
+<section class="section" id="tyranny" aria-labelledby="t-tyr">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <p class="num">07 — Diplomacy and tyranny</p>
+      <h2 id="t-tyr">A reputation you spend</h2>
+      <p class="lead">Diplomacy is not only a road to victory, it is the currency of war. Every attack costs a point — except when you are taking back land that was taken from you by force: no one holds it against you for going home. Ceding a territory willingly earns one. So does an envoy sent to a foreign capital.</p>
+    </div>
+    <div class="cards reveal">
+      <article class="card">
+        <span class="kicker">The edge</span>
+        <h3>Down to zero</h3>
+        <p>Out of diplomacy, a player who still wants to attack must become a <b>Tyrant</b>. They gain the right to strike without counting the cost.</p>
+      </article>
+      <article class="card">
+        <span class="kicker">The price</span>
+        <h3>What the crown costs</h3>
+        <p>A Tyrant never gains diplomacy again: the diplomatic road is shut for the rest of the game. Only the sword and the faith remain.</p>
+      </article>
+      <article class="card">
+        <span class="kicker">The pack</span>
+        <h3>Everyone against one</h3>
+        <p>Attacking a Tyrant costs nobody anything. Nor does razing their temples. Every turn one of their lands revolts — and that one will never take them back.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="play" aria-labelledby="t-play">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <p class="num">08 — Play</p>
+      <h2 id="t-play">Free, in the browser, no sign-up</h2>
+      <p class="lead">The prototype runs entirely in the page: nothing to install, no account to create. Games are recorded anonymously — length, rounds, lords, victory type — purely to balance the game.</p>
+    </div>
+    <div class="play reveal">
+      <article class="play-card">
+        <h3>On one screen</h3>
+        <ol>
+          <li>Pick the number of lords, from 3 to 6.</li>
+          <li>Everyone takes a lord and a colour.</li>
+          <li>Pass the device each turn. Empty seats are played by bots.</li>
+        </ol>
+        <a class="btn" href="/fields-of-fire/">Start a local game</a>
+      </article>
+      <article class="play-card">
+        <h3>Everyone at home</h3>
+        <ol>
+          <li>Create a room: you get a five-character code.</li>
+          <li>Share the code or the link; your friends join from their own computer.</li>
+          <li>Everyone marks ready, the host starts the game.</li>
+        </ol>
+        <a class="btn btn-ghost" href="/fields-of-fire/">Create a room</a>
+      </article>
+    </div>
+    <p class="tiny reveal" style="margin-top:20px">A game set aside can be paused for 48 hours, then resumed with the same code.</p>
+  </div>
+</section>
+
+<section class="section" id="playtests" aria-labelledby="t-pt">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <p class="num">09 — Playtests</p>
+      <h2 id="t-pt">The game isn’t finished, and that’s the good part</h2>
+      <p class="lead">Fields of Fire is a prototype: rules shift from one week to the next, cards are on trial, thresholds are measured game after game. What helps us most: a card that strikes you as too strong or useless, a lord that feels unplayable, and how many were around the table.</p>
+    </div>
+
+    <form class="form reveal" id="contact" novalidate>
+      <div class="field">
+        <label for="f-motif">You’d like to…</label>
+        <select id="f-motif" name="motif">
+          <option value="playtest">Join a playtest</option>
+          <option value="feedback">Send feedback on a game</option>
+          <option value="other">Get in touch</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="f-name">Name or handle</label>
+        <input id="f-name" name="name" type="text" autocomplete="nickname" required>
+      </div>
+      <div class="field">
+        <label for="f-email">E-mail</label>
+        <input id="f-email" name="email" type="email" autocomplete="email" required>
+      </div>
+      <div class="field">
+        <label for="f-msg">Message (optional)</label>
+        <textarea id="f-msg" name="message"></textarea>
+      </div>
+      <input class="hp" type="text" name="_honey" tabindex="-1" autocomplete="off" aria-hidden="true">
+      <div>
+        <button class="btn" type="submit">Send</button>
+      </div>
+      <p class="form-msg" id="form-msg" role="status" aria-live="polite"></p>
+      <p class="form-note">Your details are used only to reply to you. No tracking, no resale.</p>
+    </form>
+  </div>
+</section>
 
 </main>
 
-<footer class="footer">
-  <div class="wrap footer-grid">
-    <img class="footer-logo" src="../assets/images/nube-games-logo-light.svg" alt="Nube Games" width="160" height="163" loading="lazy">
-    <ul class="footer-links">
-      <li><a href="#fields-of-fire">Fields of Fire</a></li>
-      <li><a href="#play">Play</a></li>
-      <li><a href="#playtest">Playtests</a></li>
-      <li><a href="#contact">Contact</a></li>
-      <li data-github hidden><a href="#" rel="noopener">GitHub</a></li>
-    </ul>
-    <p class="copy">© <span id="year">2026</span> Nube Games · Independent board games</p>
-    <p class="legal">The artwork shown in the Fields of Fire prototype is used for illustrative purposes only and does not belong to Nube Games in any way. In-game music: RandomMind, public domain (CC0).</p>
+<footer class="foot">
+  <div class="wrap">
+    <div class="foot-top">
+      <img class="footer-logo" src="../assets/images/nube-games-logo-light.svg" alt="Nube Games" width="120" height="122" loading="lazy">
+      <nav class="foot-links" aria-label="Footer">
+        <a href="/fields-of-fire/">Play</a>
+        <a href="#playtests">Playtests</a>
+        <a href="#contact">Contact</a>
+        <a href="/" hreflang="fr" lang="fr">Français</a>
+      </nav>
+    </div>
+    <p>© 2026 Nube Games · Independent board games</p>
+    <small>The artwork shown in the Fields of Fire prototype is used for illustrative purposes only and does not belong to Nube Games. In-game music: RandomMind, public domain (CC0). The paintings used on some cards are in the public domain; details are listed in the prototype’s CREDITS file.</small>
   </div>
 </footer>
-<svg width="0" height="0" style="position:absolute" aria-hidden="true">
-  <symbol id="cloud" viewBox="0 0 200 110">
-    <path d="M38 96C18 96 6 84 6 68 6 51 20 40 37 41 38 22 55 8 77 10 90 11 100 18 106 28 113 19 125 14 138 15 158 17 171 33 170 52 186 54 196 66 195 79 194 90 185 96 172 96Z"/>
-  </symbol>
-</svg>
 
-<script src="../js/main.js" defer></script>
+<script src="../js/main.js?v=2.0" defer></script>
 </body>
 </html>

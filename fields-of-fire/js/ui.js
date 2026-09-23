@@ -8,6 +8,14 @@
   var SAVE = 'fof-save-v1';
   var $ = function (id) { return document.getElementById(id); };
   var esc = FOF.esc;
+  // v1.9 : pendant le tour d'un adversaire, l'interface se redessinait entièrement à chaque action
+  // (jusqu'à plusieurs fois par seconde). Réécrire un bloc identique provoque un reflow et un
+  // clignotement. On n'écrit plus que si le contenu a réellement changé.
+  function setHTML(el, html) {
+    if (!el) return;
+    if (el.dataset.sig === html) return;
+    el.dataset.sig = html; el.innerHTML = html;
+  }
   function color(pid) { var p = st.players[pid]; return FOF.PLAYER_COLORS.filter(function (c) { return c.id === p.color; })[0].hex; }
   function bIcon(t, h) { return '<img src="assets/icons/bld-' + t + '.png" alt="' + FOF.BUILDINGS[t].name + '"' + (h ? ' style="height:' + h + 'px"' : '') + '>'; }
 
@@ -169,12 +177,12 @@
   function startWaitClock() { if (!waitTimer) waitTimer = setInterval(tickWait, 1000); }
   function renderHeader() {
     var pi = PHASES.map(function (x) { return x[0]; }).indexOf(st.phase);
-    $('phases').innerHTML = PHASES.map(function (x, i) { if (x[0] === 'collect') return ''; return '<span class="phase ' + (i === pi ? 'on' : i < pi ? 'done' : '') + '"><span class="n">' + i + '</span><span class="t">' + x[1] + '</span></span>'; }).join('');
-    $('roundChip').innerHTML = 'Tour ' + st.round + (net ? ' · <span class="room-code" title="Code du salon">' + net.code + '</span> · vous : <b style="color:' + color(net.seatIndex()) + '">' + esc(st.players[net.seatIndex()].name) + '</b>' : '');
+    setHTML($('phases'), PHASES.map(function (x, i) { if (x[0] === 'collect') return ''; return '<span class="phase ' + (i === pi ? 'on' : i < pi ? 'done' : '') + '"><span class="n">' + i + '</span><span class="t">' + x[1] + '</span></span>'; }).join(''));
+    setHTML($('roundChip'), 'Tour ' + st.round + (net ? ' · <span class="room-code" title="Code du salon">' + net.code + '</span> · vous : <b style="color:' + color(net.seatIndex()) + '">' + esc(st.players[net.seatIndex()].name) + '</b>' : ''));
   }
 
   function renderOpponents() {
-    $('players').innerHTML = '<div class="section-title">Dirigeants</div>' + st.players.map(function (p) {
+    setHTML($('players'), '<div class="section-title">Dirigeants</div>' + st.players.map(function (p) {
       var terr = FOF.terrOf(st, p.id).length, tem = FOF.countBld(st, p.id, 'T');
       var pills = (p.tyran ? '<span class="pill tyran">Tyran</span>' : '') + (p.pact !== null ? '<span class="pill pact">Pacte</span>' : '') + (!p.alive ? '<span class="pill">Éliminé</span>' : '');
       var busy = p.id === actor() && p.alive && !st.winner && !myTurn();
@@ -186,7 +194,7 @@
         '<span title="Temples"><img class="icn" src="assets/icons/bld-T.png" alt=""> <b>' + tem + '/' + st.victory.rel + '</b></span></div>' +
         (busy ? '<div class="thinking-row">' + FOF.ic(p.bot ? 'helm' : 'crown', 13) + ' <span>' + (p.bot ? 'réfléchit' : PHASE_SHORT[st.phase]) + '</span><i class="d"></i><i class="d"></i><i class="d"></i></div>' : '') +
         '</div></div>';
-    }).join('');
+    }).join(''));
   }
 
   /* ---------- carte ---------- */
@@ -215,7 +223,7 @@
     else if (mode && mode.kind === 'deploy') { blink = {}; mode.spots.forEach(function (tid) { blink['t' + tid] = 1; }); }
     FOF.Board.reach(st, $('rcCv'), blink);
     $('tokens').setAttribute('viewBox', b.x + ' ' + b.y + ' ' + b.w + ' ' + b.h);
-    $('tokens').innerHTML = tokensSVG();
+    setHTML($('tokens'), tokensSVG());
     renderPopover(sc);
     renderRadial(sc, b);
     var ban = banner();
@@ -576,7 +584,7 @@
         return '<button class="bbtn parch" data-replace="' + b + '" data-idx="' + x[1] + '" data-tid="' + t.id + '" ' + (bad ? 'disabled' : '') + '>' + bIcon(b, 20) + '<span class="price">' + FOF.bldCost(st, p, b) + '<span class="coin"></span></span></button>';
       }).join('') + '</div>');
     });
-    if (t.id !== p.capital) h.push('<div style="margin-top:10px"><button class="btn small gold" data-capital="' + t.id + '" ' + (p.gold < 10 ? 'disabled' : '') + '>' + FOF.ic('crown', 14) + ' Installer la capitale ici · 10 or</button></div>');
+    if (t.id !== p.capital) h.push('<div style="margin-top:10px"><button class="btn small gold" data-capital="' + t.id + '" ' + (p.gold < 10 ? 'disabled' : '') + '>Installer la capitale ici · 10 or</button></div>');
     return h.join('');
   }
 
@@ -682,7 +690,7 @@
       (canUndo() ? '<button class="btn small undo" data-undo="1" title="Le pion revient d’où il vient et peut repartir ailleurs">' + FOF.ic('move', 14) + ' Annuler le déplacement</button>' : '') +
       '<button class="btn primary go" data-next="1" ' + (st.pending.length || st.winner || !myTurn() ? 'disabled' : '') + '>' + hint[1] + '</button>' +
       (p.leader === 'edouard' && st.phase === 'collect' ? '<button class="btn small gold" data-act="edouard" ' + (p.edouardUsed || p.dip > 3 || p.gold < 4 || p.tyran || p.attackedLast || p.raidedLast ? 'disabled' : '') + '>Edouard : 4 or → +1 diplomatie</button>' : '') + '</div>');
-    $('mat').innerHTML = h.join('');
+    setHTML($('mat'), h.join(''));
   }
 
   /* ---------- panneau droit ---------- */
@@ -695,7 +703,7 @@
     }
     if (err && !pop) h.push('<div class="box"><div class="err" style="margin:0">' + esc(err) + '</div></div>');
     h.push('<div class="box"><div class="section-title">Chronique</div><div class="log">' + st.log.slice(-50).reverse().map(function (l) { return '<div style="--lc:' + (l.p === null ? '#555' : color(l.p)) + '">' + esc(l.m) + '</div>'; }).join('') + '</div></div>');
-    $('right').innerHTML = h.join('');
+    setHTML($('right'), h.join(''));
   }
 
   /* ---------- modales ---------- */
@@ -858,7 +866,7 @@
       if (bl.length) h.push('<div class="section-title" style="margin-top:10px">Trébuchets</div><div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn small ' + (m.trebBld === undefined ? 'primary' : '') + '" data-treb="-1">Ne pas tirer</button>' + bl.map(function (x) { return '<button class="btn small ' + (m.trebBld === x[1] ? 'primary' : '') + '" data-treb="' + x[1] + '">Détruire ' + FOF.BUILDINGS[x[0].t].name + '</button>'; }).join('') + '</div>');
     }
     h.push('<div class="duel">' + sideHTML(p, pv.detA, pv.A, 0, pv.att.map(function (u) { return u.key; }), pv.lead) + '<div class="vs">' + FOF.ic('swords', 22) + '</div>' + sideHTML(d, pv.detD, pv.D, 0, pv.du.map(function (u) { return u.key; }), pv.dl) + '</div>');
-    h.push('<p>Chances de victoire : <b class="num">' + prob + ' %</b> · Coût : <b class="num">' + (pv.cost ? '−' + pv.cost + ' diplomatie' + (p.pact === d.id ? ' (rupture du pacte !)' : '') : 'aucun (cible Tyran)') + '</b></p>');
+    h.push('<p>Chances de victoire : <b class="num">' + prob + ' %</b> · Coût : <b class="num">' + (pv.cost ? '−' + pv.cost + ' diplomatie' + (p.pact === d.id ? ' (rupture du pacte !)' : '') : (pv.reprise ? 'aucun (reprise de votre terre)' : 'aucun (cible Tyran)')) + '</b></p>');
     h.push('<p class="muted">Si vous perdez, toutes vos unités engagées sont défaussées.</p><div class="actions"><button class="btn" data-close="1">Annuler</button><button class="btn attack-go" data-go="1">' + FOF.ic('swords', 17) + ' Lancer l’assaut</button></div></div>');
     return h.join('');
   }
