@@ -73,9 +73,19 @@
   }
 
   /* ---------- recrutement ---------- */
+  var DIPCARD = { corbeau: 1, emissaire: 1, heraut: 1, pelerin: 1, ambassadeur: 1 };
   function cardValue(st, p, key) {
     var d = FOF.unitDef(key);
-    if (FOF.isElite(key)) { var avg = d.pow.reduce(function (s, v) { return s + v; }, 0) / 4; return avg + (d.move - 1) * 0.6 - d.upkeep * 0.45 + 0.8; }
+    // course diplomatique lancée : les cartes qui rapportent de la diplomatie passent devant
+    if (DIPCARD[key] && !p.tyran && p.dip >= st.victory.dip * 0.45) return 3.6;
+    if (FOF.isElite(key)) {
+      var avg = d.pow.reduce(function (s, v) { return s + v; }, 0) / 4;
+      var ev = avg + (d.move - 1) * 0.6 - d.upkeep * 0.45 + 0.8;
+      // tôt, ou quand l'armée est vide, un corps de troupe bon marché vaut mieux que rien
+      var na = FOF.army(st, p.id).filter(function (u) { return FOF.isElite(u.key); }).length;
+      if (na === 0) ev += 0.8; else if (na === 1) ev += 0.4;
+      return ev;
+    }
     var anyT = function (k) { return st.map.terr.some(function (t) { return SPECIAL_TARGET[k](st, p, t); }); };
     switch (key) {
       case 'emissaire': return p.tyran ? 0 : 3.2;
@@ -90,7 +100,10 @@
       case 'caboteur': return anyT('caboteur') ? 1.8 : 0;
       case 'caravanier': return anyT('caravanier') ? 1.8 : 0;
       case 'ambassadeur': return anyT('ambassadeur') ? 1.5 : 0;
-      case 'pretresse': return 1.2;
+      case 'pretresse': return FOF.army(st, p.id).some(function (u) { return FOF.isElite(u.key); }) ? 2.3 : 1.0;
+      case 'charpentier': return 2.1;
+      case 'trebuchets': return 2.6;
+      case 'espion': return 1.3;
       default: return 0.5;
     }
   }
@@ -120,7 +133,21 @@
   }
 
   /* ---------- militaire ---------- */
+  // v1.8 : un joueur qui approche de la victoire diplomatique arrête de guerroyer.
+  // Chaque assaut coûte 1 diplomatie : s'acharner reviendrait à saborder sa propre course.
+  function dipRace(st, p) {
+    if (p.tyran) return false;
+    var need = st.victory.dip - p.dip;
+    if (need > 4) return false;
+    // il faut aussi une source de diplomatie : cartes diplomatiques ou aménagements à céder
+    var eng = FOF.army(st, p.id).some(function (u) { return ['corbeau','emissaire','heraut','pelerin','ambassadeur'].indexOf(u.key) >= 0; })
+      || st.map.terr.some(function (t) { return t.ctrl !== null && t.ctrl !== p.id && t.blds.some(function (b) { return b.o === p.id; }); });
+    return eng || need <= 2;
+  }
+  FOF.botDipRace = dipRace;
+
   function attackAct(st, p) {
+    if (dipRace(st, p)) return null;
     var locs = {}; if (p.lpos && !p.lFought && !p.lConq) locs[p.lpos] = 1;
     FOF.army(st, p.id).forEach(function (u) { if (FOF.isElite(u.key) && !u.fought && !u.pacif) locs[u.pos] = 1; });
     var best = null, bs = 0;

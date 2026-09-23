@@ -6,7 +6,7 @@
 <title>Fields of Fire</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alegreya+Sans:wght@400;700;800&family=Cinzel:wght@500;700&family=Grenze:wght@600;700&family=IBM+Plex+Mono:wght@500&display=swap">
-<link rel="stylesheet" href="css/style.css?v=1.7">
+<link rel="stylesheet" href="css/style.css?v=1.8">
 </head>
 <body>
 
@@ -34,7 +34,7 @@
         <p class="err" id="netErr" role="alert"></p>
         <p class="note" id="onlineNote" hidden>Le jeu en ligne n’est pas encore activé sur ce site.</p>
         <div class="setup-actions" id="resumeBox"></div>
-        <p class="note">Version 1.6 · prototype. Les parties sont enregistrées de façon anonyme (durée, tours, dirigeants, type de victoire…) pour équilibrer le jeu. Hugues le Bâtisseur et Aliénor l’Amirale sont à l’essai.</p>
+        <p class="note">Version 1.8 · prototype. Les parties sont enregistrées de façon anonyme (durée, tours, dirigeants, type de victoire…) pour équilibrer le jeu. Hugues le Bâtisseur et Aliénor l’Amirale sont à l’essai.</p>
         <p class="note">Les illustrations des cartes et des dirigeants sont utilisées à titre illustratif uniquement et n’appartiennent en aucun cas à Nube Games. Musique : RandomMind, domaine public (CC0).</p>
       </div>
       <div id="stepLocal" hidden>
@@ -68,10 +68,11 @@
     <button class="btn ghost icon-btn" id="animBtn" type="button" aria-label="Animations" data-ic="spark"></button>
     <button class="btn ghost icon-btn" id="chatBtn" type="button" aria-label="Tchat" hidden data-ic="chat"></button>
     <button class="btn ghost hdr-toggle" id="logBtn" type="button" aria-pressed="true" title="Afficher / masquer la chronique"><span data-ic="scroll"></span> Chronique</button>
+    <button class="btn ghost" id="styleBtn" type="button" title="Style de la carte"></button>
     <button class="btn ghost" id="deckBtn" type="button" title="Voir le deck"><span data-ic="cards"></span> Deck</button>
     <button class="btn ghost" id="glossBtn" type="button" title="Glossaire"><span data-ic="book"></span> Glossaire</button>
     <button class="btn ghost hdr-speed" id="speedBtn" type="button" hidden></button>
-    <button class="btn ghost icon-btn hdr-flag" id="flagBtn" type="button" title="Abandonner la partie" aria-label="Abandonner la partie" data-ic="flag"></button>
+    <button class="btn ghost icon-btn hdr-flag" id="flagBtn" type="button" title="Quitter la partie (pause 48 h ou abandon)" aria-label="Quitter la partie" data-ic="flag"></button>
     <button class="btn ghost" id="helpBtn" type="button" title="Règles"><span data-ic="help"></span> Règles</button>
     <button class="btn ghost icon-btn" id="bugBtn" type="button" title="Signaler un bug" aria-label="Signaler un bug" data-ic="bug"></button>
     <button class="btn ghost" id="newBtn" type="button" title="Nouvelle partie"><span data-ic="restart"></span> Nouvelle partie</button>
@@ -82,7 +83,6 @@
     <div id="boardWrap"><canvas id="baseCv"></canvas><canvas id="amCv"></canvas><canvas id="ovCv"></canvas><canvas id="rcCv"></canvas><svg id="tokens"></svg><div class="popover" id="popover" hidden></div><div id="radial" hidden></div></div>
     <div class="legend"><span><i class="chip" style="background:#b3d65a"></i><img src="assets/icons/biome-P.png" alt="">Plaines</span><span><i class="chip" style="background:#2d6b2f"></i><img src="assets/icons/biome-F.png" alt="">Forêt</span><span><i class="chip" style="background:#aca596"></i><img src="assets/icons/biome-M.png" alt="">Montagnes</span><span><i class="chip" style="background:#526043"></i><img src="assets/icons/biome-Ma.png" alt="">Marécage</span></div>
     <div class="board-tools"><button class="btn small" id="zoomOut" type="button" aria-label="Dézoomer">−</button><button class="btn small" id="zoomIn" type="button" aria-label="Zoomer">+</button></div>
-    <button class="btn" id="marketToggle" data-showmarket="1" type="button" hidden>Voir la zone de recrutement ▴</button>
     <div class="market" id="market" hidden></div>
   </main>
   <aside class="right" id="right"></aside>
@@ -94,23 +94,23 @@
 <div id="bugModal" hidden></div>
 <div id="chatPanel" hidden><div class="chat-head"><b><span data-ic="chat"></span> Tchat de la partie</b><button class="btn small ghost" data-chatclose="1" aria-label="Fermer">✕</button></div><div id="chatList"></div><div class="chat-in"><input id="chatInput" maxlength="300" placeholder="Votre message…" autocomplete="off"><button class="btn small primary" data-chatsend="1">Envoyer</button></div></div>
 
-<script src="js/config.js?v=1.7"></script>
-<script src="js/icons.js?v=1.7"></script>
-<script src="js/data.js?v=1.7"></script>
-<script src="js/map.js?v=1.7"></script>
-<script src="js/engine.js?v=1.7"></script>
-<script src="js/cards.js?v=1.7"></script>
-<script src="js/board.js?v=1.7"></script>
-<script src="js/net.js?v=1.7"></script>
-<script src="js/stats.js?v=1.7"></script>
-<script src="js/sfx.js?v=1.7"></script>
-<script src="js/fx.js?v=1.7"></script>
-<script src="js/music.js?v=1.7"></script>
-<script src="js/bot.js?v=1.7"></script>
-<script src="js/tutorial.js?v=1.7"></script>
-<script src="js/extras.js?v=1.7"></script>
-<script src="js/ui.js?v=1.7"></script>
-<script src="js/main.js?v=1.7"></script>
+<script src="js/config.js?v=1.8"></script>
+<script src="js/icons.js?v=1.8"></script>
+<script src="js/data.js?v=1.8"></script>
+<script src="js/map.js?v=1.8"></script>
+<script src="js/engine.js?v=1.8"></script>
+<script src="js/cards.js?v=1.8"></script>
+<script src="js/board.js?v=1.8"></script>
+<script src="js/net.js?v=1.8"></script>
+<script src="js/stats.js?v=1.8"></script>
+<script src="js/sfx.js?v=1.8"></script>
+<script src="js/fx.js?v=1.8"></script>
+<script src="js/music.js?v=1.8"></script>
+<script src="js/bot.js?v=1.8"></script>
+<script src="js/tutorial.js?v=1.8"></script>
+<script src="js/extras.js?v=1.8"></script>
+<script src="js/ui.js?v=1.8"></script>
+<script src="js/main.js?v=1.8"></script>
 
 </body>
 </html>

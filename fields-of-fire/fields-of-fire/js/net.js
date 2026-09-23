@@ -108,9 +108,19 @@
       }).then(function () { if (r.seatIndex() < 0) throw new Error('Impossible de rejoindre ce salon.'); return r; });
     });
   };
+  // v1.8 : toutes les parties commencées avant cette date sont retirées (remise à zéro du prototype).
+  // Les salons restent dans la base, ils ne sont simplement plus jouables.
+  FOF.PURGE_BEFORE = Date.parse('2026-09-23T16:47:30Z');
+
   // une partie sans action depuis plus de 48 h est close automatiquement
   function checkStale(r) {
     var row = r.row;
+    if (row && row.status === 'playing' && row.state && row.state.t0 < FOF.PURGE_BEFORE) {
+      FOF.statsAbandon(row.state);
+      return r.cas({ status: 'closed' }).catch(function () {}).then(function () {
+        throw new Error('Cette partie date d’avant la remise à zéro du 23/09 : elle a été close. Créez un nouveau salon.');
+      });
+    }
     if (!row || row.status !== 'playing' || !row.state || !FOF.expired(row.state)) return r;
     FOF.statsAbandon(row.state);
     return r.cas({ status: 'closed' }).catch(function () {}).then(function () { throw new Error('Partie abandonnée : plus aucune action depuis 48 heures.'); });

@@ -209,6 +209,96 @@
 
   var SEA3 = [[92, 206, 222], [52, 150, 214], [34, 104, 190], [26, 78, 162]];
   function mix3(p, v) { var n = p.length - 1, f = Math.max(0, Math.min(n, v * n)), k = Math.min(n - 1, Math.floor(f)), t = f - k, a = p[k], b = p[k + 1]; return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t]; }
+  /* ---------- styles de carte (v1.8) ----------
+     Traitement appliqué au calque du terrain seulement, une fois par carte.
+     Les couleurs des joueurs sont peintes sur un autre calque (overlay) : elles ne sont pas touchées. */
+  var STYLES = ['enluminure', 'estampe'];
+  FOF.MAP_STYLES = [
+    { id: 'enluminure', name: 'Enluminure' },
+    { id: 'estampe', name: 'Estampe sur bois' }
+  ];
+  FOF.mapStyle = function () {
+    var v; try { v = localStorage.getItem('fof-mapstyle'); } catch (e) {}
+    return STYLES.indexOf(v) >= 0 ? v : 'enluminure';        // enluminure par défaut
+  };
+  FOF.setMapStyle = function (s) {
+    if (STYLES.indexOf(s) < 0) return;
+    try { localStorage.setItem('fof-mapstyle', s); } catch (e) {}
+  };
+
+  function clamp8(v) { return v < 0 ? 0 : v > 255 ? 255 : v; }
+  function lum8(r, g, b) { return 0.299 * r + 0.587 * g + 0.114 * b; }
+  function isSea8(r, g, b) { return b > 90 && b > r + 25 && b > g + 10; }
+  // le halo cyan des côtes est ce qui date le plus le rendu : on le ramène vers la mer
+  function killGlow(a, i) {
+    var r = a[i], g = a[i + 1], b = a[i + 2];
+    if (b > 165 && g > 150 && r < g - 35) {
+      var m = (g + b) / 2;
+      a[i] = clamp8(r * 0.5 + 18); a[i + 1] = clamp8(g - (m - 120) * 0.62); a[i + 2] = clamp8(b - (m - 120) * 0.34);
+    }
+  }
+  function vignette(ctx, w, h, col) {
+    var g = ctx.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.25, w / 2, h / 2, Math.max(w, h) * 0.72);
+    g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, col);
+    ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
+  }
+  var EST_PAL = [[228, 218, 198], [196, 168, 110], [122, 140, 86], [48, 78, 58], [92, 88, 80], [28, 36, 48], [20, 16, 12]];
+
+  function styleBase(canvas, style) {
+    var w = canvas.width, h = canvas.height;
+    if (!w || !h) return;
+    var ctx = canvas.getContext('2d'), d;
+    try { d = ctx.getImageData(0, 0, w, h); } catch (e) { return; }   // canvas « teinté » : on laisse tel quel
+    var a = d.data, i, r, g, b, L;
+    if (style === 'estampe') {
+      for (i = 0; i < a.length; i += 4) {
+        if (!a[i + 3]) continue;
+        killGlow(a, i);
+        r = a[i]; g = a[i + 1]; b = a[i + 2];
+        if (isSea8(r, g, b)) { a[i] = 28; a[i + 1] = 36; a[i + 2] = 48; continue; }
+        r = clamp8((r - 128) * 1.3 + 128); g = clamp8((g - 128) * 1.3 + 128); b = clamp8((b - 128) * 1.3 + 128);
+        var best = 0, bd = 1e9;
+        for (var k = 0; k < EST_PAL.length; k++) {
+          var dr = r - EST_PAL[k][0], dg = g - EST_PAL[k][1], db = b - EST_PAL[k][2];
+          var dd = dr * dr + dg * dg + db * db;
+          if (dd < bd) { bd = dd; best = k; }
+        }
+        a[i] = EST_PAL[best][0]; a[i + 1] = EST_PAL[best][1]; a[i + 2] = EST_PAL[best][2];
+      }
+      ctx.putImageData(d, 0, 0);
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighten';
+      ctx.strokeStyle = 'rgba(228,218,198,.22)'; ctx.lineWidth = 1.1;
+      for (var x = -h; x < w; x += 9) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x + h, h); ctx.stroke(); }
+      ctx.restore();
+      vignette(ctx, w, h, 'rgba(20,16,12,.34)');
+      return;
+    }
+    // enluminure : mer de lapis, terres en pierres précieuses, filet d'or
+    for (i = 0; i < a.length; i += 4) {
+      if (!a[i + 3]) continue;
+      r = a[i]; g = a[i + 1]; b = a[i + 2]; L = lum8(r, g, b) / 255;
+      if (isSea8(r, g, b)) {
+        a[i] = clamp8(22 + L * 46); a[i + 1] = clamp8(46 + L * 62); a[i + 2] = clamp8(118 + L * 92);
+      } else {
+        var Lm = lum8(r, g, b), s = 1.3;
+        a[i] = clamp8((Lm + (r - Lm) * s) * 0.94 + 16);
+        a[i + 1] = clamp8((Lm + (g - Lm) * s) * 0.9 + 10);
+        a[i + 2] = clamp8((Lm + (b - Lm) * s) * 0.82);
+      }
+    }
+    ctx.putImageData(d, 0, 0);
+    vignette(ctx, w, h, 'rgba(12,8,24,.58)');
+    var gg = ctx.createLinearGradient(0, 0, 0, h);
+    gg.addColorStop(0, '#f6e27a'); gg.addColorStop(0.5, '#d4af37'); gg.addColorStop(1, '#9a7b1f');
+    ctx.strokeStyle = gg;
+    ctx.lineWidth = Math.max(6, Math.round(Math.min(w, h) * 0.008));
+    ctx.strokeRect(ctx.lineWidth / 2, ctx.lineWidth / 2, w - ctx.lineWidth, h - ctx.lineWidth);
+    ctx.lineWidth = 2;
+    var inset = Math.max(14, Math.round(Math.min(w, h) * 0.016));
+    ctx.strokeRect(inset, inset, w - inset * 2, h - inset * 2);
+  }
+
   function drawBase(st, rs, canvas) {
     var gw = rs.gw, gh = rs.gh, N = gw * gh, S = rs.S, m = st.map;
     canvas.width = gw; canvas.height = gh;
@@ -622,9 +712,15 @@
     icons: function () { return []; },
     bounds: function () { return cache ? { x: cache.minX, y: cache.minY, w: cache.wU, h: cache.hU } : null; },
     prepare: function (st, baseCanvas, done) {
-      var key = st.seed + ':' + st.map.terr.length;
+      // le style fait partie de la clé de cache : changer de style suffit à redessiner le terrain
+      var key = st.seed + ':' + st.map.terr.length + ':' + FOF.mapStyle();
       if (cache && cache.key === key && baseCanvas.dataset.key === key) { done(); return; }
-      loadImages().then(function () { cache = build(st); drawBase(st, cache, baseCanvas); baseCanvas.dataset.key = key; done(); });
+      loadImages().then(function () {
+        cache = build(st); cache.key = key;
+        drawBase(st, cache, baseCanvas);
+        styleBase(baseCanvas, FOF.mapStyle());
+        baseCanvas.dataset.key = key; done();
+      });
     },
     // couche des propriétaires, sélection et cibles à choisir
     overlay: function (st, canvas, view, colorOf) {

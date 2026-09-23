@@ -1,4 +1,4 @@
-# Fields of Fire — version web (v1.7, prototype)
+# Fields of Fire — version web (v1.8, prototype)
 
 Jeu 100 % statique (HTML/CSS/JS, sans build). Servi par GitHub Pages sur https://nubegames.fr/fields-of-fire/ (dossier `fields-of-fire/` du repo `nubegamesfr.github.io`).
 
@@ -73,4 +73,42 @@ Limites du prototype : pas de comptes, quiconque a le code d'un salon peut y éc
 - **Correction de la défausse** : acheter une carte n'empêche plus d'en défausser une (le programme les avait liées à tort ; la règle écrite autorise les deux, dans n'importe quel ordre).
 - **Menu radial** : icône de déplacement réduite pour tenir dans la pastille.
 - **Edouard le Sage** : confirmation avant l'achat de diplomatie — coût, trésor avant/après, et avertissement renforcé au tour 1 (« avec 1 or il vous restera peu de quoi recruter »).
-- **Illustrations manquantes** : les cartes Espion, Héraut, Ambassadeur, Pèlerin, Milice, Frondeurs, Charpentier et les dirigeants Hugues et Aliénor reçoivent une **plaque emblème** gravée (fond peint sombre + emblème doré) à la place du placeholder générique. Ce sont des images générées ici, à remplacer par de vraies illustrations quand le créateur en fournira : il suffit de déposer le fichier au même nom dans `assets/units/<clé>.jpg` (400 × 244) ou `assets/heroes/<clé>.jpg` (300 × 316).
+- **Illustrations manquantes** : les cartes Espion, Héraut, Ambassadeur, Pèlerin, Milice, Frondeurs, Charpentier et les dirigeants Hugues et Aliénor reçoivent de vraies **peintures du domaine public**, recadrées au format des cartes (La Tour, Holbein, Bosch, Bruegel, Titien, Sandys — détail dans `CREDITS.md`). Plus aucune carte ne tombe sur le placeholder couronne. Pour en remplacer une : déposer un fichier au même nom dans `assets/units/<clé>.jpg` (400 × 244) ou `assets/heroes/<clé>.jpg` (300 × 316), rien d'autre à toucher.
+
+## v1.7a — correction de l'IA (23/09/2026)
+- **Le bot ignorait cinq cartes** : Pillards, Charpentier, Espion, Prêtresse, Trébuchets n'étaient jamais achetés,
+  faute de valeur dans sa grille d'évaluation (`js/bot.js`, `cardValue`). Corrigé : les cinq sont désormais
+  évaluées, et les élites bon marché valent davantage quand l'armée est vide (comportement plus humain en début de partie).
+- **Style de la carte** : bouton dans l'en-tête qui bascule entre **Enluminure** (par défaut) et
+  **Estampe sur bois**, choix mémorisé dans le navigateur (`fof-mapstyle`).
+  Le traitement est appliqué au calque du terrain uniquement (`styleBase` dans `board.js`), une seule
+  fois par carte : le style fait partie de la clé de cache de `prepare`, donc changer de style suffit
+  à le redessiner. Les couleurs des joueurs sont peintes sur le calque `overlay`, elles ne sont donc
+  jamais mangées par le traitement — c'était la réserve principale sur l'estampe.
+  Ajouter un style : une entrée dans `FOF.MAP_STYLES` et une branche dans `styleBase`.
+- Aucune règle du jeu n'a changé. Voir `claude/06_analyse_equilibrage.md` dans le projet pour la campagne
+  d'équilibrage complète (environ 40 000 parties simulées, 3 à 6 joueurs) et les six correctifs proposés,
+  qui eux attendent validation.
+
+## v1.8 (playtest 5)
+- **Didacticiel au premier plan** : l'encart passe au-dessus de tout (`z-index: 200`) et se remet
+  tout seul si un rendu de l'interface l'a masqué (`tutorial.js`, boucle `tick`). Il ne se ferme
+  plus que par ses propres boutons.
+- **Marché : les cartes ne disparaissent plus.** Pendant le recrutement la zone reste toujours
+  affichée. Le bouton « Regarder la carte ▾ » la passe en vignettes (nom + illustration, 473 px → 234 px
+  de haut) au lieu de la masquer ; « Agrandir les cartes ▴ » ou un clic sur les vignettes la rouvre.
+  Après un achat elle se réduit d'elle-même, le temps de déployer l'unité. Le bouton
+  « Voir la zone de recrutement » devient inutile et a été retiré.
+  *Note technique : la classe de réduction s'appelle `compact` et non `mini` — `.mini` est déjà
+  la vignette d'unité du tapis et imposait sa largeur de 112 px à toute la barre.*
+- **Quitter ≠ abandonner.** Le drapeau blanc ouvre désormais trois choix : continuer,
+  **mettre en pause 48 h** (la partie et le salon sont conservés, on reprend avec le même code ;
+  sans action pendant 48 h elle est abandonnée par la règle existante) ou abandonner tout de suite.
+- **Remise à zéro du prototype (23/09/2026)** : les parties commencées avant cette date sont closes
+  (`FOF.PURGE_BEFORE` dans `net.js`, appliqué aussi à la sauvegarde locale), et `stats.html`
+  ne compte plus que les parties postérieures. Rien n'est supprimé dans la base : le tableau des
+  dirigeants est simplement recalculé côté page à partir des parties retenues, au lieu de lire la
+  vue `leader_stats` qui agrège tout depuis toujours.
+- Aucune règle du jeu n'a changé. Les correctifs d'équilibrage (Ambassade, seuils de victoire,
+  Edouard, Mathilde) restent en attente de validation — voir `claude/06_analyse_equilibrage.md`
+  §14 et §15 dans le projet.

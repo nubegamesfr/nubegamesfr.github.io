@@ -50,7 +50,13 @@
     if (!on) return;
     var st = FOF.currentState && FOF.currentState();
     if (!st || st.winner) return hide();
-    if (cur) return;                       // une étape est déjà affichée
+    // v1.8 : le didacticiel ne doit jamais disparaître à cause d'une action de l'interface.
+    // Si l'encart a été masqué ou retiré du document par un rendu, on le remet tel qu'il était.
+    if (cur) {
+      var b = $('tutoBox');
+      if (!b || !b.isConnected || b.hidden) show(cur);
+      return;                              // une étape est déjà affichée
+    }
     for (var i = 0; i < STEPS.length; i++) {
       var s = STEPS[i];
       if (seen[s.id]) continue;
