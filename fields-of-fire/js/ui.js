@@ -5,6 +5,8 @@
   // pile d'annulation : uniquement les déplacements de la phase militaire, tant qu'aucune action
   // irréversible (combat, conquête, effet, changement de phase) n'a été jouée depuis.
   var undoStack = [];
+  // taille retenue du plateau (voir renderBoard) : évite que la carte saute à chaque rendu
+  var fitBox = null;
   var SAVE = 'fof-save-v1';
   var $ = function (id) { return document.getElementById(id); };
   var esc = FOF.esc;
@@ -33,7 +35,7 @@
 
   // net : salon en ligne (null = jeu local sur un seul écran)
   FOF.startUI = function (state, room) {
-    st = state; sel = null; mode = null; pop = null; err = ''; modal = null; lastTurnShown = 0; zoom = 1; marketOpen = true;
+    st = state; sel = null; mode = null; pop = null; err = ''; modal = null; lastTurnShown = 0; zoom = 1; marketOpen = true; fitBox = null; undoStack.length = 0;
     if (net) net.stop();
     net = room || null; combatSig = sig(st.lastCombat);
     if (!net) FOF.statsInit(st, 'local');
@@ -209,11 +211,21 @@
     // reste caché derrière, ce qui est exactement ce qu'on cherchait à éviter en la réduisant.
     var mh = (mkt && !mkt.hidden && mkt.classList.contains('compact')) ? mkt.offsetHeight : 0;
     var dispoH = Math.max(80, board.clientHeight - 24 - (mh ? mh + 14 : 0));   // 14 px : le dégradé qui coiffe le marché
-    var fit = Math.min((board.clientWidth - 24) / b.w, dispoH / b.h);
+    // v1.9.1 — LE clignotement du mode en ligne : la barre du bas montre le joueur actif, et sa
+    // hauteur change d'un joueur à l'autre (armée plus ou moins fournie, texte sur une ou deux
+    // lignes). Le plateau se recalculait à chaque fois et sautait de 823×569 à 781×540 plusieurs
+    // fois par seconde. On garde la taille tant que la place disponible n'a pas vraiment changé.
+    var availW = Math.max(80, board.clientWidth - 24), availH = dispoH;
+    var mapKey = Math.round(b.w) + 'x' + Math.round(b.h);
+    if (!fitBox || fitBox.key !== mapKey || fitBox.mh !== mh ||
+        Math.abs(availW - fitBox.w) > 4 || Math.abs(availH - fitBox.h) > 40) {
+      fitBox = { key: mapKey, w: availW, h: availH, mh: mh };
+    }
+    var fit = Math.min(fitBox.w / b.w, fitBox.h / b.h);
     if (!(fit > 0)) fit = 1;
     var sc = fit * zoom;
     wrap.style.width = Math.round(b.w * sc) + 'px'; wrap.style.height = Math.round(b.h * sc) + 'px';
-    wrap.style.marginTop = zoom === 1 ? Math.max(12, (board.clientHeight - mh - b.h * sc) / 2) + 'px' : '12px';
+    wrap.style.marginTop = zoom === 1 ? Math.max(12, (fitBox.h - b.h * sc) / 2) + 'px' : '12px';
     wrap.dataset.scale = sc;
     var picks = pickTargets();
     FOF.Board.overlay(st, $('ovCv'), { sel: sel, picks: picks }, color);
@@ -731,6 +743,8 @@
       '<div class="set-row"><div class="set-lbl"><b>Animations</b><small>Déplacements, bandeaux et effets.</small></div><div class="set-opts">' +
         '<button class="btn' + (anim ? ' primary' : '') + '" data-setanim="1">Activées</button>' +
         '<button class="btn' + (anim ? '' : ' primary') + '" data-setanim="0">Réduites</button></div></div>' +
+      '<p class="muted" style="font-size:13px;margin:10px 0 0;text-align:right">Fields of Fire · version <b>' + FOF.CONFIG.version + '</b>' +
+        ' — si ce numéro n\u2019est pas le dernier publié, rechargez la page en forçant le cache (Ctrl+Maj+R, ou Cmd+Maj+R).</p>' +
       '<div class="actions"><button class="btn primary" data-close="1">Fermer</button></div></div>';
   }
   function renderModal() {
@@ -866,7 +880,7 @@
       if (bl.length) h.push('<div class="section-title" style="margin-top:10px">Trébuchets</div><div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn small ' + (m.trebBld === undefined ? 'primary' : '') + '" data-treb="-1">Ne pas tirer</button>' + bl.map(function (x) { return '<button class="btn small ' + (m.trebBld === x[1] ? 'primary' : '') + '" data-treb="' + x[1] + '">Détruire ' + FOF.BUILDINGS[x[0].t].name + '</button>'; }).join('') + '</div>');
     }
     h.push('<div class="duel">' + sideHTML(p, pv.detA, pv.A, 0, pv.att.map(function (u) { return u.key; }), pv.lead) + '<div class="vs">' + FOF.ic('swords', 22) + '</div>' + sideHTML(d, pv.detD, pv.D, 0, pv.du.map(function (u) { return u.key; }), pv.dl) + '</div>');
-    h.push('<p>Chances de victoire : <b class="num">' + prob + ' %</b> · Coût : <b class="num">' + (pv.cost ? '−' + pv.cost + ' diplomatie' + (p.pact === d.id ? ' (rupture du pacte !)' : '') : (pv.reprise ? 'aucun (reprise de votre terre)' : 'aucun (cible Tyran)')) + '</b></p>');
+    h.push('<p>Chances de victoire : <b class="num">' + prob + ' %</b> · Coût : <b class="num">' + (pv.cost ? '−' + pv.cost + ' diplomatie' + (p.pact === d.id ? ' (rupture du pacte !)' : '') : 'aucun (cible Tyran)') + '</b></p>');
     h.push('<p class="muted">Si vous perdez, toutes vos unités engagées sont défaussées.</p><div class="actions"><button class="btn" data-close="1">Annuler</button><button class="btn attack-go" data-go="1">' + FOF.ic('swords', 17) + ' Lancer l’assaut</button></div></div>');
     return h.join('');
   }

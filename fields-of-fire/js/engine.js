@@ -294,10 +294,8 @@
       D = du.filter(function (u) { return FOF.isElite(u.key); }).length; detD.push(['Élites en mer', D]);
       if (dl) { D += d.mod; detD.push(['Dirigeant', d.mod]); }
     }
-    // reprendre une terre que ce joueur vous avait prise par les armes ne coûte rien
-    var reprise = !!(t && a.kind === 'terr' && t.ctrl === d.id && t.takenFrom === p.id);
-    var cost = (d.tyran || reprise) ? 0 : 1; if (p.pact === d.id) cost += 2;
-    return { A: A, D: D, detA: detA, detD: detD, att: att, lead: lead, du: du, dl: dl, cost: cost, reprise: reprise };
+    var cost = d.tyran ? 0 : 1; if (p.pact === d.id) cost += 2;
+    return { A: A, D: D, detA: detA, detD: detD, att: att, lead: lead, du: du, dl: dl, cost: cost };
   };
   FOF.attackTargets = function (st, loc) {
     var p = FOF.cur(st), out = [];
@@ -326,11 +324,11 @@
     var pv = FOF.previewAttack(st, a);
     if (!pv.att.length && !pv.lead) throw new Error('Aucune unité ne peut attaquer ici.');
     var t = loc[0] === 't' ? T(st, +loc.slice(1)) : null;
-    // coûts — reprendre une terre que l'adversaire vous avait prise par les armes est gratuit
+    // coûts — v1.9.1 : la reprise d'une terre perdue coûte de nouveau 1 diplomatie. La gratuité,
+    // mesurée sur 1 000 parties, faisait passer la voie diplomatique de 29 % à 60 % des victoires.
     p.attackedNow = true; d.raidedNow = true;
-    var reprise = !!(t && a.kind === 'terr' && t.ctrl === d.id && t.takenFrom === p.id);
     if (p.pact === d.id) breakPact(st, p, d);
-    if (!d.tyran && !reprise) loseDip(st, p, 1, 'attaque');
+    if (!d.tyran) loseDip(st, p, 1, 'attaque');
     var treb = a.treb ? st.units.filter(function (u) { return u.uid === a.treb; })[0] : null;
     // dés
     var aPr = FOF.unitsAt(st, loc, p.id).some(function (u) { return u.key === 'pretresse'; });
@@ -619,7 +617,6 @@
         t.ctrl = null; t.blds = []; t.takenFrom = null;
         log(st, att.name + ' met ' + t.name + ' à sac : il n’en reste que cendres.', att.id, 'devastate');
       } else {
-        t.takenFrom = def.id;   // reprise sans malus : voir §A des amendements v1.6
         t.ctrl = att.id; t.conqStamp = st.turnNo; t.revoltFrom = null;
         log(st, att.name + ' s’empare de ' + t.name + '.', att.id, 'conquer');
       }

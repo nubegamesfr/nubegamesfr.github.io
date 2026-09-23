@@ -204,7 +204,10 @@ aside.right { border-left: 1px solid var(--line); display: flex; flex-direction:
 .track .boxes i { width: 13px; height: 13px; border: 1px solid #6b6453; border-radius: 2px; display: block; }
 .track .boxes i.on { background: var(--pc); border-color: var(--pc); }
 .track .boxes i.goal { border-color: #c7342b; box-shadow: inset 0 0 0 1px #c7342b; }
-.army { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px; }
+/* v1.9.1 : la barre du bas change de contenu à chaque joueur (armée fournie ou vide, texte sur
+   une ou deux lignes). Sa hauteur variait de 130 à 159 px, ce qui faisait sauter la carte à
+   chaque rendu. Ces deux hauteurs minimales la figent. */
+.army { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px; min-height: 88px; align-items: center; }
 .mini { width: 112px; flex: none; border-radius: 8px; border: 3px solid #d4b04f; overflow: hidden; font-size: 13px; position: relative; cursor: pointer; background: var(--parch); color: var(--parch-ink); }
 .mini.elite { border-color: #b8463c; } .mini.done { opacity: .55; }
 .mini img { width: 100%; height: 46px; object-fit: cover; display: block; }
@@ -212,7 +215,7 @@ aside.right { border-left: 1px solid var(--line); display: flex; flex-direction:
 .mini .ms { padding: 0 5px 3px; color: #5c4d33; }
 .mini .mv { position: absolute; top: 3px; right: 3px; background: var(--arrow); color: #fff; font-weight: 800; border-radius: 10px; padding: 0 6px; font-size: 12.5px; }
 .cta { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; max-width: 330px; }
-.cta .hint { font-size: 15px; color: var(--bone-dim); text-align: right; }
+.cta .hint { font-size: 15px; color: var(--bone-dim); text-align: right; min-height: 2.8em; display: flex; align-items: center; justify-content: flex-end; }
 .cta .go { font-size: 19.5px; padding: 12px 22px; border-radius: 12px; font-family: var(--f-display); letter-spacing: .03em; box-shadow: 0 0 0 0 rgba(120,170,240,.55); animation: glow 2.2s ease-in-out infinite; }
 @keyframes glow { 50% { box-shadow: 0 0 0 8px rgba(120,170,240,0); } 0% { box-shadow: 0 0 0 0 rgba(120,170,240,.5); } }
 
@@ -286,7 +289,10 @@ button.mode-card:hover { transform: translateY(-2px); border-color: var(--gold);
 .seat.mine { box-shadow: 0 0 0 1px var(--gold) inset; }
 .seat.empty { border-style: dashed; opacity: .55; min-height: 56px; }
 .seat-name { display: flex; flex-direction: column; } .seat-name small { color: var(--gold); letter-spacing: .1em; text-transform: uppercase; font-size: 12.5px; }
-.waiting { color: var(--bone-dim); align-self: center; animation: pulse 1.6s ease-in-out infinite; }
+/* v1.9.1 — LE clignotement. Ce sélecteur visait le <span class="waiting"> du salon, mais
+   ui.js pose aussi la classe « waiting » sur <body> pendant le tour d'un autre joueur :
+   la PAGE ENTIÈRE passait de 100 % à 45 % d'opacité toutes les 1,6 s. Limité au span. */
+span.waiting { color: var(--bone-dim); align-self: center; animation: pulse 1.6s ease-in-out infinite; }
 /* pastilles « prêt » du salon en ligne */
 .seat .rdy { display: inline-flex; align-items: center; gap: 6px; justify-self: end; padding: 5px 11px; border-radius: 999px; font-size: 13px; letter-spacing: .04em; white-space: nowrap;
   border: 1px solid rgba(214,196,150,.28); background: rgba(0,0,0,.22); color: var(--bone-dim); }
@@ -706,12 +712,14 @@ header.bar .music { flex: none; }
 body.waiting #tokens .tk.cur .tki { animation: tokBob 2.6s ease-in-out infinite, curGlow 2.2s ease-in-out infinite; }
 @keyframes curGlow { 0%, 100% { filter: none; } 50% { filter: drop-shadow(0 0 7px var(--wc, #e2b448)); } }
 /* liseré discret autour de la carte, à la couleur du joueur qu'on attend */
+/* v1.9 : ce liseré « respirait » (opacité 0,10 → 0,34 en boucle) sur tout le pourtour de la carte
+   pendant qu'on attendait un autre joueur. Cumulé aux bandeaux de phase, cela donnait une interface
+   qui pulse. Il est désormais fixe : même information, plus aucun mouvement. */
 body.waiting #boardWrap::after { content: ''; position: absolute; inset: 0; pointer-events: none; border-radius: inherit;
-  box-shadow: inset 0 0 0 2px var(--wc, #e2b448); opacity: .18; animation: wpulse 2.6s ease-in-out infinite; }
-@keyframes wpulse { 0%, 100% { opacity: .1; } 50% { opacity: .34; } }
+  box-shadow: inset 0 0 0 2px var(--wc, #e2b448); opacity: .22; }
 
 @media (prefers-reduced-motion: reduce) {
-  .wdot, .wbar i, .opp.thinking::after, .opp .thinking-row .d, body.waiting #boardWrap::after { animation: none; }
+  .wdot, .wbar i, .opp.thinking::after, .opp .thinking-row .d { animation: none; }
   body.waiting #tokens .tk.cur .tki { animation: none; }
 }
 

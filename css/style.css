@@ -62,6 +62,12 @@ p{margin:0 0 1em}
 /* ---------- héros ---------- */
 .hero{position:relative;padding:clamp(56px,9vw,112px) 0 clamp(40px,6vw,72px);overflow:hidden;isolation:isolate}
 .hero-bg{position:absolute;inset:0;z-index:-1;pointer-events:none}
+/* cover du jeu, plein cadre derrière le titre */
+.hero-cover{position:absolute;inset:0;background-image:var(--cover);background-size:cover;background-position:center 38%;opacity:.55}
+.hero-cover::after{content:'';position:absolute;inset:0;
+  background:linear-gradient(180deg,rgba(11,7,18,.60) 0%,rgba(11,7,18,.26) 32%,rgba(11,7,18,.86) 82%,var(--ink) 100%),
+             linear-gradient(90deg,rgba(11,7,18,.80) 0%,rgba(11,7,18,.42) 38%,rgba(11,7,18,0) 66%)}
+@media (max-width:760px){.hero-cover{opacity:.42;background-position:center 44%}}
 .glow{position:absolute;border-radius:50%;filter:blur(90px);opacity:.5}
 .glow-a{width:46vw;height:46vw;left:-10vw;top:-12vw;background:#6a2be0}
 .glow-b{width:38vw;height:38vw;right:-8vw;top:4vw;background:#c0127a;opacity:.4}

@@ -30,6 +30,10 @@
   }
   function banner(html, col) {
     var el = fxLayer(), b = document.createElement('div');
+    // v1.9.1 : un bandeau dure 1,9 s. Quand les phases s'enchaînaient vite, jusqu'à cinq se
+    // superposaient et l'écran restait barré de sombre. Il n'y en a plus qu'un à la fois.
+    var vieux = el.querySelectorAll('.fx-banner');
+    for (var i = 0; i < vieux.length; i++) vieux[i].remove();
     b.className = 'fx-banner'; b.innerHTML = html; if (col) b.style.setProperty('--bc', col);
     el.appendChild(b); setTimeout(function () { b.remove(); }, 1900);
   }
@@ -154,8 +158,10 @@
       if (n > 0) st.log.slice(-n).forEach(function (l) {
         var r = classify(l); if (!r || !r[1]) return;
         var col = l.p !== null && l.p !== undefined ? o.color(l.p) : null;
-        if (r[1] === 'tyran') { tyranPop(st.players[l.p]); snd.push('tyran'); popped = true; return; }
-        if (r[1] === 'pop' && !popped) { pop(l.m, r[2], r[3], col); popped = true; snd.push(r[3] === 'bad' ? 'bad' : l.k === 'pact' ? 'dip' : 'conquer'); }
+        if (r[1] === 'tyran') { if (anim) tyranPop(st.players[l.p]); snd.push('tyran'); popped = true; return; }
+        // v1.9.1 : la grande carte centrale (sombre, 2,3 s, jusqu'à 80 % de largeur) n'apparaît plus
+        // pendant le tour d'un autre joueur — l'événement est quand même annoncé, en bulle.
+        if (r[1] === 'pop' && !popped && aMoi && anim) { pop(l.m, r[2], r[3], col); popped = true; snd.push(r[3] === 'bad' ? 'bad' : l.k === 'pact' ? 'dip' : 'conquer'); }
         else toast(l.m, r[2], r[3], col);
         if (l.k === 'recruit') snd.push('recruit');
         if (l.k === 'build') snd.push('build');
