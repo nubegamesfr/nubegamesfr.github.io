@@ -66,7 +66,7 @@ const SITE = {
     if (form.querySelector('[name="_honey"]').value) return;       // piège à robots
 
     // garde-fou contre les envois répétés : un message par demi-minute depuis ce navigateur.
-    // Ce n'est qu'un premier filtre — la vraie limitation doit être posée côté serveur.
+    // Ce n'est qu'un premier filtre - la vraie limitation doit être posée côté serveur.
     try {
       const last = +(localStorage.getItem('nube-sent') || 0);
       if (Date.now() - last < 30000) {
