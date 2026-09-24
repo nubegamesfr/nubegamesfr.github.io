@@ -36,7 +36,7 @@
 <body>
 <main>
   <h1>Signalements de bugs</h1>
-  <p class="lead">Les signalements envoyés depuis le bouton « Signaler un bug » du jeu <b>et</b> les messages du formulaire de nubegames.fr (étiquette « site nubegames.fr »). <b>Ils ne partent pas par e-mail</b> : ils sont écrits dans la table <code>bug_reports</code> de la base, et cette page les lit.</p>
+  <p class="lead">Les signalements envoyés depuis le bouton « Signaler un bug » du jeu <b>et</b> les messages du formulaire de nubegames.fr (étiquette « site nubegames.fr »). <b>Ils ne partent pas par e-mail</b> : ils sont écrits dans la table <code>bug_reports</code> de la base. Cette page ne peut les afficher que si vous ouvrez la lecture de cette table, ce qui n'est pas recommandé - voir plus bas.</p>
   <div class="bar-row">
     <button id="reload">Actualiser</button>
     <button id="csv">Télécharger en CSV</button>
@@ -98,10 +98,8 @@
       '<p class="ctx">La base répond <code>200</code> avec une liste vide. C\u2019est la signature d\u2019une table protégée par RLS ' +
       'qui accepte l\u2019écriture (le jeu enregistre bien les signalements) mais n\u2019autorise aucune lecture : PostgREST renvoie alors ' +
       '<code>[]</code> au lieu d\u2019une erreur. Les signalements sont donc bien dans la table, mais cette page ne peut pas les lire.</p>' +
-      '<p class="ctx" style="margin-top:8px">Pour les voir ici, exécutez ceci une fois dans <b>Supabase → SQL Editor</b> :</p>' +
-      '<pre>create policy "lecture publique des signalements"\n  on public.bug_reports for select\n  to anon\n  using (true);</pre>' +
-      '<p class="ctx">Cela rend les signalements lisibles par quiconque connaît cette URL. Si vous préférez les garder privés, ' +
-      'consultez-les directement dans <b>Supabase → Table Editor → bug_reports</b> et ne publiez pas cette page.</p></div>';
+      '<p class="ctx" style="margin-top:8px">C’est voulu, et il faut que ça le reste. Les signalements contiennent des noms, des adresses e-mail et l’état complet de parties : ouvrir leur lecture à <code>anon</code> les rendrait lisibles et exportables par quiconque connaît cette adresse. Cette page est publique, elle ne doit donc jamais pouvoir les afficher.</p>' +
+      '<p class="ctx">Pour les consulter, passez par <b>Supabase → Table Editor → bug_reports</b>, derrière votre compte.</p></div>';
   }
 
   function csv() {

@@ -322,7 +322,6 @@
     return out;
   };
   // v1.9.6 - le Trébuchet ne se joue plus pendant un assaut : c'est un effet d'unité ordinaire.
-  FOF.trebuchetFor = function () { return null; };
 
   function doAttack(st, a) {
     var p = FOF.cur(st), d = st.players[a.target], loc = a.loc;

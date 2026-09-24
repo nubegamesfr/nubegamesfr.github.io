@@ -173,7 +173,7 @@
       '<label class="fld"><span>Votre adresse e-mail</span>' +
       '<input id="unlockMail" type="email" inputmode="email" autocomplete="email" placeholder="vous@exemple.fr" maxlength="120"></label>' +
       '<label class="chk"><input id="unlockOk" type="checkbox"> <span>J’accepte d’être recontacté par Nube Games au sujet de l’avancée de Fields of Fire (conseils de jeu, statistiques des dirigeants et des cartes, nouvelles versions). Désinscription à tout moment.</span></label>' +
-      '<p class="muted" style="font-size:12px">Votre adresse ne sert qu’à cela et n’est transmise à personne.</p>' +
+      '<p class="muted" style="font-size:12px">Votre adresse ne sert qu’à cela. Elle est conservée chez Supabase, notre hébergeur de base de données (Europe), et n’est transmise à personne d’autre. Désinscription à tout moment par le formulaire de contact.</p>' +
       '<p id="unlockErr" class="err" role="alert"></p>' +
       '<div class="actions"><button class="btn" type="button" data-unlockclose="1">Plus tard</button>' +
       '<button class="btn primary" type="button" data-unlockgo="1">Débloquer</button></div></div></div>';
@@ -195,9 +195,16 @@
         '<div class="actions" style="justify-content:center"><button class="btn primary" type="button" data-unlockdone="1">Choisir mon dirigeant</button></div></div></div>';
     }
     if (!FOF.sbReq || !FOF.CONFIG.supabaseUrl) { fini(); return; }
+    // Le repli vers bug_reports ne vaut QUE si la table dédiée n'existe pas encore. Une erreur de
+    // droits ou de réseau ne doit pas faire atterrir une adresse e-mail dans la table des bugs :
+    // ce sont deux traitements différents, et l'utilisateur n'a pas consenti à ça.
+    function tableAbsente(e) {
+      var m = (e && e.message ? e.message : '') + '';
+      return /PGRST205|PGRST20[0-9]|does not exist|n.existe pas|Not Found|404/i.test(m);
+    }
     FOF.sbReq('POST', 'newsletter_signups', { email: mail.slice(0, 120), consent: true, source: 'unlock-heroes' }, 'return=minimal')
-      .then(fini, function () {
-        // la table dédiée n'existe pas encore : on retombe sur celle des signalements, qui marche déjà
+      .then(fini, function (e1) {
+        if (!tableAbsente(e1)) { err.textContent = 'Envoi impossible : ' + e1.message; if (btn) btn.disabled = false; return; }
         FOF.sbReq('POST', 'bug_reports', row, 'return=minimal').then(fini, function (e) {
           err.textContent = 'Envoi impossible : ' + e.message; if (btn) btn.disabled = false;
         });

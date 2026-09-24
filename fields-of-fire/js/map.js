@@ -147,14 +147,14 @@
     var VISE = 4;
     var seeds = [];
     for (var c = 0; c < targets.length; c++) {
-      var best = -1, bestS = 1e9, bestD = 0;
+      var best = -1, bestS = 1e9;
       for (var t = 0; t < 80; t++) {
         var cand = ri(s, N);
         if (!ok(cand, c)) continue;
         var d = seeds.length ? Math.min.apply(null, seeds.map(function (x) { return hexDist(x, cand, W); })) : VISE;
         if (d < 3) continue;                       // jamais collées
         var score = Math.abs(d - VISE);            // ni collées, ni à l'autre bout de la carte
-        if (score < bestS) { bestS = score; best = cand; bestD = d; }
+        if (score < bestS) { bestS = score; best = cand; }
       }
       if (best < 0) return null;
       seeds.push(best); owner[best] = c;
@@ -383,7 +383,6 @@
       // une mer immense qu'on traversait en un déplacement.
       var dist = {}, prec = {}, file = [], MAXL = 40 * RH;
       coups(depart).forEach(function (o) {
-        if (!waterSet[0] && false) return;
         var e = depart + '|' + o.d;
         // depuis une jonction, seul le bond dans l'eau est possible : c'est le prolongement exact
         // de la frontière terrestre. On l'impose en n'ouvrant que les bonds.
