@@ -1,4 +1,5 @@
 User-agent: *
 Allow: /
+Disallow: /fields-of-fire/_docs/
 
 Sitemap: https://nubegames.fr/sitemap.xml
