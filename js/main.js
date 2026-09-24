@@ -42,6 +42,14 @@ const SITE = {
     reveals.forEach(el => io.observe(el));
   }
 
+  /* ---------- l'image de couverture apparaît une fois chargée ----------
+     Pas de spinner : la page est lisible tout de suite, la carte se pose derrière elle. */
+  const cover = $('#cover');
+  if (cover) {
+    const vu = () => cover.classList.add('vu');
+    if (cover.complete && cover.naturalWidth) vu(); else cover.addEventListener('load', vu, { once: true });
+  }
+
   /* ---------- liens du jeu ---------- */
   if (SITE.playUrl) $$('a[href="/fields-of-fire/"]').forEach(a => { a.href = SITE.playUrl; });
 

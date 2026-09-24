@@ -5,7 +5,7 @@
 <title>Fields of Fire · Nube Games, independent board game studio</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="description" content="Fields of Fire, a 3-to-6-player board game of conquest by Nube Games. Three roads to victory: the sword, the faith or diplomacy. The prototype plays free in your browser, on one screen or remotely.">
-<meta name="theme-color" content="#0b0712">
+<meta name="theme-color" content="#0c0710">
 <meta name="color-scheme" content="dark">
 <meta name="robots" content="index, follow, max-image-preview:large">
 <link rel="canonical" href="https://nubegames.fr/en/">
@@ -33,7 +33,7 @@
 <link rel="preload" href="../assets/fonts/unbounded.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="../assets/fonts/manrope.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" as="image" href="/assets/images/fof-cover.webp" fetchpriority="high">
-<link rel="stylesheet" href="../css/style.css?v=2.1">
+<link rel="stylesheet" href="../css/style.css?v=3.0">
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
@@ -58,76 +58,78 @@
 
 <main id="main">
 
-<section class="hero" id="top" aria-labelledby="hero-title">
-  <div class="hero-bg" aria-hidden="true">
-    <span class="hero-cover" style="--cover:url(/assets/images/fof-cover.webp)"></span>
-    <span class="glow glow-a"></span><span class="glow glow-b"></span><span class="glow glow-c"></span>
-    <span class="grain"></span>
+<!-- ======== Full-screen header: Fields of Fire, and nothing else ======== -->
+<section class="jaquette" id="top" aria-labelledby="game-title">
+  <div class="jaquette-fond" aria-hidden="true">
+    <img id="cover" src="../assets/images/fof-cover.webp" width="1920" height="1080" alt="" fetchpriority="high">
   </div>
-  <div class="wrap">
-    <p class="status"><span class="dot" aria-hidden="true"></span> Prototype · free to play online</p>
-    <p class="presents">Nube Games presents</p>
-    <h1 class="hero-title" id="hero-title">
-      <span class="line">Fields</span>
-      <span class="line grad">of Fire</span>
-    </h1>
-    <p class="hero-tag">A game of conquest won by the sword, by the faith or by diplomacy. Yours to choose.</p>
-    <div class="hero-cta">
+  <span class="jaquette-teinte" aria-hidden="true"></span>
+
+  <div class="jaquette-inner">
+    <img class="couronne" src="../assets/images/fof-couronne.png" width="440" height="352" alt=""
+         fetchpriority="high" aria-hidden="true">
+    <h1 class="jeu-titre" id="game-title"><span>Fields</span><span>of Fire</span></h1>
+    <div class="jeu-filet" aria-hidden="true"></div>
+    <p class="jeu-accroche">The sword, the faith or diplomacy. Three ways to win, one game to choose.</p>
+    <div class="jeu-cta">
       <a class="btn" href="/fields-of-fire/">Play for free</a>
       <a class="btn btn-ghost" href="#the-game">See the game</a>
     </div>
-
-    <figure class="hero-shot reveal">
-      <img src="../assets/images/fof-partie.webp" width="1600" height="950" fetchpriority="high"
-           alt="A four-player game of Fields of Fire: the archipelago map in the centre, the lords on the left, the five-card recruitment row below.">
-    </figure>
-    <p class="shot-cap">A four-lord game, running in the browser.</p>
+    <p class="jeu-meta"><b>3 to 6 players</b> · Playable prototype · No sign-up</p>
   </div>
+
+  <a class="defile" href="#the-game" aria-label="Go to the game overview"><span>Scroll</span><i aria-hidden="true"></i></a>
 </section>
 
 <section class="section" id="the-game" aria-labelledby="t-game">
   <div class="wrap">
-    <div class="sec-head reveal">
+    <div class="sec-head">
       <p class="num">01 — The game</p>
       <h2 id="t-game">Three ways to win, one game to choose</h2>
       <p class="lead">Each player takes a lord and starts from a capital on an archipelago drawn afresh every game. You raise taxes, recruit, manoeuvre and build. Attacking costs diplomacy; building costs gold; and everyone watches whoever is closing in on their own victory condition.</p>
     </div>
-    <div class="facts reveal">
-      <div class="fact"><b>3 to 6</b><span>players</span></div>
-      <div class="fact"><b>7</b><span>territories per player on the map</span></div>
-      <div class="fact"><b>8</b><span>lords with distinct powers</span></div>
-      <div class="fact"><b>3</b><span>roads to victory</span></div>
-      <div class="fact"><b>Free</b><span>and no sign-up</span></div>
+    <div class="faits">
+      <div class="fait"><b>3 to 6</b><span>players</span></div>
+      <div class="fait"><b>7</b><span>territories per player on the map</span></div>
+      <div class="fait"><b>8</b><span>lords with distinct powers</span></div>
+      <div class="fait"><b>66</b><span>unit cards in the deck</span></div>
+      <div class="fait"><b>Free</b><span>and no sign-up</span></div>
     </div>
+
+    <figure class="fig reveal" style="margin-top:clamp(34px,4.4vw,60px)">
+      <img src="../assets/images/fof-partie.webp" width="1600" height="950" loading="lazy" decoding="async"
+           alt="A four-player game of Fields of Fire: the archipelago map in the centre, the lords on the left, the five-card recruitment row below.">
+    </figure>
+    <p class="fig-cap">A four-lord game, running in the browser.</p>
   </div>
 </section>
 
 <section class="section" id="victory" aria-labelledby="t-vic">
   <div class="wrap">
-    <div class="sec-head reveal">
+    <div class="sec-head">
       <p class="num">02 — Roads to victory</p>
       <h2 id="t-vic">The sword, the faith, diplomacy</h2>
       <p class="lead">All three are open to everyone from turn one, and their thresholds rise with the player count. Nothing forces an early choice: many games turn on the moment someone switches.</p>
     </div>
-    <div class="cards reveal">
-      <article class="card card-hi">
+    <div class="panneaux">
+      <article class="panneau accent">
         <span class="kicker">Military</span>
         <h3>Take the land</h3>
         <p>Hold enough territories, capital included. Every assault costs diplomacy, except against a Tyrant — conquest isolates you as much as it enlarges you.</p>
       </article>
-      <article class="card card-hi">
+      <article class="panneau">
         <span class="kicker">Religious</span>
         <h3>Raise the temples</h3>
         <p>Build enough temples, foreign soil included, or gain them by conversion and cession. A temple costs 7 gold, and razing one is never free.</p>
       </article>
-      <article class="card card-hi">
+      <article class="panneau">
         <span class="kicker">Diplomatic</span>
         <h3>Make a name</h3>
         <p>Reach the diplomacy threshold by playing envoys, ceding land and keeping the peace. An Embassy in your capital amplifies every gain, as long as no one attacks you.</p>
       </article>
     </div>
 
-    <table class="tbl reveal">
+    <table class="tbl">
       <caption class="tiny" style="text-align:left;padding-bottom:10px">Victory thresholds by player count</caption>
       <thead>
         <tr><th scope="col">Road</th><th scope="col">3 players</th><th scope="col">4</th><th scope="col">5</th><th scope="col">6</th></tr>
@@ -138,33 +140,33 @@
         <tr><td>Diplomatic · points</td><td>7</td><td>8</td><td>9</td><td>10</td></tr>
       </tbody>
     </table>
-    <p class="tiny reveal" style="margin-top:14px">These numbers are still moving: they are tuned playtest after playtest.</p>
+    <p class="tiny" style="margin-top:14px">These numbers are still moving: they are tuned playtest after playtest.</p>
   </div>
 </section>
 
 <section class="section" id="turn" aria-labelledby="t-turn">
   <div class="wrap">
-    <div class="sec-head reveal">
+    <div class="sec-head">
       <p class="num">03 — The turn</p>
       <h2 id="t-turn">Four phases, always in the same order</h2>
     </div>
-    <div class="steps reveal">
-      <div class="step"><b>Collect</b><p>1 gold per territory, 1 more per city, minus your units’ upkeep. The breakdown is shown line by line.</p></div>
-      <div class="step"><b>Recruit</b><p>Five cards sit face up. You may buy one and discard one, in whichever order you like.</p></div>
-      <div class="step"><b>Military</b><p>Move your pieces, claim a neutral territory, or attack — at the price of one diplomacy point.</p></div>
-      <div class="step"><b>Build</b><p>Camp, fort, port, city, temple, embassy. Two buildings per tile, and as many builds as your gold allows.</p></div>
+    <div class="etapes">
+      <div class="etape"><b>Collect</b><p>1 gold per territory, 1 more per city, minus your units’ upkeep. The breakdown is shown line by line.</p></div>
+      <div class="etape"><b>Recruit</b><p>Five cards sit face up. You may buy one and discard one, in whichever order you like.</p></div>
+      <div class="etape"><b>Military</b><p>Move your pieces, claim a neutral territory, or attack — at the price of one diplomacy point.</p></div>
+      <div class="etape"><b>Build</b><p>Camp, fort, port, city, temple, embassy. Two buildings per tile, and as many builds as your gold allows.</p></div>
     </div>
   </div>
 </section>
 
 <section class="section" id="map" aria-labelledby="t-map">
   <div class="wrap">
-    <div class="sec-head reveal">
+    <div class="sec-head">
       <p class="num">04 — The map</p>
       <h2 id="t-map">A different archipelago every game</h2>
       <p class="lead">The map is drawn anew for each game: seven territories per player, four terrains — plains, forest, mountains, marsh — and sea zones parting the continents. Terrain matters: every elite unit has a different strength depending on where it fights.</p>
     </div>
-    <div class="split reveal">
+    <div class="duo">
       <figure class="fig">
         <img src="../assets/images/fof-carte.webp" width="1200" height="830" loading="lazy" decoding="async"
              alt="A generated Fields of Fire map: green and mountainous continents parted by a blue sea, capitals marked with coloured banners.">
@@ -176,14 +178,14 @@
       </div>
     </div>
 
-    <div class="styles reveal" style="margin-top:clamp(30px,4vw,54px)">
+    <div class="styles" style="margin-top:clamp(30px,4vw,54px)">
       <figure class="style-fig">
-        <img src="../assets/images/fof-carte-enluminure.webp" width="1300" height="898" loading="lazy" decoding="async"
+        <img src="../assets/images/fof-carte-enluminure.webp" width="1300" height="630" loading="lazy" decoding="async"
              alt="The game map in the Illumination style: deep lapis sea, jewel-toned lands, a gold rule around the board.">
         <figcaption><b>Illumination</b> — lapis sea, gold rule, manuscript tones. The default look.</figcaption>
       </figure>
       <figure class="style-fig">
-        <img src="../assets/images/fof-carte-estampe.webp" width="1300" height="898" loading="lazy" decoding="async"
+        <img src="../assets/images/fof-carte-estampe.webp" width="1300" height="630" loading="lazy" decoding="async"
              alt="The same map in the Woodcut style: reduced palette, ink-dark sea, terrains in engraved flats.">
         <figcaption><b>Woodcut</b> — seven tones, ink sea, instant reading. Switchable in the settings.</figcaption>
       </figure>
@@ -193,13 +195,13 @@
 
 <section class="section" id="units" aria-labelledby="t-units">
   <div class="wrap">
-    <div class="sec-head reveal">
+    <div class="sec-head">
       <p class="num">05 — The units</p>
       <h2 id="t-units">You don’t recruit what you want, you recruit what turns up</h2>
       <p class="lead">Five cards face up, one buy and one discard per turn. Elite units fight — their strength shifts with the terrain. Special units never fight: they convert a temple, carry word to a foreign court, scout the map or shore up a defence. Every card requires a building before it can be recruited, and draws upkeep at each collection.</p>
     </div>
     <figure class="fig reveal">
-      <img src="../assets/images/fof-cartes.webp" width="1200" height="535" loading="lazy" decoding="async"
+      <img src="../assets/images/fof-cartes.webp" width="1200" height="400" loading="lazy" decoding="async"
            alt="The recruitment row: five unit cards face up, with artwork, strength per terrain, upkeep and recruitment requirement.">
     </figure>
     <p class="fig-cap">The recruitment row, with deck and discard on the left.</p>
@@ -208,23 +210,23 @@
 
 <section class="section" id="lords" aria-labelledby="t-lords">
   <div class="wrap">
-    <div class="sec-head reveal">
+    <div class="sec-head">
       <p class="num">06 — The lords</p>
       <h2 id="t-lords">Eight lords, eight ways to play</h2>
       <p class="lead">Your lord is a piece like any other: it moves, it claims, it can lead an assault and lose a territory doing so. Its power, though, shapes the whole game.</p>
     </div>
-    <div class="lords reveal">
-      <div class="lord"><b>Odon the Brave</b><p>Each of his elite units in an assault gives him +1, whether or not he leads it.</p></div>
-      <div class="lord"><b>Gustave the Irascible</b><p>His camps, forts and ports gain +1 defence. His cities cost 5 gold.</p></div>
-      <div class="lord"><b>Edward the Wise</b><p>Once per game, in peacetime: 4 gold for 1 diplomacy point.</p></div>
-      <div class="lord"><b>Mathilda the Beloved</b><p>Her first city costs 4 gold; the rest are full price.</p></div>
-      <div class="lord"><b>Adele the Pious</b><p>Her temples cost 6 gold and give +1 defence.</p></div>
-      <div class="lord"><b>Henry the Strategist</b><p>All his elite units move one tile further.</p></div>
-      <div class="lord"><b>Hugh the Builder</b><p>His camps, forts and ports cost 1 gold less.</p></div>
-      <div class="lord"><b>Eleanor the Admiral</b><p>Her ports cost 2 gold.</p></div>
+    <div class="seigneurs">
+      <div class="seigneur"><b>Odon the Brave</b><p>Each of his elite units in an assault gives him +1, whether or not he leads it.</p></div>
+      <div class="seigneur"><b>Gustave the Irascible</b><p>His camps, forts and ports gain +1 defence. His cities cost 6 gold.</p></div>
+      <div class="seigneur"><b>Edward the Wise</b><p>Once per game, in peacetime: 4 gold for 1 diplomacy point.</p></div>
+      <div class="seigneur"><b>Mathilda the Beloved</b><p>Her first city costs 4 gold; the rest are full price.</p></div>
+      <div class="seigneur"><b>Adele the Pious</b><p>Her temples cost 6 gold and give +1 defence.</p></div>
+      <div class="seigneur"><b>Henry the Strategist</b><p>All his elite units move one tile further.</p></div>
+      <div class="seigneur"><b>Hugh the Builder</b><p>His camps, forts and ports cost 1 gold less.</p></div>
+      <div class="seigneur"><b>Eleanor the Admiral</b><p>Her ports cost 2 gold.</p></div>
     </div>
     <figure class="fig reveal" style="margin-top:clamp(26px,3.4vw,44px)">
-      <img src="../assets/images/fof-dirigeants.webp" width="1000" height="810" loading="lazy" decoding="async"
+      <img src="../assets/images/fof-dirigeants.webp" width="1000" height="595" loading="lazy" decoding="async"
            alt="The lord selection screen: three cards with portrait, name, power and player colour.">
     </figure>
     <p class="fig-cap">Choosing lords, before starting a local game.</p>
@@ -233,23 +235,23 @@
 
 <section class="section" id="tyranny" aria-labelledby="t-tyr">
   <div class="wrap">
-    <div class="sec-head reveal">
+    <div class="sec-head">
       <p class="num">07 — Diplomacy and tyranny</p>
       <h2 id="t-tyr">A reputation you spend</h2>
-      <p class="lead">Diplomacy is not only a road to victory, it is the currency of war. Every attack costs a point — except when you are taking back land that was taken from you by force: no one holds it against you for going home. Ceding a territory willingly earns one. So does an envoy sent to a foreign capital.</p>
+      <p class="lead">Diplomacy is not only a road to victory, it is the currency of war. Every attack costs a point, including retaking land that was taken from you. Ceding a territory willingly earns one. So does an envoy sent to a foreign capital.</p>
     </div>
-    <div class="cards reveal">
-      <article class="card">
+    <div class="panneaux">
+      <article class="panneau">
         <span class="kicker">The edge</span>
         <h3>Down to zero</h3>
         <p>Out of diplomacy, a player who still wants to attack must become a <b>Tyrant</b>. They gain the right to strike without counting the cost.</p>
       </article>
-      <article class="card">
+      <article class="panneau accent">
         <span class="kicker">The price</span>
         <h3>What the crown costs</h3>
         <p>A Tyrant never gains diplomacy again: the diplomatic road is shut for the rest of the game. Only the sword and the faith remain.</p>
       </article>
-      <article class="card">
+      <article class="panneau accent">
         <span class="kicker">The pack</span>
         <h3>Everyone against one</h3>
         <p>Attacking a Tyrant costs nobody anything. Nor does razing their temples. Every turn one of their lands revolts — and that one will never take them back.</p>
@@ -260,13 +262,13 @@
 
 <section class="section" id="play" aria-labelledby="t-play">
   <div class="wrap">
-    <div class="sec-head reveal">
+    <div class="sec-head">
       <p class="num">08 — Play</p>
       <h2 id="t-play">Free, in the browser, no sign-up</h2>
       <p class="lead">The prototype runs entirely in the page: nothing to install, no account to create. Games are recorded anonymously — length, rounds, lords, victory type — purely to balance the game.</p>
     </div>
-    <div class="play reveal">
-      <article class="play-card">
+    <div class="jouer">
+      <article class="jouer-carte">
         <h3>On one screen</h3>
         <ol>
           <li>Pick the number of lords, from 3 to 6.</li>
@@ -275,7 +277,7 @@
         </ol>
         <a class="btn" href="/fields-of-fire/">Start a local game</a>
       </article>
-      <article class="play-card">
+      <article class="jouer-carte">
         <h3>Everyone at home</h3>
         <ol>
           <li>Create a room: you get a five-character code.</li>
@@ -285,20 +287,20 @@
         <a class="btn btn-ghost" href="/fields-of-fire/">Create a room</a>
       </article>
     </div>
-    <p class="tiny reveal" style="margin-top:20px">A game set aside can be paused for 48 hours, then resumed with the same code.</p>
+    <p class="tiny" style="margin-top:20px">A game set aside can be paused for 48 hours, then resumed with the same code.</p>
   </div>
 </section>
 
 <section class="section" id="playtests" aria-labelledby="t-pt">
   <div class="wrap">
-    <div class="sec-head reveal">
+    <div class="sec-head">
       <p class="num">09 — Playtests</p>
       <h2 id="t-pt">The game isn’t finished, and that’s the good part</h2>
       <p class="lead">Fields of Fire is a prototype: rules shift from one week to the next, cards are on trial, thresholds are measured game after game. What helps us most: a card that strikes you as too strong or useless, a lord that feels unplayable, and how many were around the table.</p>
     </div>
 
-    <form class="form reveal" id="contact" novalidate>
-      <div class="field">
+    <form class="form" id="contact" novalidate>
+      <div class="champ">
         <label for="f-motif">You’d like to…</label>
         <select id="f-motif" name="motif">
           <option value="playtest">Join a playtest</option>
@@ -306,15 +308,15 @@
           <option value="other">Get in touch</option>
         </select>
       </div>
-      <div class="field">
+      <div class="champ">
         <label for="f-name">Name or handle</label>
         <input id="f-name" name="name" type="text" autocomplete="nickname" required>
       </div>
-      <div class="field">
+      <div class="champ">
         <label for="f-email">E-mail</label>
         <input id="f-email" name="email" type="email" autocomplete="email" required>
       </div>
-      <div class="field">
+      <div class="champ">
         <label for="f-msg">Message (optional)</label>
         <textarea id="f-msg" name="message"></textarea>
       </div>
@@ -330,11 +332,11 @@
 
 </main>
 
-<footer class="foot">
+<footer class="pied">
   <div class="wrap">
-    <div class="foot-top">
-      <img class="footer-logo" src="../assets/images/nube-games-logo-light.svg" alt="Nube Games" width="120" height="122" loading="lazy">
-      <nav class="foot-links" aria-label="Footer">
+    <div class="pied-haut">
+      <img class="pied-logo" src="../assets/images/nube-games-logo-light.svg" alt="Nube Games" width="120" height="122" loading="lazy">
+      <nav class="pied-liens" aria-label="Footer">
         <a href="/fields-of-fire/">Play</a>
         <a href="#playtests">Playtests</a>
         <a href="#contact">Contact</a>
@@ -345,10 +347,10 @@
       </nav>
     </div>
     <p>© 2026 Nube Games · Independent board games</p>
-    <small>The artwork shown in the Fields of Fire prototype is used for illustrative purposes only and does not belong to Nube Games. In-game music: RandomMind, public domain (CC0). The paintings used on some cards are in the public domain; details are listed in the prototype’s CREDITS file.</small>
+    <small>Every illustration in the Fields of Fire prototype is a public-domain, royalty-free work; details are listed in the CREDITS file. In-game music: RandomMind, public domain (CC0).</small>
   </div>
 </footer>
 
-<script src="../js/main.js?v=2.1" defer></script>
+<script src="../js/main.js?v=3.0" defer></script>
 </body>
 </html>
