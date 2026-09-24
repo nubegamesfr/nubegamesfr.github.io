@@ -1,11 +1,21 @@
-/* Fields of Fire - statistiques de parties (une ligne par partie dans la table game_stats) */
+/* Fields of Fire - statistiques de parties (une ligne par partie dans la table game_stats)
+
+   v1.9.8 - SEULES LES PARTIES 100 % HUMAINES SONT ENREGISTRÉES.
+   Les bots suivent une stratégie simple et régulière : leurs parties durent cinq à six fois plus
+   longtemps que celles de vrais joueurs et ne disent rien de l'équilibrage réel. Une seule IA à la
+   table suffit donc à écarter la partie : rien n'est envoyé, ni en cours de jeu, ni à l'abandon. */
 (function (FOF) {
   'use strict';
+  function humainsSeuls(st) {
+    return !!st && !!st.players && !st.players.some(function (p) { return p.bot; });
+  }
+  FOF.statsHumainsSeuls = humainsSeuls;
   function uuid() { return (crypto.randomUUID ? crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) { var r = Math.random() * 16 | 0; return (c === 'x' ? r : (r & 3 | 8)).toString(16); })); }
 
   // à appeler une fois à la création de la partie
   FOF.statsInit = function (st, mode, room) {
     if (st.meta) return;
+    if (!humainsSeuls(st)) return;                     // une IA à la table : aucune trace
     st.meta = { gid: uuid(), mode: mode, room: room || null, startedAt: new Date().toISOString(), lastTurn: 0, gold: st.players.map(function () { return [0, 0]; }), maxTerr: st.players.map(function () { return 0; }) };
   };
   function sample(st) {
@@ -44,7 +54,7 @@
   }
   // à appeler après chaque action par le client qui a joué
   FOF.statsTick = function (st) {
-    if (!st.meta) return;
+    if (!st.meta || !humainsSeuls(st)) return;
     var ended = !!st.winner && !st.meta.sentEnd;
     if (st.turnNo !== st.meta.lastTurn || ended) {
       if (st.turnNo !== st.meta.lastTurn) { sample(st); st.meta.lastTurn = st.turnNo; }
@@ -52,5 +62,7 @@
       send(row(st));
     }
   };
-  FOF.statsAbandon = function (st) { if (st && st.meta && !st.winner) send(row(st, { abandoned: true })); };
+  // Les parties sauvegardées avant cette version peuvent contenir des bots : on revérifie ici,
+  // sinon une vieille sauvegarde rejouée enverrait encore sa ligne à l'abandon.
+  FOF.statsAbandon = function (st) { if (st && st.meta && !st.winner && humainsSeuls(st)) send(row(st, { abandoned: true })); };
 })(window.FOF = window.FOF || {});

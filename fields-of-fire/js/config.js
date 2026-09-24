@@ -3,5 +3,5 @@ window.FOF = window.FOF || {};
 FOF.CONFIG = {
   supabaseUrl: 'https://wucrnsmogswphekitodw.supabase.co',
   supabaseKey: 'sb_publishable_1ah4C-mmBA8nhFTRGsx1LQ_qPzUB_eM',
-  version: 'beta 1.9.7'
+  version: 'beta 1.9.8'
 };
