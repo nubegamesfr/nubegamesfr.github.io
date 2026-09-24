@@ -39,6 +39,10 @@
   function build(st) {
     var m = st.map, W = m.W, H = m.H, seed = m.terr.length * 131 + W;
     var hexT = {}; m.terr.forEach(function (t) { hexT[t.hex] = t.id; });
+    // v1.9.7 — une case d'eau n'appartient plus forcément à une seule mer : les traits la coupent
+    // par son centre. Chaque case est donc lue en six triangles, et map.js dit à quelle mer va
+    // chacun (voir seaTri). Le pixel trouve son triangle par l'angle depuis le centre de la case.
+    var iEau = {}; (m.water || []).forEach(function (h, i) { iEau[h] = i; });
     // cadrage serré sur les terres (+ une bande de mer)
     var minX = 1e9, minY = 1e9, maxX = -1e9, maxY = -1e9;
     m.terr.forEach(function (t) { var c = FOF.hexCenter(t.hex, W, R); minX = Math.min(minX, c.x); maxX = Math.max(maxX, c.x); minY = Math.min(minY, c.y); maxY = Math.max(maxY, c.y); });
@@ -55,7 +59,12 @@
       if (hc.col < 0 || hc.row < 0 || hc.col >= W || hc.row >= H) { kind[i] = 0; continue; }
       var h = hc.row * W + hc.col;
       if (hexT[h] !== undefined) { kind[i] = 1; id[i] = hexT[h]; }
-      else if (m.zoneOf[h] !== undefined) { kind[i] = 2; id[i] = m.zoneOf[h]; }
+      else if (iEau[h] !== undefined && m.seaTri) {
+        var cc = FOF.hexCenter(h, W, R);
+        var ang = Math.atan2(wy - cc.y, wx - cc.x) * 180 / Math.PI + 90;
+        var kk = Math.floor((((ang % 360) + 360) % 360) / 60) % 6;
+        kind[i] = 2; id[i] = m.seaTri[iEau[h] * 6 + kk];
+      }
       else kind[i] = 0;
     }
     // champ de distance au bord de sa région, et distance de la mer à la terre
@@ -99,7 +108,11 @@
     }
     var anchor = {};
     Object.keys(best).forEach(function (k) { var j = best[k].i; anchor[k] = { x: minX + ((j % gw) + 0.5) / S, y: minY + (((j / gw) | 0) + 0.5) / S }; });
-    m.seas.forEach(function (z) { if (!anchor['s' + z.id]) { var c = FOF.hexCenter(z.anchor, W, R); anchor['s' + z.id] = { x: Math.max(minX + 10, Math.min(maxX - 10, c.x)), y: Math.max(minY + 10, Math.min(maxY - 10, c.y)) }; } });
+    m.seas.forEach(function (z) {
+      if (anchor['s' + z.id]) return;
+      var c = z.anchor && z.anchor.x !== undefined ? z.anchor : FOF.hexCenter(z.anchor, W, R);
+      anchor['s' + z.id] = { x: Math.max(minX + 10, Math.min(maxX - 10, c.x)), y: Math.max(minY + 10, Math.min(maxY - 10, c.y)) };
+    });
     return { key: st.seed + ':' + m.terr.length, seed: seed, minX: minX, minY: minY, wU: wU, hU: hU, S: S, gw: gw, gh: gh, kind: kind, id: id, dist: dist, shore: shore, coastD: coastD, anchor: anchor, box: box, masks: {}, tint: {} };
   }
 
@@ -304,6 +317,46 @@
     ctx.strokeRect(inset, inset, w - inset * 2, h - inset * 2);
   }
 
+  /* v1.9.7 — les frontières de mer sont de vraies lignes, tracées après la trame.
+     La carte est ondulée par un bruit : un point de l'écran est déplacé avant d'être
+     rattaché à une case. Pour que le trait tombe exactement sur la frontière peinte, on
+     applique donc la déformation À L'ENVERS à chacun de ses points. */
+  function deform(x, y, seed) {
+    return {
+      x: x + R * 0.42 * vnoise(x / 38, y / 38, seed) + R * 0.16 * vnoise(x / 11, y / 11, seed + 7) + R * 0.05 * vnoise(x / 3.5, y / 3.5, seed + 11),
+      y: y + R * 0.42 * vnoise(x / 38 + 50, y / 38, seed + 3) + R * 0.16 * vnoise(x / 11, y / 11 + 90, seed + 9) + R * 0.05 * vnoise(x / 3.5 + 20, y / 3.5, seed + 13)
+    };
+  }
+  function deformInv(tx, ty, seed) {
+    var x = tx, y = ty;
+    for (var k = 0; k < 6; k++) { var d = deform(x, y, seed); x += (tx - d.x) * 0.7; y += (ty - d.y) * 0.7; }
+    return { x: x, y: y };
+  }
+  function tracerMers(ctx, st, rs) {
+    var m = st.map;
+    if (!m.seaRays || !m.seaRays.length) return;
+    ctx.save();
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.setLineDash([7 * rs.S, 4.6 * rs.S]);
+    ctx.lineWidth = 1.6 * rs.S;
+    ctx.strokeStyle = 'rgba(246,252,255,.96)';
+    ctx.shadowColor = 'rgba(8,24,50,.75)'; ctx.shadowBlur = 2 * rs.S;
+    m.seaRays.forEach(function (ray) {
+      ctx.beginPath();
+      var premier = true;
+      for (var s = 0; s < ray.pts.length - 1; s++) {
+        var a = ray.pts[s], b = ray.pts[s + 1], n = 6;
+        for (var k = (s === 0 ? 0 : 1); k <= n; k++) {
+          var p = deformInv(a.x + (b.x - a.x) * k / n, a.y + (b.y - a.y) * k / n, rs.seed);
+          var px = (p.x - rs.minX) * rs.S, py = (p.y - rs.minY) * rs.S;
+          if (premier) { ctx.moveTo(px, py); premier = false; } else ctx.lineTo(px, py);
+        }
+      }
+      ctx.stroke();
+    });
+    ctx.restore();
+  }
+
   function drawBase(st, rs, canvas) {
     var gw = rs.gw, gh = rs.gh, N = gw * gh, S = rs.S, m = st.map;
     canvas.width = gw; canvas.height = gh;
@@ -344,13 +397,9 @@
         if (s0 < 1.1) col = [236, 250, 252];                                          // écume
         else if (s0 < 1.7) col = [150, 222, 236];
         if (s0 >= 1.1) { var sx = lx - shx, sy = ly - shy; if (sx >= 0 && sy >= 0 && LK[sy * lw + sx] === 1) col = [col[0] * 0.78, col[1] * 0.8, col[2] * 0.86]; }
-        // v1.9.2 : trait pointillé des zones de mer — plus épais, tirets plus longs, et repris
-        //          tel quel par les deux styles d'affichage (voir styleBase).
-        if (k === 2 && dist[i] < 1.05 * S && ((lx + ly) % Math.round(11 * u)) < 6.5 * u) {
-          var nb = [i - 1, i + 1, i - gw, i + gw].some(function (q) { return q >= 0 && q < N && kind[q] === 2 && id[q] !== id[i]; });
-          if (!nb) nb = [i - P, i + P, i - gw * P, i + gw * P].some(function (q) { return q >= 0 && q < N && kind[q] === 2 && id[q] !== id[i]; });
-          if (nb) col = [170, 214, 245];
-        }
+        // v1.9.7 : le trait pointillé des zones de mer n'est plus peint ici, pixel par pixel.
+        //          Il est tracé après coup, comme une vraie ligne, depuis le point où une
+        //          frontière de territoire atteint la côte (voir tracerMers).
         if (k === 0) col = [col[0] * 0.88, col[1] * 0.9, col[2] * 0.94];
       }
       var o = j * 4; d[o] = col[0]; d[o + 1] = col[1]; d[o + 2] = col[2]; d[o + 3] = 255;
@@ -429,6 +478,7 @@
     var vg = ctx.createRadialGradient(gw / 2, gh / 2, Math.min(gw, gh) * 0.5, gw / 2, gh / 2, Math.max(gw, gh) * 0.78);
     vg.addColorStop(0, 'rgba(8,20,50,0)'); vg.addColorStop(1, 'rgba(8,20,50,.28)');
     ctx.fillStyle = vg; ctx.fillRect(0, 0, gw, gh);
+    tracerMers(ctx, st, rs);            // en dernier : les frontières de mer ne sont pas assombries
   }
 
   // dessins vectoriels des terrains (x, y = pied du motif, en pixels ; k = pixels par unité)
