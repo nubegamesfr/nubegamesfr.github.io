@@ -1,4 +1,4 @@
-/* Fields of Fire — jeu en ligne : salons (code), synchronisation de l'état par Supabase (REST + sondage) */
+/* Fields of Fire - jeu en ligne : salons (code), synchronisation de l'état par Supabase (REST + sondage) */
 (function (FOF) {
   'use strict';
   var C = FOF.CONFIG;

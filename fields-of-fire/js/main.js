@@ -1,4 +1,4 @@
-/* Fields of Fire — accueil : choix du mode (local / en ligne), salon, choix des dirigeants par fiches */
+/* Fields of Fire - accueil : choix du mode (local / en ligne), salon, choix des dirigeants par fiches */
 (function (FOF) {
   'use strict';
   var $ = function (id) { return document.getElementById(id); };
@@ -16,7 +16,7 @@
   var LOCKED = FOF.LOCKED_LEADERS;
   function isLocked(k) { return FOF.leaderLocked(k); }
   // Les dirigeants verrouillés sont repoussés en fin de liste : avec 6 sièges au plus pour 8
-  // dirigeants, ils ne sont jamais distribués tant qu'ils ne sont pas débloqués — ni au joueur,
+  // dirigeants, ils ne sont jamais distribués tant qu'ils ne sont pas débloqués - ni au joueur,
   // ni aux autres sièges de la partie locale, qui sont eux aussi des humains.
   function shuffled() {
     var l = LEAD_KEYS.slice().sort(function () { return Math.random() - 0.5; });
@@ -102,7 +102,7 @@
       // v1.9.2 : l'hôte choisit aussi la mer élargie depuis le salon en ligne
       h.push('<label class="tuto-check" style="margin-right:12px" title="Plus de zones de mer et un large plus vaste"><input type="checkbox" data-osea="1"' + (wideSea ? ' checked' : '') + '> ⚓ Mer élargie</label>');
       h.push('<button class="btn primary" type="button" data-ostart="1" ' + (lock ? 'disabled' : '') + '>' + lbl + '</button>');
-    } else h.push('<span class="waiting">' + (allRdy ? 'Tout le monde est prêt — en attente du lancement par l’hôte…' : 'Déclarez-vous prêt quand vous êtes installé (' + nRdy + '/' + n + ' prêts).') + '</span>');
+    } else h.push('<span class="waiting">' + (allRdy ? 'Tout le monde est prêt - en attente du lancement par l’hôte…' : 'Déclarez-vous prêt quand vous êtes installé (' + nRdy + '/' + n + ' prêts).') + '</span>');
     h.push('<button class="btn" type="button" data-oleave="1">Quitter le salon</button></div>');
     $('lobby').innerHTML = h.join('');
   }

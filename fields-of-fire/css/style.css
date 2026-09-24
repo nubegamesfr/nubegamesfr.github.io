@@ -11,7 +11,7 @@
 @font-face { font-family: 'Grenze'; font-style: normal; font-weight: 700; font-display: swap; src: url(../assets/fonts/grenze-700.woff2) format('woff2'); }
 @font-face { font-family: 'IBM Plex Mono'; font-style: normal; font-weight: 500; font-display: swap; src: url(../assets/fonts/ibm-plex-mono-500.woff2) format('woff2'); }
 
-/* Fields of Fire — table de guerre : cuir sombre autour, parchemin pour la carte et les cartes. Thème unique assumé. */
+/* Fields of Fire - table de guerre : cuir sombre autour, parchemin pour la carte et les cartes. Thème unique assumé. */
 [hidden] { display: none !important; }
 :root {
   --ink: #141416; --table: #1b1a1d; --panel: #232228; --panel-2: #2c2b31; --line: #3b3a42;
@@ -90,7 +90,7 @@ img { max-width: 100%; }
 .hero .power { font-size: 15.5px; line-height: 1.3; }
 .hero .tag { font-size: 12.5px; letter-spacing: .12em; text-transform: uppercase; color: #7a6a4c; }
 .hero.taken { opacity: .45; filter: grayscale(.6); }
-/* v1.9.6 — dirigeants à débloquer : grisés, avec un cadenas. Ils restent cliquables : le clic
+/* v1.9.6 - dirigeants à débloquer : grisés, avec un cadenas. Ils restent cliquables : le clic
    ouvre la demande d'inscription. */
 .hero.locked { opacity: .5; filter: grayscale(1); position: relative; }
 .hero.locked::after { content: "\1F512"; position: absolute; left: 14px; top: 12px; font-size: 22px;
@@ -167,7 +167,7 @@ aside.right { border-left: 1px solid var(--line); display: flex; flex-direction:
 /* carte */
 #board { position: relative; overflow: auto; background: #20242a; }
 #boardWrap { position: relative; margin: 0 auto; }
-/* v1.9 — LA cause du « svg qui recouvre les constructions » : cette règle visait les calques du
+/* v1.9 - LA cause du « svg qui recouvre les constructions » : cette règle visait les calques du
    plateau, mais elle attrapait AUSSI toutes les icônes SVG des fenêtres ouvertes au-dessus de la
    carte (le panneau de construction est dans #boardWrap). Chaque icône était étirée sur tout le
    plateau et avalait les clics. Restreinte aux enfants directs. */
@@ -193,7 +193,7 @@ aside.right { border-left: 1px solid var(--line); display: flex; flex-direction:
 .pc-row img { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; border: 2px solid var(--pc); flex: none; }
 .pc-row .t { flex: 1; min-width: 0; font-size: 15.5px; } .pc-row .t small { display: block; color: var(--muted); font-size: 14px; }
 .bgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); gap: 6px; }
-/* v1.9.6 — boutons d'aménagement : fond sombre et icône dorée. Le parchemin beige avec une icône
+/* v1.9.6 - boutons d'aménagement : fond sombre et icône dorée. Le parchemin beige avec une icône
    noire se lisait mal et jurait avec le reste de la fenêtre, qui est sombre. */
 .bbtn { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 7px 4px 6px;
   border-radius: 8px; border: 2px solid #cfa94e; font-size: 14.5px; line-height: 1.15;
@@ -322,7 +322,7 @@ button.mode-card:hover { transform: translateY(-2px); border-color: var(--gold);
 .seat.mine { box-shadow: 0 0 0 1px var(--gold) inset; }
 .seat.empty { border-style: dashed; opacity: .55; min-height: 56px; }
 .seat-name { display: flex; flex-direction: column; } .seat-name small { color: var(--gold); letter-spacing: .1em; text-transform: uppercase; font-size: 12.5px; }
-/* v1.9.1 — LE clignotement. Ce sélecteur visait le <span class="waiting"> du salon, mais
+/* v1.9.1 - LE clignotement. Ce sélecteur visait le <span class="waiting"> du salon, mais
    ui.js pose aussi la classe « waiting » sur <body> pendant le tour d'un autre joueur :
    la PAGE ENTIÈRE passait de 100 % à 45 % d'opacité toutes les 1,6 s. Limité au span. */
 span.waiting { color: var(--bone-dim); align-self: center; animation: pulse 1.6s ease-in-out infinite; }
@@ -404,7 +404,7 @@ button.hero:disabled { cursor: not-allowed; }
 .market.row1 .ucard .acts .btn { font-size: 10px; padding: 5px 1px; min-height: 30px; }
 .market.row1 .slot .why { font-size: 10px; }
 
-/* v1.8 : marché réduit — les cartes restent visibles, en vignettes, pour dégager la carte du jeu. */
+/* v1.8 : marché réduit - les cartes restent visibles, en vignettes, pour dégager la carte du jeu. */
 .market.compact { padding: 10px 16px 8px; margin-top: 0; }   /* le retrait de -10px mordait sur le bas de la carte */
 .market.compact h3 { font-size: 14px; margin-bottom: 5px; }
 /* La largeur du marché suit celle de son contenu : rétrécir les cartes écrase toute la barre et le
@@ -850,7 +850,7 @@ header.bar { position: relative; z-index: 96; }
 }
 /* phase de construction : les pions laissent passer le clic vers le territoire */
 /* v1.8 : en phase de construction, seule la bannière de capitale et les icônes d'aménagement
-   captaient encore le clic à la place du territoire — d'où le « SVG devant la construction ».
+   captaient encore le clic à la place du territoire - d'où le « SVG devant la construction ».
    On neutralise toute la couche, et on ne laisse que le maillet cliquable. */
 #tokens.nohit { pointer-events: none; }
 #tokens.nohit .mallet { pointer-events: auto; }
@@ -877,8 +877,8 @@ header.bar { position: relative; z-index: 96; }
 .modal.surrender .actions, .modal.edouardc .actions { flex-wrap: wrap; }
 
 @media (max-width: 900px) {
-  /* Sur téléphone et tablette la mise en page s'empile et le bouton de phase — le plus utilisé du
-     jeu — se retrouvait en bas d'une page défilante. Il est désormais ancré au bas de l'écran. */
+  /* Sur téléphone et tablette la mise en page s'empile et le bouton de phase - le plus utilisé du
+     jeu - se retrouvait en bas d'une page défilante. Il est désormais ancré au bas de l'écran. */
   .cta { position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; max-width: none;
          flex-direction: row; align-items: center; gap: 10px;
          background: rgba(28, 27, 31, .97); border-top: 1px solid var(--line); padding: 8px 12px;
@@ -1011,7 +1011,7 @@ header.bar { position: relative; z-index: 96; }
 .modal.settings .set-audio { display: flex; align-items: center; gap: 6px; }
 .modal.settings .set-audio .mtitle { max-width: 170px; }
 
-/* v1.8 : l'aide devient un vrai texte de règles — lisible, aéré, avec les valeurs de la partie. */
+/* v1.8 : l'aide devient un vrai texte de règles - lisible, aéré, avec les valeurs de la partie. */
 .modal.help { width: min(720px, 100%); }
 .modal.help p { margin: 0 0 10px; line-height: 1.55; color: var(--bone-dim); }
 .modal.help .section-title { margin-top: 18px; }
@@ -1020,7 +1020,7 @@ header.bar { position: relative; z-index: 96; }
 .modal.help ul.rules-l li, .modal.help ol.rules-l li { margin-bottom: 6px; }
 .modal.help b { color: var(--bone); }
 
-/* v1.9.2 — licencier une unité, et la liste des pions d'une case surchargée */
+/* v1.9.2 - licencier une unité, et la liste des pions d'une case surchargée */
 .mini { position: relative; }
 .mini-kill { position: absolute; right: 3px; top: 3px; z-index: 2; width: 24px; height: 24px; padding: 0;
   display: flex; align-items: center; justify-content: center; border-radius: 50%;
@@ -1031,7 +1031,7 @@ header.bar { position: relative; z-index: 96; }
 .stacklist .pc-row:first-child { border-top: 0; }
 .stacklist img { width: 44px; height: 44px; }
 
-/* v1.9.2 — la zone de recrutement consultable depuis « Deck », et la fiche d'un adversaire */
+/* v1.9.2 - la zone de recrutement consultable depuis « Deck », et la fiche d'un adversaire */
 .zonestrip { display: flex; gap: 8px; flex-wrap: wrap; margin: 6px 0 4px; }
 .zcard { width: 104px; border-radius: 8px; overflow: hidden; border: 2px solid #cfa94e; background: var(--parch); color: var(--parch-ink); cursor: help; }
 .zcard img { width: 100%; height: 62px; object-fit: cover; display: block; }
@@ -1042,7 +1042,7 @@ header.bar { position: relative; z-index: 96; }
 .opp[data-heroinfo]:hover { border-color: var(--gold-deep); }
 #tokens.nohit .tmore { pointer-events: auto; }
 
-/* v1.9.2 — encart des Trébuchets dans la fenêtre d'assaut */
+/* v1.9.2 - encart des Trébuchets dans la fenêtre d'assaut */
 .treb-box { border: 1px solid #8a5a2b; background: rgba(60,38,18,.35); border-radius: 10px; padding: 9px 11px; margin: 10px 0 2px; }
 .treb-box .treb-h { display: flex; align-items: center; gap: 7px; font-size: 15.5px; color: #f1d488; }
 .treb-box p { margin: 4px 0 8px; font-size: 14px; line-height: 1.35; }

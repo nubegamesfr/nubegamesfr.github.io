@@ -1,4 +1,4 @@
-/* Fields of Fire — petits effets sonores synthétisés (Web Audio, aucun fichier, libres de droits) */
+/* Fields of Fire - petits effets sonores synthétisés (Web Audio, aucun fichier, libres de droits) */
 (function (FOF) {
   'use strict';
   var ctx = null, master = null, on = true, vol = 0.8;

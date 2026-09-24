@@ -1,4 +1,4 @@
-/* Fields of Fire — configuration du serveur (Supabase). Clé publique « anon » : elle est faite pour être dans le code du site. */
+/* Fields of Fire - configuration du serveur (Supabase). Clé publique « anon » : elle est faite pour être dans le code du site. */
 window.FOF = window.FOF || {};
 FOF.CONFIG = {
   supabaseUrl: 'https://wucrnsmogswphekitodw.supabase.co',

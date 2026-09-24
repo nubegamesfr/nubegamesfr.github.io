@@ -1,4 +1,4 @@
-/* Fields of Fire — bouton animations, signalement de bug, tchat du mode en ligne */
+/* Fields of Fire - bouton animations, signalement de bug, tchat du mode en ligne */
 (function (FOF) {
   'use strict';
   var $ = function (id) { return document.getElementById(id); };

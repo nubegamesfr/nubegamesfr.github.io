@@ -1,4 +1,4 @@
-/* Fields of Fire — jeu d'icônes dessinées (style médiéval), pour remplacer les émojis.
+/* Fields of Fire - jeu d'icônes dessinées (style médiéval), pour remplacer les émojis.
    FOF.ic('nom', taille) renvoie un SVG inline qui prend la couleur du texte (currentColor). */
 (function (FOF) {
   'use strict';

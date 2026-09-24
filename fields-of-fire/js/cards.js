@@ -1,4 +1,4 @@
-/* Fields of Fire — rendu des cartes d'unité et des fiches de dirigeant (repris des prototypes physiques) */
+/* Fields of Fire - rendu des cartes d'unité et des fiches de dirigeant (repris des prototypes physiques) */
 (function (FOF) {
   'use strict';
   var esc = FOF.esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };

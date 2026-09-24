@@ -1,4 +1,4 @@
-# Crédits — Fields of Fire (version web)
+# Crédits - Fields of Fire (version web)
 
 ## Illustrations des cartes et des dirigeants
 
@@ -79,4 +79,39 @@ sur notre propre serveur.
 
 ## Musique
 
-Pistes libres (CC0) chargées depuis OpenGameArt, voir `js/music.js`.
+Toutes les pistes sont en CC0 (domaine public) et chargées depuis OpenGameArt.
+Le crédit n'est pas exigé par cette licence ; il est donné ici par courtoisie.
+Voir `js/music.js` pour les adresses exactes.
+
+### Ambiance (21 pistes)
+
+- *A Legend Will Rise* - CodeManu
+- *The Field of Dreams* - pauliuw
+- *Treasure Hunter* - TAD
+- *Once Upon a Time* - TAD
+- *Minstrel Dance* - RandomMind
+- *King’s Feast* - RandomMind
+- *The Bard’s Tale* - RandomMind
+- *Harvest Season* - RandomMind
+- *Exploration* - RandomMind
+- *Market Day* - RandomMind
+- *Rejoicing* - RandomMind
+- *The Old Tower Inn* - RandomMind
+- *The Old Tower Inn (chiptune)* - RandomMind
+- *Victory Theme* - RandomMind
+- *Defeat Theme* - RandomMind
+- *Lament for a Warrior’s Soul* - RandomMind
+- *GrassLands Theme* - DST
+- *Exploring Town* - Spring Spring
+- *The Ancient Legend* - vitalezzz
+- *Adventurer’s Path* - vitalezzz
+- *Journey With No Name* - iamoneabe
+
+### Combat (6 pistes)
+
+- *Battle Theme A* - cynicmusic
+- *Battle* - Wolfgang_
+- *Medieval Battle* - RandomMind
+- *War Theme* - Spring Spring
+- *Orcs Victorious* - bobjt
+- *Hope* - MintoDog

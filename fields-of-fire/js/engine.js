@@ -1,4 +1,4 @@
-/* Fields of Fire — moteur de règles (v1.1)
+/* Fields of Fire - moteur de règles (v1.1)
  * L'état de partie est un objet JSON pur ; toutes les modifications passent par FOF.act(state, action).
  * Ce découpage permettra de synchroniser les actions entre ordinateurs (Supabase Realtime) sans changer les règles. */
 (function (FOF) {
@@ -63,7 +63,7 @@
     if (type === 'T' && p.leader === 'adele') c = 6;
     if (type === 'P' && p.leader === 'alienor') c = 2;
     if (p.leader === 'hugues' && (type === 'C' || type === 'F' || type === 'P')) c = Math.max(1, c - 1);
-    // v1.9.6 — Maître d'œuvre : la remise s'applique APRÈS le pouvoir du dirigeant, donc elle se
+    // v1.9.6 - Maître d'œuvre : la remise s'applique APRÈS le pouvoir du dirigeant, donc elle se
     // cumule avec Adèle (temple 7 → 6 par Adèle → 5 avec le Maître d'œuvre).
     if (type === 'T' && st.units.some(function (u) { return u.owner === p.id && u.key === 'maitre'; })) c = Math.max(1, c - 1);
     return c;
@@ -89,7 +89,7 @@
         if (T(st, +u.pos.slice(1)).blds.some(function (b) { return b.t === typ && b.o !== p.id; })) inc.trade += 2;
       }
     });
-    // v1.9.6 — Prélat : +1 or par temple possédé, à la collecte.
+    // v1.9.6 - Prélat : +1 or par temple possédé, à la collecte.
     inc.temples = FOF.army(st, p.id).some(function (u) { return u.key === 'prelat'; }) ? FOF.countBld(st, p.id, 'T') : 0;
     inc.total = inc.terr + inc.cities + inc.ports + inc.trade + inc.temples;
     inc.upkeep = FOF.army(st, p.id).reduce(function (a, u) { return a + FOF.unitDef(u.key).upkeep; }, 0);
@@ -321,7 +321,7 @@
     });
     return out;
   };
-  // v1.9.6 — le Trébuchet ne se joue plus pendant un assaut : c'est un effet d'unité ordinaire.
+  // v1.9.6 - le Trébuchet ne se joue plus pendant un assaut : c'est un effet d'unité ordinaire.
   FOF.trebuchetFor = function () { return null; };
 
   function doAttack(st, a) {
@@ -329,7 +329,7 @@
     var pv = FOF.previewAttack(st, a);
     if (!pv.att.length && !pv.lead) throw new Error('Aucune unité ne peut attaquer ici.');
     var t = loc[0] === 't' ? T(st, +loc.slice(1)) : null;
-    // coûts — v1.9.1 : la reprise d'une terre perdue coûte de nouveau 1 diplomatie. La gratuité,
+    // coûts - v1.9.1 : la reprise d'une terre perdue coûte de nouveau 1 diplomatie. La gratuité,
     // mesurée sur 1 000 parties, faisait passer la voie diplomatique de 29 % à 60 % des victoires.
     p.attackedNow = true; d.raidedNow = true;
     if (p.pact === d.id) breakPact(st, p, d);
@@ -362,7 +362,7 @@
       if (pv.lead) leaderDefeated(st, p, d, res);
     }
     st.lastCombat = res;
-    log(st, p.name + ' lance l’assaut contre ' + d.name + ' à ' + FOF.locName(st, loc) + ' : ' + (pv.A + ra) + ' contre ' + (pv.D + rd) + ' — ' + (win ? 'les assaillants l’emportent' : 'les défenseurs tiennent bon') + '.', p.id, win ? 'attackwin' : 'attacklose');
+    log(st, p.name + ' lance l’assaut contre ' + d.name + ' à ' + FOF.locName(st, loc) + ' : ' + (pv.A + ra) + ' contre ' + (pv.D + rd) + ' - ' + (win ? 'les assaillants l’emportent' : 'les défenseurs tiennent bon') + '.', p.id, win ? 'attackwin' : 'attacklose');
     checkWin(st);
   }
   function leaderDefeated(st, loser, winner, res) {
@@ -371,7 +371,7 @@
     st.pending.push({ type: 'cedeTerritory', pid: loser.id, to: winner.id });
   }
 
-  // v1.9.6 — une ambassade prise dans une conversion est RASÉE, jamais transférée. Sans cela, le
+  // v1.9.6 - une ambassade prise dans une conversion est RASÉE, jamais transférée. Sans cela, le
   // Partisan sur une capitale adverse donnait au joueur une seconde ambassade, hors de sa propre
   // capitale : deux règles violées d'un coup (« une seule » et « dans votre capitale »).
   function convertir(st, t, pid) {
@@ -400,9 +400,9 @@
       case 'exploratrice': return st.phase === 'collect' && t.ctrl === null && t.revoltFrom !== p.id && t.cont !== T(st, p.capital).cont ? 'Revendiquer ce territoire' : null;
       case 'partisan': return t.ctrl !== null && t.ctrl !== p.id && t.blds.some(function (b) { return b.o !== p.id; }) ? 'Soulever tous les aménagements' : null;
       case 'predicateur': return t.ctrl !== null && t.ctrl !== p.id && t.blds.some(function (b) { return b.t === 'T' && b.o !== p.id; }) ? 'Convertir le temple' : null;
-      // v1.9.6 — le Gouverneur agit sur TOUS vos territoires, où qu'il se trouve, temples exclus.
+      // v1.9.6 - le Gouverneur agit sur TOUS vos territoires, où qu'il se trouve, temples exclus.
       case 'gouverneur': return FOF.terrOf(st, p.id).some(function (x) { return x.blds.some(function (b) { return b.o !== p.id && b.t !== 'T'; }); }) ? 'Convertir les aménagements adverses' : null;
-      // v1.9.6 — le Trébuchet n'est plus lié à un assaut : posé sur un territoire adverse, il rase
+      // v1.9.6 - le Trébuchet n'est plus lié à un assaut : posé sur un territoire adverse, il rase
       // un aménagement adverse et reste en jeu. Une fois par tour.
       case 'trebuchets': return !u.fought && t.ctrl !== null && t.ctrl !== p.id && t.blds.some(function (b) { return b.o !== p.id; }) ? 'Détruire un aménagement' : null;
     }
@@ -490,7 +490,7 @@
     var p = FOF.cur(st), t = T(st, tid);
     if (st.phase !== 'build') return 'Pas en phase de construction.';
     if (t.ctrl !== p.id) return 'Ce territoire ne vous appartient pas.';
-    // v1.9.6 — emplacements : 3 sur la capitale, 2 sur tout autre territoire. TOUT compte
+    // v1.9.6 - emplacements : 3 sur la capitale, 2 sur tout autre territoire. TOUT compte
     // désormais, temple et ambassade inclus (les deux exemptions de la v1.9.2 sont annulées).
     var slots = FOF.slotsOf(st, p, tid);
     if (t.blds.length >= slots) return 'Déjà ' + slots + ' aménagements.';
@@ -509,7 +509,7 @@
     var p = FOF.cur(st);
     var pend = st.pending[0];
     if (pend && a.type !== 'resolve' && a.type !== 'deficitTake' && a.type !== 'surrender') throw new Error('Une décision est en attente.');
-    // v1.9.2 — anti-mauvais-clic : tant qu'aucune action n'a été jouée dans la phase en cours, on
+    // v1.9.2 - anti-mauvais-clic : tant qu'aucune action n'a été jouée dans la phase en cours, on
     // peut revenir à la précédente. Toute action qui change l'état salit la phase.
     if (a.type !== 'nextPhase' && a.type !== 'prevPhase' && a.type !== 'surrender') st.phaseClean = false;
     switch (a.type) {
@@ -541,7 +541,7 @@
         if (p.attackedLast || p.raidedLast) throw new Error('Les cours étrangères se ferment après les armes : ni attaque ni agression depuis votre dernier tour.');
         p.gold -= 4; p.flags.edouard = true; p.edouardUsed = true; gainDip(st, p, 1, 'Edouard le Sage'); checkWin(st); break;
       case 'discardZone':
-        // v1.6 : l'achat et la défausse sont indépendants (1 de chaque par tour) — avant, acheter bloquait la défausse.
+        // v1.6 : l'achat et la défausse sont indépendants (1 de chaque par tour) - avant, acheter bloquait la défausse.
         if (st.phase !== 'recruit' || p.flags.discarded) throw new Error('Vous avez déjà défaussé une carte ce tour-ci.');
         if (!st.zone[a.slot]) throw new Error('Cet emplacement du marché est vide.');
         st.discard.push(st.zone[a.slot]); st.zone[a.slot] = draw(st); p.flags.discarded = true;
@@ -646,7 +646,7 @@
         p.capital = ct.id;
         log(st, p.name + ' transfère sa cour à ' + ct.name + '.', p.id, 'build');
         if (razed) log(st, 'L’ambassade de ' + p.name + ' à ' + oldCap.name + ' ferme ses portes : la cour n’y est plus.', p.id, 'bad');
-        // v1.9.6 — l'ancienne capitale redevient un territoire ordinaire : 2 emplacements. Si elle
+        // v1.9.6 - l'ancienne capitale redevient un territoire ordinaire : 2 emplacements. Si elle
         // en occupe encore 3, le joueur doit en raser un avant de poursuivre.
         if (oldCap.blds.length > FOF.slotsOf(st, p, oldCap.id)) st.pending.push({ type: 'razeSlot', pid: p.id, tid: oldCap.id });
         break;

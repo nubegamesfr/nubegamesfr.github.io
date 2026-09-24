@@ -1,4 +1,4 @@
-# Fields of Fire — version web (v1.8, prototype)
+# Fields of Fire - version web (v1.8, prototype)
 
 Jeu 100 % statique (HTML/CSS/JS, sans build). Servi par GitHub Pages sur https://nubegames.fr/fields-of-fire/ (dossier `fields-of-fire/` du repo `nubegamesfr.github.io`).
 
@@ -63,19 +63,19 @@ Limites du prototype : pas de comptes, quiconque a le code d'un salon peut y éc
 - **v1.6 · combat en mer retiré** : plus aucun combat dans une zone de mer, pour personne (Aliénor comprise). Il ne lui reste que ses ports à 2 or, le +1 or par port et l'embarquement élargi ; mesurée à 32 % de victoires sur 1 200 parties simulées à 4 joueurs.
 
 ## v1.7 (playtest 4)
-- **Salon en ligne : drapeaux « prêt »** — chaque joueur se déclare prêt ; l'hôte est prêt d'office (c'est lui qui lance) et les bots comptent comme prêts. Le bouton « Lancer la partie » reste bloqué tant que tout le monde ne l'est pas, et affiche le compte (`2/3 prêts`). Vérifié aussi côté serveur, pour qu'un salon ne puisse pas démarrer par un lancement concurrent.
-- **Fenêtres qui restent ouvertes** — le glossaire, le deck, l'aide, le bilan de fin et la fiche de dirigeant ne sont plus refermés (ni rouverts) par l'action d'un autre joueur. Le contenu des fenêtres n'est réécrit que s'il a réellement changé.
+- **Salon en ligne : drapeaux « prêt »** - chaque joueur se déclare prêt ; l'hôte est prêt d'office (c'est lui qui lance) et les bots comptent comme prêts. Le bouton « Lancer la partie » reste bloqué tant que tout le monde ne l'est pas, et affiche le compte (`2/3 prêts`). Vérifié aussi côté serveur, pour qu'un salon ne puisse pas démarrer par un lancement concurrent.
+- **Fenêtres qui restent ouvertes** - le glossaire, le deck, l'aide, le bilan de fin et la fiche de dirigeant ne sont plus refermés (ni rouverts) par l'action d'un autre joueur. Le contenu des fenêtres n'est réécrit que s'il a réellement changé.
 - **Icône de diplomatie** : deux mains qui se serrent (`icons.js`, entrée `branch`), partout où la diplomatie apparaît.
 - **Construction** : les pions et la couronne de capitale ne captent plus le clic pendant la phase de construction (`#tokens.nohit`), le marteau reste accessible sur toute la case.
 - **Trois cartes bon marché** (à l'essai) : Milice paysanne et Frondeurs (élites, 1 campement, 1 or d'entretien) et Charpentier (spéciale, 1 campement, +1 en défense sur son territoire, reste en jeu). De quoi recruter dès les premiers tours.
-- **Abandon** : bouton drapeau blanc dans l'en-tête, avec confirmation. Le joueur est traité comme éliminé — territoires neutres, aménagements détruits, unités défaussées. Possible même pendant le tour d'un autre.
+- **Abandon** : bouton drapeau blanc dans l'en-tête, avec confirmation. Le joueur est traité comme éliminé - territoires neutres, aménagements détruits, unités défaussées. Possible même pendant le tour d'un autre.
 - **Animations d'attente** : quand un autre joueur (ou un bot) réfléchit, sa fiche s'anime (reflet, trois points, phase en cours), son pion prend un halo, la carte reçoit un liseré à sa couleur et le bandeau du bas indique depuis combien de temps on attend.
 - **Correction de la défausse** : acheter une carte n'empêche plus d'en défausser une (le programme les avait liées à tort ; la règle écrite autorise les deux, dans n'importe quel ordre).
 - **Menu radial** : icône de déplacement réduite pour tenir dans la pastille.
-- **Edouard le Sage** : confirmation avant l'achat de diplomatie — coût, trésor avant/après, et avertissement renforcé au tour 1 (« avec 1 or il vous restera peu de quoi recruter »).
-- **Illustrations manquantes** : les cartes Espion, Héraut, Ambassadeur, Pèlerin, Milice, Frondeurs, Charpentier et les dirigeants Hugues et Aliénor reçoivent de vraies **peintures du domaine public**, recadrées au format des cartes (La Tour, Holbein, Bosch, Bruegel, Titien, Sandys — détail dans `CREDITS.md`). Plus aucune carte ne tombe sur le placeholder couronne. Pour en remplacer une : déposer un fichier au même nom dans `assets/units/<clé>.jpg` (400 × 244) ou `assets/heroes/<clé>.jpg` (300 × 316), rien d'autre à toucher.
+- **Edouard le Sage** : confirmation avant l'achat de diplomatie - coût, trésor avant/après, et avertissement renforcé au tour 1 (« avec 1 or il vous restera peu de quoi recruter »).
+- **Illustrations manquantes** : les cartes Espion, Héraut, Ambassadeur, Pèlerin, Milice, Frondeurs, Charpentier et les dirigeants Hugues et Aliénor reçoivent de vraies **peintures du domaine public**, recadrées au format des cartes (La Tour, Holbein, Bosch, Bruegel, Titien, Sandys - détail dans `CREDITS.md`). Plus aucune carte ne tombe sur le placeholder couronne. Pour en remplacer une : déposer un fichier au même nom dans `assets/units/<clé>.jpg` (400 × 244) ou `assets/heroes/<clé>.jpg` (300 × 316), rien d'autre à toucher.
 
-## v1.7a — correction de l'IA (23/09/2026)
+## v1.7a - correction de l'IA (23/09/2026)
 - **Le bot ignorait cinq cartes** : Pillards, Charpentier, Espion, Prêtresse, Trébuchets n'étaient jamais achetés,
   faute de valeur dans sa grille d'évaluation (`js/bot.js`, `cardValue`). Corrigé : les cinq sont désormais
   évaluées, et les élites bon marché valent davantage quand l'armée est vide (comportement plus humain en début de partie).
@@ -84,7 +84,7 @@ Limites du prototype : pas de comptes, quiconque a le code d'un salon peut y éc
   Le traitement est appliqué au calque du terrain uniquement (`styleBase` dans `board.js`), une seule
   fois par carte : le style fait partie de la clé de cache de `prepare`, donc changer de style suffit
   à le redessiner. Les couleurs des joueurs sont peintes sur le calque `overlay`, elles ne sont donc
-  jamais mangées par le traitement — c'était la réserve principale sur l'estampe.
+  jamais mangées par le traitement - c'était la réserve principale sur l'estampe.
   Ajouter un style : une entrée dans `FOF.MAP_STYLES` et une branche dans `styleBase`.
 - Aucune règle du jeu n'a changé. Voir `claude/06_analyse_equilibrage.md` dans le projet pour la campagne
   d'équilibrage complète (environ 40 000 parties simulées, 3 à 6 joueurs) et les six correctifs proposés,
@@ -99,10 +99,10 @@ Limites du prototype : pas de comptes, quiconque a le code d'un salon peut y éc
   de haut) au lieu de la masquer ; « Agrandir les cartes ▴ » ou un clic sur les vignettes la rouvre.
   Après un achat elle se réduit d'elle-même, le temps de déployer l'unité. Le bouton
   « Voir la zone de recrutement » devient inutile et a été retiré.
-  *Note technique : la classe de réduction s'appelle `compact` et non `mini` — `.mini` est déjà
+  *Note technique : la classe de réduction s'appelle `compact` et non `mini` - `.mini` est déjà
   la vignette d'unité du tapis et imposait sa largeur de 112 px à toute la barre.*
 - **Le marché tient toujours à l'écran** (`fitMarket` dans `ui.js`) : après chaque rendu, si les
-  cinq cartes dépassent la hauteur du plateau, la barre est resserrée par paliers — `tight`
+  cinq cartes dépassent la hauteur du plateau, la barre est resserrée par paliers - `tight`
   (illustration et texte réduits), puis `tighter` (texte et pied de carte masqués), puis `row1`
   (les cinq sur une seule rangée, plafond de hauteur et défilement annulés). Mesuré sur douze
   formats de 1920×1080 à 390×844 : aucune carte ni bouton « Acheter » coupé, contre 5 cartes et
@@ -131,9 +131,9 @@ Limites du prototype : pas de comptes, quiconque a le code d'un salon peut y éc
   - **seuils de victoire** : militaire 8 + joueurs, religieuse 6 + joueurs, diplomatique 4 + joueurs.
   Vérifié par 1 600 parties simulées sur les fichiers livrés : répartition des victoires
   36/35/29 à 3 joueurs, 36/38/26 à 4, 27/37/36 à 5, 20/38/42 à 6. La voie militaire reste faible à
-  6 joueurs — voir `claude/06_analyse_equilibrage.md` §16.3.
+  6 joueurs - voir `claude/06_analyse_equilibrage.md` §16.3.
 
-## v1.8b — audit d'interface (23/09/2026)
+## v1.8b - audit d'interface (23/09/2026)
 
 Un contrôle automatisé (`audit_ui.js`, hors dépôt) parcourt 7 formats d'écran × 12 états de
 l'interface (accueil, création de partie, collecte, recrutement, marché plein et réduit, militaire,
@@ -153,7 +153,7 @@ Défauts réels trouvés et corrigés :
   (`.market { width: 100% }`), plus colonnes en `1fr` sous 900 px.
 - **Bouton « Fermer » des Règles sous le bord de l'écran** en 1366×768 et plus bas : la barre
   d'actions des fenêtres est désormais collante en bas de la fenêtre.
-- **Bouton de phase hors écran sur téléphone et tablette** — le bouton le plus utilisé du jeu se
+- **Bouton de phase hors écran sur téléphone et tablette** - le bouton le plus utilisé du jeu se
   trouvait en bas d'une page défilante. Ancré au bas de l'écran sous 900 px.
 - Cibles tactiles sous 30 px (contrôles audio, case du didacticiel, pastille de couleur, boutons
   des cartes) : plancher de 34 px sous 820 px de large, et boutons de carte empilés.
@@ -162,7 +162,7 @@ Faux positifs volontairement ignorés par l'audit : éléments du plateau recouv
 ouverte (c'est le but), et éléments sous la ligne de flottaison de l'accueil, qui est un formulaire
 défilant.
 
-## v1.8c — jouabilité sur téléphone (23/09/2026)
+## v1.8c - jouabilité sur téléphone (23/09/2026)
 
 Essai réel d'un tour complet en 390×844 : l'en-tête occupait deux rangées de onze boutons, la barre
 des joueurs était coupée au bord de l'écran, la carte tombait à 366×275 pendant que le tapis en
@@ -172,7 +172,7 @@ téléphone ajoutée sous 620 px :
 - en-tête sur une seule rangée qui défile latéralement, libellés masqués sur les boutons à icône ;
 - barre des joueurs en rangée défilante avec accroche (`scroll-snap`), une fiche par écran ;
 - tapis compacté : pistes en compteurs chiffrés (`1/11`) au lieu des rangées de cases, portrait et
-  textes réduits — la carte passe de 351 à 439 px de haut et la page ne défile plus ;
+  textes réduits - la carte passe de 351 à 439 px de haut et la page ne défile plus ;
 - menu radial resserré (boutons 50 px, rayon 54 au lieu de 78) ;
 - légende des terrains masquée, bandeau de phase réduit et remonté au-dessus des cartes ;
 - commandes de l'en-tête réordonnées (chronique, règles, deck, glossaire, style d'abord ; ambiance
@@ -184,10 +184,10 @@ glissement à un doigt quand la carte est zoomée (150 px de glissement → 150 
 suppression du clic parasite en fin de glissement.
 
 Limite connue : en portrait la carte est bornée par la largeur de l'écran (366 px), quelle que soit
-la hauteur disponible. Les territoires font une quarantaine de pixels — jouable, mais le zoom et le
+la hauteur disponible. Les territoires font une quarantaine de pixels - jouable, mais le zoom et le
 pincement sont utiles. Le paysage reste plus confortable.
 
-## v1.8d — retours de playtest (23/09/2026)
+## v1.8d - retours de playtest (23/09/2026)
 
 - **Le bas de la carte restait caché par le marché réduit.** La carte était dimensionnée sur toute
   la hauteur du plateau alors que les vignettes en recouvrent le bas : 450 px de carte masqués en
@@ -201,7 +201,7 @@ pincement sont utiles. Le paysage reste plus confortable.
   l'ont rejointe : l'en-tête passe de 14 à 8 boutons. `musicUI()` ne fait que rafraîchir des
   contrôles existants, la fenêtre les pose donc elle-même avec `musicHTML()` à chaque rendu.
 
-## v1.8e — retours de playtest (23/09/2026)
+## v1.8e - retours de playtest (23/09/2026)
 
 - **La page clignotait pendant le tour d'un bot.** Deux causes cumulées, toutes deux introduites en
   v1.8 : `fitMarket` retirait puis remettait ses paliers à chaque rendu (le marché s'affichait en
@@ -212,7 +212,7 @@ pincement sont utiles. Le paysage reste plus confortable.
   pendant que les bots jouent : une seule taille de carte, une seule hauteur de marché.
 - **Le SVG passait devant les territoires en phase de construction.** `nohit` ne neutralisait que
   les pions (`.tk`) : la **bannière de capitale** et les icônes d'aménagement captaient toujours le
-  clic, donc impossible de bâtir sur la case sous une bannière — ce qui bloquait la partie une fois
+  clic, donc impossible de bâtir sur la case sous une bannière - ce qui bloquait la partie une fois
   une capitale déplacée. Toute la couche `#tokens` est maintenant neutralisée en phase de
   construction, le maillet excepté. Vérifié : un clic au centre exact de la bannière atteint la
   carte et ouvre le panneau de construction.

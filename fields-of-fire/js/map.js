@@ -1,4 +1,4 @@
-/* Fields of Fire — génération de carte (hexagones) */
+/* Fields of Fire - génération de carte (hexagones) */
 (function (FOF) {
   'use strict';
 
@@ -109,7 +109,7 @@
     var targets = cs.sizes.slice(); if (cs.extra) targets.push(cs.extra);
     // v1.9.2 : grille choisie pour que la carte rendue tienne dans un rapport ~2:1, qui remplit
     // mieux un écran large et se lit plus clairement. Géométrie hexagonale : un pas en x vaut
-    // √3·R, un pas en y vaut 1,5·R, donc le rapport rendu est 1,155 × W/H — on vise W/H ≈ 1,73.
+    // √3·R, un pas en y vaut 1,5·R, donc le rapport rendu est 1,155 × W/H - on vise W/H ≈ 1,73.
     // La grille est dimensionnée pour que les terres occupent au moins ~45 % de la carte rendue :
     // au-delà, la mer mange l'écran (mesuré à 60-74 % avant cette correction).
     var aire = Math.round(7 * n / (FOF.LAND_TARGET || (n <= 3 ? 0.40 : 0.46)));
@@ -143,7 +143,7 @@
     // v1.9.4 : graines RAPPROCHÉES. Elles étaient auparavant placées le plus loin possible les unes
     // des autres : les continents s'étalaient sur toute la grille et la mer occupait les trois
     // quarts de l'écran. On vise maintenant une distance juste suffisante pour qu'ils ne se
-    // touchent pas — des masses voisines séparées par des détroits.
+    // touchent pas - des masses voisines séparées par des détroits.
     var VISE = 4;
     var seeds = [];
     for (var c = 0; c < targets.length; c++) {
@@ -171,7 +171,7 @@
           nbrs(i % W, Math.floor(i / W), W, H).forEach(function (j) { if (ok(j, c) && front.indexOf(j) < 0) front.push(j); });
         });
         if (!front.length) return null;
-        // v1.9.2 : croissance compacte — on tire trois candidats et on garde le plus proche du
+        // v1.9.2 : croissance compacte - on tire trois candidats et on garde le plus proche du
         // centre du continent. Des masses ramassées laissent beaucoup moins de mer à l'écran
         // qu'une croissance purement aléatoire, qui étire les continents en filaments.
         var cx = 0, cy = 0;
@@ -249,7 +249,7 @@
   }
 
   /* ============================================================================
-     v1.9.7 — DÉCOUPE DES MERS PAR RAYONS
+     v1.9.7 - DÉCOUPE DES MERS PAR RAYONS
 
      Règle : partout où une frontière entre deux territoires atteint la côte, un trait
      part de ce point et file vers le large en prolongeant exactement cette frontière.
@@ -257,7 +257,7 @@
      n'accèdent plus à la même mer à cet endroit : chacun a la sienne.
 
      Conséquence assumée : une case d'eau n'appartient plus forcément à une seule mer.
-     Ce n'est pas un problème pour le moteur — une flotte est posée sur une ZONE de mer
+     Ce n'est pas un problème pour le moteur - une flotte est posée sur une ZONE de mer
      (« s3 »), jamais sur une case. Les cases ne servent qu'à fabriquer et à dessiner.
 
      Trop de traits feraient trop de mers : on en retire ensuite, entiers, jusqu'au
@@ -318,7 +318,7 @@
 
        Entre les deux bouts, le trait enchaîne des BONDS. Un bond traverse une case d'eau de part
        en part, par son centre, et ressort par le sommet opposé : la case est donc bien coupée en
-       deux. Depuis une jonction il n'y a qu'une seule case d'eau, donc le premier bond est forcé —
+       deux. Depuis une jonction il n'y a qu'une seule case d'eau, donc le premier bond est forcé -
        et c'est exactement le prolongement de la frontière terrestre. Ensuite, le chemin est libre.  */
     function cle(p) { return Math.round(p.x * 4) + ':' + Math.round(p.y * 4); }
     var som = {};
@@ -335,12 +335,14 @@
       var s = som[k];
       if (s.terres >= 2 && s.eaux.length) { estJonction[k] = true; jonctions.push(k); }
       // sommet du bord extérieur : il lui manque une case, donc la carte s'arrête là
-      if (s.eaux.length && s.hs.length < 3) estSortie[k] = true;
+      // une sortie de carte est un sommet en pleine eau au bord de la trame : jamais un point
+      // de côte, sinon le trait finirait sur le rivage d'un territoire sans aucune frontière là.
+      if (s.eaux.length && s.hs.length < 3 && s.terres === 0) estSortie[k] = true;
     });
     if (!jonctions.length) return null;
 
     // Deux façons d'aller d'une jonction à la suivante, en ligne droite comme en tournant :
-    //   · le BOND  (2 R) traverse une case d'eau par son centre — c'est lui qui coupe la case ;
+    //   · le BOND  (2 R) traverse une case d'eau par son centre - c'est lui qui coupe la case ;
     //   · le PAS   (R)   longe l'arête entre deux cases d'eau.
     // Enchaînés dans la même direction, bond et pas font une ligne droite. Changer de direction
     // coûte cher (voir VIRAGE), pour que les traits restent droits et ne longent pas la côte.
@@ -377,7 +379,7 @@
     function cherche(depart, versSortie) {
       // Un partenaire n'est retenu que s'il est PROCHE : un détroit, une baie, un bras de mer.
       // Au-delà, le trait part vers le bord de la carte. Sans cette limite, toutes les jonctions
-      // se mariaient entre voisines le long des côtes et le large restait d'un seul tenant —
+      // se mariaient entre voisines le long des côtes et le large restait d'un seul tenant -
       // une mer immense qu'on traversait en un déplacement.
       var dist = {}, prec = {}, file = [], MAXL = 40 * RH;
       coups(depart).forEach(function (o) {
@@ -386,6 +388,10 @@
         // depuis une jonction, seul le bond dans l'eau est possible : c'est le prolongement exact
         // de la frontière terrestre. On l'impose en n'ouvrant que les bonds.
         if (o.L < 2 * RH) return;
+        // même règle dès le premier bond : si l'autre bout du bond frôle une terre sans être une
+        // jonction, ce trait ne peut pas exister - on préfère aucun trait à un trait qui semble
+        // se raccrocher au rivage n'importe où.
+        if (som[o.k].terres > 0 && !estJonction[o.k]) return;
         dist[o.k + '|' + o.d] = o.L; prec[o.k + '|' + o.d] = { k: depart, d: -1 };
         file.push({ k: o.k, d: o.d, c: o.L });
       });
@@ -406,6 +412,10 @@
         coups(u.k).forEach(function (o) {
           var c2 = u.c + o.L + (o.d === u.d ? 0 : VIRAGE);
           if (o.d === (u.d + 3) % 6) return;                          // demi-tour interdit
+          // En chemin, un trait ne frôle jamais la côte : un sommet qui touche une terre sans être
+          // une jonction donnerait l'impression que le trait s'y raccroche, alors qu'aucune
+          // frontière n'arrive là. Seules les jonctions, où l'on s'arrête, font exception.
+          if (som[o.k].terres > 0 && !estJonction[o.k]) return;
           var vk = o.k + '|' + o.d;
           if (dist[vk] !== undefined && dist[vk] <= c2) return;
           dist[vk] = c2; prec[vk] = { k: u.k, d: u.d };
@@ -416,8 +426,8 @@
     }
 
     // mariage des jonctions : les paires les plus droites et les plus courtes d'abord
-    // Pour chaque jonction on compare les deux issues possibles — rejoindre une autre jonction,
-    // ou sortir par le bord — et on garde la moins chère. Comme un virage coûte très cher, une
+    // Pour chaque jonction on compare les deux issues possibles - rejoindre une autre jonction,
+    // ou sortir par le bord - et on garde la moins chère. Comme un virage coûte très cher, une
     // jonction qui n'a pas de vis-à-vis proche file tout droit vers le large : c'est ce qui
     // découpe la haute mer, au lieu de laisser une seule étendue qu'on traverse d'un coup.
     var propositions = [], versLeBord = {};
@@ -449,7 +459,7 @@
     /* ---- 2. découpe exacte : chaque case d'eau est faite de six triangles ----------------
        Un bond traverse la case par son centre, d'un sommet au sommet opposé : il suit donc
        exactement deux rayons de l'hexagone et le partage en deux moitiés de trois triangles.
-       Un pas longe une arête entre deux cases. Toute la découpe tient donc sur les triangles —
+       Un pas longe une arête entre deux cases. Toute la découpe tient donc sur les triangles -
        pas de trame de pixels, pas d'approximation, et le tracé à l'écran tombe au même endroit. */
     var triDe = {};                                    // case d'eau -> index de base de ses 6 triangles
     water.forEach(function (h, i) { triDe[h] = i * 6; });
@@ -547,7 +557,7 @@
 
        L'embranchement est la deuxième source de traits : les jonctions côtières sont toutes au
        bord, elles ne peuvent pas découper le large. Un trait peut donc repartir du milieu d'un
-       autre trait — d'un de ses sommets intermédiaires, jamais de son milieu exact — et filer
+       autre trait - d'un de ses sommets intermédiaires, jamais de son milieu exact - et filer
        tout droit jusqu'à retomber sur un trait, une jonction côtière ou le bord de la carte. */
     var moyenne = NT / Math.max(1, nVoulu);
     var PLANCHER = Math.max(9, Math.round(moyenne * 0.7)), PLAFOND = Math.max(30, Math.round(moyenne * 1.8));
@@ -577,7 +587,7 @@
         });
         if (petite < 0) break;
         // la plus petite voisine, d'abord sans dépasser le plafond ; si aucune ne convient,
-        // on accepte quand même — mieux vaut une mer un peu grande qu'un confetti
+        // on accepte quand même - mieux vaut une mer un peu grande qu'un confetti
         var choix = -1;
         [true, false].forEach(function (strict) {
           if (choix >= 0) return;
@@ -621,6 +631,7 @@
         var cs = coups(cur), suiv = null;
         for (var j = 0; j < cs.length; j++) if (cs[j].d === dir) { suiv = cs[j]; break; }
         if (!suiv) break;
+        if (som[suiv.k].terres > 0 && !estJonction[suiv.k]) break;   // pas de frôlement de côte
         cur = suiv.k;
         pts.push({ x: som[cur].x, y: som[cur].y });
         if (surTrait[cur] || estJonction[cur] || estSortie[cur]) return pts.length >= 3 ? pts : null;
@@ -639,14 +650,23 @@
         ray.pts.forEach(function (p, i) {
           var k = cle(p);
           surTrait[k] = true;
-          if (i === 0 || i === ray.pts.length - 1) return;
+          if (i === 0 || i === ray.pts.length - 1) {
+            // Un trait peut aussi repartir du BOUT AU LARGE d'un autre trait. Ces points-là sont
+            // en pleine eau, donc sans risque de frôler une côte, et ce sont les seuls qui
+            // permettent de trancher la haute mer, loin de toute côte.
+            if (som[k] && som[k].terres === 0) {
+              var vois = cle(ray.pts[i === 0 ? 1 : ray.pts.length - 2]);
+              depart.push({ k: k, avant: vois, apres: vois });
+            }
+            return;
+          }
           if (Math.abs(cum[i] / lg - 0.5) < 0.03) return;            // jamais pile au milieu
           depart.push({ k: k, avant: cle(ray.pts[i - 1]), apres: cle(ray.pts[i + 1]) });
         });
       });
       // deuxième famille de points de départ : le centre d'une case que le trait traverse.
-      // C'est indispensable quand un trait ne fait qu'un bond — il n'a alors aucun sommet
-      // intermédiaire —, ce qui est le cas courant sur une mer étroite.
+      // C'est indispensable quand un trait ne fait qu'un bond - il n'a alors aucun sommet
+      // intermédiaire -, ce qui est le cas courant sur une mer étroite.
       var centres = [];
       rayons.forEach(function (ray, ri) {
         if (mort[ri]) return;
@@ -671,6 +691,7 @@
           if (k0 === ct.i1 || k0 === ct.i2) continue;      // pas dans l'axe du trait
           var kc = cle(cs0[k0]);
           if (!som[kc]) continue;
+          if (som[kc].terres > 0 && !estJonction[kc]) continue;
           var pts0 = [{ x: c0.x, y: c0.y }, { x: cs0[k0].x, y: cs0[k0].y }];
           if (surTrait[kc] || estJonction[kc] || estSortie[kc]) { out.push(pts0); continue; }
           var suite = droitDepuis(kc, dirDe(c0, cs0[k0]), surTrait);

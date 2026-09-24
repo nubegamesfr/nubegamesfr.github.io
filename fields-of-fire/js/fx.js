@@ -1,4 +1,4 @@
-/* Fields of Fire — animations (déplacements, phases, or, conquêtes, constructions, cartes) */
+/* Fields of Fire - animations (déplacements, phases, or, conquêtes, constructions, cartes) */
 (function (FOF) {
   'use strict';
   var prev = null, reduce = false;
@@ -160,7 +160,7 @@
         var col = l.p !== null && l.p !== undefined ? o.color(l.p) : null;
         if (r[1] === 'tyran') { if (anim) tyranPop(st.players[l.p]); snd.push('tyran'); popped = true; return; }
         // v1.9.1 : la grande carte centrale (sombre, 2,3 s, jusqu'à 80 % de largeur) n'apparaît plus
-        // pendant le tour d'un autre joueur — l'événement est quand même annoncé, en bulle.
+        // pendant le tour d'un autre joueur - l'événement est quand même annoncé, en bulle.
         if (r[1] === 'pop' && !popped && aMoi && anim) { pop(l.m, r[2], r[3], col); popped = true; snd.push(r[3] === 'bad' ? 'bad' : l.k === 'pact' ? 'dip' : 'conquer'); }
         else toast(l.m, r[2], r[3], col);
         if (l.k === 'recruit') snd.push('recruit');

@@ -1,4 +1,4 @@
-/* Fields of Fire — didacticiel facultatif (3 tours).
+/* Fields of Fire - didacticiel facultatif (3 tours).
    Il montre l'interface puis commente chaque phase ; il ne bloque jamais le joueur,
    qui peut faire autre chose que ce qui est proposé, passer une étape ou tout arrêter. */
 (function (FOF) {
@@ -6,7 +6,7 @@
   var $ = function (id) { return document.getElementById(id); };
   var on = false, seen = {}, cur = null, timer = null;
 
-  // when : { round, phase } — l'étape apparaît quand la partie arrive là (round 0 = avant tout)
+  // when : { round, phase } - l'étape apparaît quand la partie arrive là (round 0 = avant tout)
   var STEPS = [
     { id: 'board', sel: '#boardWrap', title: 'La carte', text: 'Voici le royaume. Chaque case est un territoire (plaines, forêt, montagnes, marécage) ou une zone de mer. Votre bannière marque votre capitale, vos pions sont posés dessus.', when: { round: 1, phase: 'collect' } },
     { id: 'mat', sel: '#mat', title: 'Votre tapis', text: 'En bas : votre dirigeant, votre or, vos trois pistes de victoire (territoires, temples, diplomatie) et vos unités. Le grand bouton à droite fait passer à la phase suivante.', when: { round: 1, phase: 'collect' } },

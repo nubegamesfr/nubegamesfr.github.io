@@ -1,4 +1,4 @@
-/* Fields of Fire — adversaires contrôlés par l'ordinateur (bots).
+/* Fields of Fire - adversaires contrôlés par l'ordinateur (bots).
    FOF.botAct(st) renvoie UNE action à jouer pour le joueur qui doit agir (ou null).
    Heuristiques simples : conquérir les neutres avec le dirigeant, recruter des élites rentables,
    attaquer quand les chances sont bonnes, bâtir cités / temples / forts, ne pas devenir Tyran à la légère. */
@@ -195,7 +195,7 @@
     for (i = 0; i < army.length; i++) {
       if (FOF.isElite(army[i].key) || army[i].key === 'exploratrice' || !FOF.effectAvailable(st, army[i])) continue;
       var ea = { type: 'effect', uid: army[i].uid };
-      // v1.9.6 — le Partisan retourne tout le territoire d'un coup : plus de cible à choisir.
+      // v1.9.6 - le Partisan retourne tout le territoire d'un coup : plus de cible à choisir.
       // Le Trébuchet, lui, vise l'aménagement adverse le plus précieux.
       if (army[i].key === 'trebuchets') {
         var tt = T(st, tid(army[i].pos)), ix = -1, bestRank = -1, RANK = { Ci: 5, F: 4, T: 3, P: 2, C: 1, A: 6 };

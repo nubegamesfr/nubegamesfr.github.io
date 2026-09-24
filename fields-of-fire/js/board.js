@@ -1,4 +1,4 @@
-/* Fields of Fire — rendu de la carte (v1.4) : trame haute définition, frontières irrégulières,
+/* Fields of Fire - rendu de la carte (v1.4) : trame haute définition, frontières irrégulières,
    motifs « papier peint » par terrain, mer avec hauts-fonds, surbrillances par masques. */
 (function (FOF) {
   'use strict';
@@ -39,7 +39,7 @@
   function build(st) {
     var m = st.map, W = m.W, H = m.H, seed = m.terr.length * 131 + W;
     var hexT = {}; m.terr.forEach(function (t) { hexT[t.hex] = t.id; });
-    // v1.9.7 — une case d'eau n'appartient plus forcément à une seule mer : les traits la coupent
+    // v1.9.7 - une case d'eau n'appartient plus forcément à une seule mer : les traits la coupent
     // par son centre. Chaque case est donc lue en six triangles, et map.js dit à quelle mer va
     // chacun (voir seaTri). Le pixel trouve son triangle par l'angle depuis le centre de la case.
     var iEau = {}; (m.water || []).forEach(function (h, i) { iEau[h] = i; });
@@ -317,7 +317,7 @@
     ctx.strokeRect(inset, inset, w - inset * 2, h - inset * 2);
   }
 
-  /* v1.9.7 — les frontières de mer sont de vraies lignes, tracées après la trame.
+  /* v1.9.7 - les frontières de mer sont de vraies lignes, tracées après la trame.
      La carte est ondulée par un bruit : un point de l'écran est déplacé avant d'être
      rattaché à une case. Pour que le trait tombe exactement sur la frontière peinte, on
      applique donc la déformation À L'ENVERS à chacun de ses points. */
@@ -550,7 +550,7 @@
     var cx = c.getContext('2d'); cx.drawImage(mk.c, 0, 0); cx.globalCompositeOperation = 'source-in'; cx.fillStyle = color; cx.fillRect(0, 0, c.width, c.height);
     return (rs.tint[k] = { c: c, x: mk.x, y: mk.y });
   }
-  // v1.9.6 — liseré rayé des capitales : alternance couleur du joueur / blanc, en diagonale,
+  // v1.9.6 - liseré rayé des capitales : alternance couleur du joueur / blanc, en diagonale,
   // comme un ruban de chantier. Motif de 16 px qui se répète sans couture.
   var rayCache = {};
   function rayures(cx, col) {
@@ -626,7 +626,7 @@
     var i = gy * rs.gw + gx;
     return rs.kind[i] === 1 && rs.id[i] === tid;
   }
-  // v1.9.2 — « mieux montrer les capitales » : on souligne le contour entier de la case en or.
+  // v1.9.2 - « mieux montrer les capitales » : on souligne le contour entier de la case en or.
   // Le tracé est construit une fois par carte et par taille de canevas, puis simplement rempli.
   var outCache = { key: null, v: {} };
   function capOutlinePath(tid) {
@@ -750,7 +750,7 @@
       var an = rs.anchor['t' + pl.capital]; if (!an) return;
       // le drapeau ne doit JAMAIS déborder de la case : on cherche le plus grand format et le
       // décalage qui tiennent entièrement sur le territoire, sinon on ne le dessine pas.
-      // v1.9.2 : anneau doré autour de la capitale — statique, sous l'interface, pour qu'on la
+      // v1.9.2 : anneau doré autour de la capitale - statique, sous l'interface, pour qu'on la
       // repère d'un coup d'œil même quand le drapeau est petit.
       var fit = flagFit(pl.capital, an);
       if (fit) {
@@ -915,7 +915,7 @@
         var col = colorOf(t.ctrl);
         paint(ctx, rs, 't' + t.id, 'fill', col, 0.3);
         paint(ctx, rs, 't' + t.id, 'band', col, 0.95);
-        // v1.9.2 — la capitale se repère au premier coup d'œil : sa case vire à l'or et son
+        // v1.9.2 - la capitale se repère au premier coup d'œil : sa case vire à l'or et son
         // liseré est doublé d'un trait doré.
         var pl = st.players[t.ctrl];
         if (pl && pl.alive && pl.capital === t.id) {

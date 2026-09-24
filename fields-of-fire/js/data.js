@@ -1,4 +1,4 @@
-/* Fields of Fire — données de jeu (règles v1.1) */
+/* Fields of Fire - données de jeu (règles v1.1) */
 (function (FOF) {
   'use strict';
   FOF.BIOMES = ['P', 'F', 'M', 'Ma'];

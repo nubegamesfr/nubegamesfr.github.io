@@ -1,4 +1,4 @@
-/* Fields of Fire — statistiques de parties (une ligne par partie dans la table game_stats) */
+/* Fields of Fire - statistiques de parties (une ligne par partie dans la table game_stats) */
 (function (FOF) {
   'use strict';
   function uuid() { return (crypto.randomUUID ? crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) { var r = Math.random() * 16 | 0; return (c === 'x' ? r : (r & 3 | 8)).toString(16); })); }
