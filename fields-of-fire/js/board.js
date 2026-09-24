@@ -838,8 +838,11 @@
         // liseré est doublé d'un trait doré.
         var pl = st.players[t.ctrl];
         if (pl && pl.alive && pl.capital === t.id) {
+          // la case vire à l'or pour signaler la capitale, mais son liseré reste à la couleur du
+          // joueur : on le repose par-dessus l'or, sinon toutes les capitales semblaient brunes.
           paint(ctx, rs, 't' + t.id, 'fill', '#e8b73a', 0.34);
-          paint(ctx, rs, 't' + t.id, 'band', '#8a6410', 1);
+          paint(ctx, rs, 't' + t.id, 'band', col, 1);
+          paint(ctx, rs, 't' + t.id, 'band', col, 1);
         }
       });
       (view.picks || []).forEach(function (tid) { paint(ctx, rs, 't' + tid, 'fill', '#46c46e', 0.45); paint(ctx, rs, 't' + tid, 'band', '#2fa857', 1); });

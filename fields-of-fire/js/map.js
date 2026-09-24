@@ -39,16 +39,16 @@
   }
 
   // v1.5 : continents libres (nombre et tailles au hasard), total = 7 × joueurs
-  function continentSizes(s, n) {
+  function continentSizes(s, n, k) {
     var total = 7 * n;
     for (var tries = 0; tries < 400; tries++) {
-      // v1.9.2 : moins de continents, plus gros. Chaque continent impose une ceinture d'eau ;
-      // n continents de 7 cases rendaient impossible de descendre sous ~60 % de mer. Deux ou trois
-      // masses (quatre à partir de cinq joueurs) tiennent le budget « mer ≤ 55 % ».
-      // à trois joueurs il y a peu de terres : deux masses seulement, sinon la ceinture d'eau
-      // de chaque continent fait exploser la part de mer.
-      var kmax = n >= 5 ? 4 : 3;
-      var k = n <= 3 ? 1 + ri(s, 2) : 2 + ri(s, kmax - 1);
+      // Nombre de continents. Jamais un seul (une masse unique retire tout l'intérêt de la mer),
+      // jamais plus que ce que la place permet : chaque continent supplémentaire exige une ceinture
+      // d'eau, et les terres disponibles valent 7 × joueurs. Mesuré : à 3 joueurs (21 cases) trois
+      // masses séparées ne rentrent dans aucune grille tenant le plafond de 55 % de mer.
+      //   3 j : 2      4 j : 2-3      5 j : 2-4      6 j : 2-4
+      // La grille est ensuite choisie en fonction de k (voir GRID dans tryGenerate) : une masse de
+      // plus demande une carte un peu plus large, sinon la génération échoue ou la mer déborde.
       var vmax = Math.max(8, Math.ceil(total / k) + 5);
       var sizes = [], left = total;
       for (var i = 0; i < k; i++) {
@@ -59,22 +59,38 @@
       }
       if (sizes.length === k && left === 0 && sizes.every(function (v) { return v >= 5 && v <= vmax; })) return { sizes: sizes, extra: 0 };
     }
-    var base = [], k2 = n >= 5 ? 3 : (n <= 3 ? 1 : 2), q0 = Math.floor(total / k2);
+    var base = [], k2 = 2, q0 = Math.floor(total / k2);
     for (var q = 0; q < k2; q++) base.push(q === k2 - 1 ? total - q0 * (k2 - 1) : q0);
     return { sizes: base, extra: 0 };
   }
 
+  // Nombre de continents. Jamais un seul (une masse unique retire tout l'intérêt de la mer),
+  // jamais plus que ce que la place permet : chaque continent supplémentaire exige une ceinture
+  // d'eau, et les terres disponibles valent 7 × joueurs. Mesuré : à 3 joueurs (21 cases) trois
+  // masses séparées ne tiennent dans aucune grille respectant le plafond de 55 % de mer.
+  //   3 j : 2      4 j : 2-3      5 j : 2-4      6 j : 2-4
+  var KMAX = { 3: 2, 4: 3, 5: 4, 6: 4 };
+
   FOF.generateMap = function (s, n) {
-    for (var attempt = 0; attempt < 400; attempt++) {
-      var m = tryGenerate(s, n);
-      if (m) return m;
+    // Le tirage se fait UNE fois, avant les essais. Il était auparavant refait à chaque essai :
+    // deux continents réussissent presque toujours du premier coup alors que quatre demandent
+    // plusieurs tentatives, si bien que le hasard retombait sur deux dans 87 % des parties
+    // (mesuré : 26 cartes à deux continents sur 30 à cinq joueurs). On tient donc le nombre voulu,
+    // et on ne descend d'un cran que s'il est réellement impossible à placer.
+    var kmax = KMAX[n] || Math.min(n + 1, 4);
+    var kVoulu = FOF.FORCE_K || (2 + ri(s, kmax - 1));
+    for (var want = kVoulu; want >= 2; want--) {
+      for (var attempt = 0; attempt < 300; attempt++) {
+        var m = tryGenerate(s, n, want);
+        if (m) return m;
+      }
     }
     throw new Error('Carte impossible à générer');
   };
 
-  function tryGenerate(s, n) {
+  function tryGenerate(s, n, k) {
     var wide = !(s && s.wideSea === false);   // « mer élargie » : choix fait à la création de la partie
-    var cs = continentSizes(s, n);
+    var cs = continentSizes(s, n, k);
     var targets = cs.sizes.slice(); if (cs.extra) targets.push(cs.extra);
     // v1.9.2 : grille choisie pour que la carte rendue tienne dans un rapport ~2:1, qui remplit
     // mieux un écran large et se lit plus clairement. Géométrie hexagonale : un pas en x vaut
@@ -82,15 +98,23 @@
     // La grille est dimensionnée pour que les terres occupent au moins ~45 % de la carte rendue :
     // au-delà, la mer mange l'écran (mesuré à 60-74 % avant cette correction).
     var aire = Math.round(7 * n / (FOF.LAND_TARGET || (n <= 3 ? 0.40 : 0.46)));
-    // Grilles retenues après mesure : rapport rendu entre 1,7 et 1,9 (paysage, sans bande grise
-    // en haut) ET mer ≤ 55 % de la surface affichée, ce qui est le plafond fixé par le créateur.
-    //   3 j : 8×6  → mer 50 %      5 j : 10×8 → mer 52 %
-    //   4 j : 9×7  → mer 50 %      6 j : 11×9 → mer 55 %
-    var TABLE = { 3: [8, 6], 4: [9, 7], 5: [10, 8], 6: [11, 9] };
+    // Grilles retenues après mesure, par joueurs ET par nombre de continents. Chaque couple donne
+    // un rendu proche de 2:1 et une mer ≤ 55 % de la surface affichée (plafond fixé par le
+    // créateur). Un continent de plus consomme de l'eau : il lui faut une grille plus large.
+    //   3 j  k2 10×6 → 54 %        5 j  k2 11×7 → 48 %   k3 11×7 → 49 %   k4 12×7 → 55 %
+    //   4 j  k2 10×6 → 47 %        6 j  k2 12×8 → 53 %   k3 12×8 → 54 %   k4 12×8 → 55 %
+    //        k3 11×6 → 55 %
+    var GRID = {
+      3: { 2: [10, 6] },
+      4: { 2: [10, 6], 3: [11, 6] },
+      5: { 2: [11, 7], 3: [11, 7], 4: [12, 7] },
+      6: { 2: [12, 8], 3: [12, 8], 4: [12, 8] }
+    };
+    var TABLE = { 3: [9, 6], 4: [10, 6], 5: [11, 7], 6: [12, 8] };
     var ASP = FOF.MAP_ASPECT || 1.56;   // rapport rendu ≈ 1,155 × W/H
     var H = Math.max(5, Math.round(Math.sqrt(aire / ASP)));
     var W = Math.round(ASP * H);
-    var tb = (FOF.MAP_WH && FOF.MAP_WH[n]) || TABLE[n];
+    var tb = (FOF.MAP_WH && FOF.MAP_WH[n]) || (GRID[n] && GRID[n][cs.sizes.length]) || TABLE[n];
     if (tb) { W = tb[0]; H = tb[1]; }
     var N = W * H, owner = new Array(N).fill(-1);
     function ok(i, c) { // case libre, pas au bord, pas collée à un autre continent
@@ -101,17 +125,23 @@
       for (var k = 0; k < nb.length; k++) if (owner[nb[k]] !== -1 && owner[nb[k]] !== c) return false;
       return true;
     }
-    // graines éloignées
+    // v1.9.4 : graines RAPPROCHÉES. Elles étaient auparavant placées le plus loin possible les unes
+    // des autres : les continents s'étalaient sur toute la grille et la mer occupait les trois
+    // quarts de l'écran. On vise maintenant une distance juste suffisante pour qu'ils ne se
+    // touchent pas — des masses voisines séparées par des détroits.
+    var VISE = 4;
     var seeds = [];
     for (var c = 0; c < targets.length; c++) {
-      var best = -1, bestD = -1;
-      for (var t = 0; t < 60; t++) {
+      var best = -1, bestS = 1e9, bestD = 0;
+      for (var t = 0; t < 80; t++) {
         var cand = ri(s, N);
         if (!ok(cand, c)) continue;
-        var d = seeds.length ? Math.min.apply(null, seeds.map(function (x) { return hexDist(x, cand, W); })) : 99;
-        if (d > bestD) { bestD = d; best = cand; }
+        var d = seeds.length ? Math.min.apply(null, seeds.map(function (x) { return hexDist(x, cand, W); })) : VISE;
+        if (d < 3) continue;                       // jamais collées
+        var score = Math.abs(d - VISE);            // ni collées, ni à l'autre bout de la carte
+        if (score < bestS) { bestS = score; best = cand; bestD = d; }
       }
-      if (best < 0 || (seeds.length && bestD < 3)) return null;
+      if (best < 0) return null;
       seeds.push(best); owner[best] = c;
     }
     // croissance aléatoire, continent par continent en tourniquet
@@ -220,7 +250,8 @@
       var cc = FOF.hexCenter(ci, W, R0);
       if (cc.x >= bx0 && cc.x <= bx1 && cc.y >= by0 && cc.y <= by1) dansBoite++;
     }
-    if (dansBoite && 1 - terr.length / dansBoite > (n <= 3 ? 0.505 : 0.48)) return null;   // marge : la boîte rendue déborde d'un rayon d'hexagone
+    var SEUIL = FOF.SEA_EST || (n <= 3 ? 0.215 : 0.48);
+    if (dansBoite && 1 - terr.length / dansBoite > SEUIL) return null;   // marge : la boîte rendue déborde d'un rayon d'hexagone
     return { W: W, H: H, terr: terr, seas: seas, zoneOf: zoneOf, nCont: targets.length };
   }
 
