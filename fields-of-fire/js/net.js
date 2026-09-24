@@ -85,7 +85,7 @@
     var cid = FOF.clientId();
     function attempt(n) {
       var code = newCode();
-      var row = { code: code, host_id: cid, status: 'lobby', seats: [{ cid: cid, name: name, color: FOF.PLAYER_COLORS[0].id, leader: FOF.randomFreeLeader([]) }], version: 0 };
+      var row = { code: code, host_id: cid, status: 'lobby', seats: [{ cid: cid, name: name, color: FOF.PLAYER_COLORS[0].id, leader: FOF.randomHumanLeader([]) }], version: 0 };
       return req('POST', 'rooms', row, 'return=representation').then(function (rows) {
         var r = new Room(code, cid); r.row = rows[0]; return r;
       }, function (e) { if (e.status === 409 && n > 0) return attempt(n - 1); throw e; });
@@ -103,7 +103,7 @@
         if (row.seats.some(function (s) { return s.cid === r.cid; })) return null;
         var usedC = row.seats.map(function (s) { return s.color; }), usedL = row.seats.map(function (s) { return s.leader; });
         var col = FOF.PLAYER_COLORS.filter(function (c) { return usedC.indexOf(c.id) < 0; })[0].id;
-        row.seats.push({ cid: r.cid, name: name, color: col, leader: FOF.randomFreeLeader(usedL) });
+        row.seats.push({ cid: r.cid, name: name, color: col, leader: FOF.randomHumanLeader(usedL) });
         return { seats: row.seats };
       }).then(function () { if (r.seatIndex() < 0) throw new Error('Impossible de rejoindre ce salon.'); return r; });
     });

@@ -500,6 +500,37 @@
     var cx = c.getContext('2d'); cx.drawImage(mk.c, 0, 0); cx.globalCompositeOperation = 'source-in'; cx.fillStyle = color; cx.fillRect(0, 0, c.width, c.height);
     return (rs.tint[k] = { c: c, x: mk.x, y: mk.y });
   }
+  // v1.9.6 — liseré rayé des capitales : alternance couleur du joueur / blanc, en diagonale,
+  // comme un ruban de chantier. Motif de 16 px qui se répète sans couture.
+  var rayCache = {};
+  function rayures(cx, col) {
+    if (rayCache[col]) return cx.createPattern(rayCache[col], 'repeat');
+    var s2 = 16, tuile = document.createElement('canvas'); tuile.width = tuile.height = s2;
+    var t2 = tuile.getContext('2d');
+    t2.fillStyle = '#ffffff'; t2.fillRect(0, 0, s2, s2);
+    t2.fillStyle = col;
+    t2.beginPath(); t2.moveTo(0, 0); t2.lineTo(s2 / 2, 0); t2.lineTo(0, s2 / 2); t2.closePath(); t2.fill();
+    t2.beginPath(); t2.moveTo(s2, 0); t2.lineTo(s2, s2 / 2); t2.lineTo(s2 / 2, s2); t2.lineTo(0, s2); t2.closePath(); t2.fill();
+    rayCache[col] = tuile;
+    return cx.createPattern(tuile, 'repeat');
+  }
+  function tintedRay(rs, loc, type, color) {
+    var k = loc + ':' + type + ':ray:' + color; if (rs.tint[k]) return rs.tint[k];
+    var mk = mask(rs, loc, type); if (!mk) return null;
+    var c = document.createElement('canvas'); c.width = mk.c.width; c.height = mk.c.height;
+    var cx = c.getContext('2d'); cx.drawImage(mk.c, 0, 0);
+    cx.globalCompositeOperation = 'source-in';
+    // le motif est décalé pour suivre la position réelle du masque sur la carte : deux capitales
+    // voisines n'affichent donc pas des rayures alignées par hasard.
+    cx.translate(-mk.x % 16, -mk.y % 16);
+    cx.fillStyle = rayures(cx, color);
+    cx.fillRect(0, 0, c.width + 32, c.height + 32);
+    return (rs.tint[k] = { c: c, x: mk.x, y: mk.y });
+  }
+  function paintRay(ctx, rs, loc, type, color, alpha) {
+    var t = tintedRay(rs, loc, type, color); if (!t) return;
+    ctx.globalAlpha = alpha; ctx.drawImage(t.c, t.x, t.y); ctx.globalAlpha = 1;
+  }
   function paint(ctx, rs, loc, type, color, alpha) {
     var t = tinted(rs, loc, type, color); if (!t) return;
     ctx.globalAlpha = alpha; ctx.drawImage(t.c, t.x, t.y); ctx.globalAlpha = 1;
@@ -841,8 +872,8 @@
           // la case vire à l'or pour signaler la capitale, mais son liseré reste à la couleur du
           // joueur : on le repose par-dessus l'or, sinon toutes les capitales semblaient brunes.
           paint(ctx, rs, 't' + t.id, 'fill', '#e8b73a', 0.34);
-          paint(ctx, rs, 't' + t.id, 'band', col, 1);
-          paint(ctx, rs, 't' + t.id, 'band', col, 1);
+          paintRay(ctx, rs, 't' + t.id, 'band', col, 1);
+          paintRay(ctx, rs, 't' + t.id, 'band', col, 1);
         }
       });
       (view.picks || []).forEach(function (tid) { paint(ctx, rs, 't' + tid, 'fill', '#46c46e', 0.45); paint(ctx, rs, 't' + tid, 'band', '#2fa857', 1); });

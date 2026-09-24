@@ -63,6 +63,9 @@
     if (type === 'T' && p.leader === 'adele') c = 6;
     if (type === 'P' && p.leader === 'alienor') c = 2;
     if (p.leader === 'hugues' && (type === 'C' || type === 'F' || type === 'P')) c = Math.max(1, c - 1);
+    // v1.9.6 — Maître d'œuvre : la remise s'applique APRÈS le pouvoir du dirigeant, donc elle se
+    // cumule avec Adèle (temple 7 → 6 par Adèle → 5 avec le Maître d'œuvre).
+    if (type === 'T' && st.units.some(function (u) { return u.owner === p.id && u.key === 'maitre'; })) c = Math.max(1, c - 1);
     return c;
   };
   FOF.defBonus = function (st, p, t) {
@@ -75,11 +78,10 @@
       if (p.leader === 'adele' && b.t === 'T') d += 1;
     });
     if (t.id === p.capital && t.ctrl === p.id) d += 2;
-    if (st.units.some(function (u) { return u.owner === p.id && u.key === 'charpentier' && u.pos === 't' + t.id; })) d += 1;   // charpentier : +1 en défense
     return d;
   };
   FOF.income = function (st, p) {
-    var inc = { terr: FOF.terrOf(st, p.id).length, cities: FOF.countBld(st, p.id, 'Ci'), ports: 0, trade: 0 };
+    var inc = { terr: FOF.terrOf(st, p.id).length, cities: FOF.countBld(st, p.id, 'Ci'), ports: 0, trade: 0, temples: 0 };
     
     FOF.army(st, p.id).forEach(function (u) {
       if ((u.key === 'caboteur' || u.key === 'caravanier') && u.pos[0] === 't') {
@@ -87,7 +89,9 @@
         if (T(st, +u.pos.slice(1)).blds.some(function (b) { return b.t === typ && b.o !== p.id; })) inc.trade += 2;
       }
     });
-    inc.total = inc.terr + inc.cities + inc.ports + inc.trade;
+    // v1.9.6 — Prélat : +1 or par temple possédé, à la collecte.
+    inc.temples = FOF.army(st, p.id).some(function (u) { return u.key === 'prelat'; }) ? FOF.countBld(st, p.id, 'T') : 0;
+    inc.total = inc.terr + inc.cities + inc.ports + inc.trade + inc.temples;
     inc.upkeep = FOF.army(st, p.id).reduce(function (a, u) { return a + FOF.unitDef(u.key).upkeep; }, 0);
     return inc;
   };
@@ -229,6 +233,12 @@
           st.pending.shift();
           var cap = T(st, loser.capital); cap.ctrl = pd.to;
           log(st, loser.name + ', acculé en sa dernière forteresse, remet sa capitale à ' + st.players[pd.to].name + '.', loser.id, 'capfall');
+          // La case n'est plus une capitale : elle retombe à 2 emplacements. Personne n'est là pour
+          // choisir (le cédant est éliminé dans la foulée), on rase donc les derniers bâtis.
+          while (cap.blds.length > 2) {
+            var bj = cap.blds.pop();
+            log(st, B[bj.t].name + ' de ' + cap.name + ' est démantelé' + (bj.t === 'Ci' ? 'e' : '') + ' : la place n’est plus une capitale.', pd.to, 'bad');
+          }
           eliminate(st, loser); continue;
         }
       }
@@ -311,13 +321,8 @@
     });
     return out;
   };
-  FOF.trebuchetFor = function (st, loc) {
-    if (loc[0] !== 't') return null;
-    var p = FOF.cur(st), t = T(st, +loc.slice(1));
-    return FOF.army(st, p.id).filter(function (u) {
-      return u.key === 'trebuchets' && !u.fought && u.pos[0] === 't' && (u.pos === loc || t.adj.indexOf(+u.pos.slice(1)) >= 0);
-    })[0] || null;
-  };
+  // v1.9.6 — le Trébuchet ne se joue plus pendant un assaut : c'est un effet d'unité ordinaire.
+  FOF.trebuchetFor = function () { return null; };
 
   function doAttack(st, a) {
     var p = FOF.cur(st), d = st.players[a.target], loc = a.loc;
@@ -329,7 +334,6 @@
     p.attackedNow = true; d.raidedNow = true;
     if (p.pact === d.id) breakPact(st, p, d);
     if (!d.tyran) loseDip(st, p, 1, 'attaque');
-    var treb = a.treb ? st.units.filter(function (u) { return u.uid === a.treb; })[0] : null;
     // dés
     var aPr = FOF.unitsAt(st, loc, p.id).some(function (u) { return u.key === 'pretresse'; });
     var dPr = pv.du.some(function (u) { return u.key === 'pretresse'; });
@@ -344,16 +348,6 @@
     }
     var win = pv.A + ra > pv.D + rd;
     var res = { loc: loc, att: p.id, def: d.id, A: pv.A, D: pv.D, detA: pv.detA, detD: pv.detD, rolls: rolls, win: win, events: [], unitsA: pv.att.map(function (u) { return u.key; }), unitsD: pv.du.map(function (u) { return u.key; }), leadA: !!pv.lead, leadD: !!pv.dl, kind: a.kind };
-    // Trébuchets : destruction, quel que soit le vainqueur
-    if (treb && a.trebBld !== undefined && t) {
-      var b = t.blds[a.trebBld];
-      if (b && b.o === d.id) {
-        t.blds.splice(a.trebBld, 1);
-        res.events.push('Les Trébuchets détruisent : ' + B[b.t].name + '.');
-        if (b.t === 'T' && !d.tyran) loseDip(st, p, 1, 'temple détruit');
-      }
-      treb.fought = true;
-    }
     pv.att.forEach(function (u) { u.fought = true; u.movesLeft = 0; });
     if (pv.lead) { p.lFought = true; p.lMovesLeft = 0; }
     p.tally.battles++; d.tally.battles++; if (win) { p.tally.wins++; d.tally.losses++; } else { p.tally.losses++; d.tally.wins++; }
@@ -364,7 +358,6 @@
       if (pv.dl) leaderDefeated(st, d, p, res);
     } else {
       pv.att.forEach(function (u) { discardUnit(st, u); });
-      if (treb && st.units.indexOf(treb) >= 0) discardUnit(st, treb);
       res.events.push('Victoire de ' + d.name + ' en défense.');
       if (pv.lead) leaderDefeated(st, p, d, res);
     }
@@ -376,6 +369,19 @@
     loser.lpos = 't' + loser.capital; loser.lMovesLeft = 0;
     res.events.push('Le dirigeant de ' + loser.name + ' est vaincu : il retourne à sa capitale et doit céder un territoire.');
     st.pending.push({ type: 'cedeTerritory', pid: loser.id, to: winner.id });
+  }
+
+  // v1.9.6 — une ambassade prise dans une conversion est RASÉE, jamais transférée. Sans cela, le
+  // Partisan sur une capitale adverse donnait au joueur une seconde ambassade, hors de sa propre
+  // capitale : deux règles violées d'un coup (« une seule » et « dans votre capitale »).
+  function convertir(st, t, pid) {
+    var n = 0, rasees = 0;
+    t.blds = t.blds.filter(function (b) {
+      if (b.o === pid) return true;
+      if (b.t === 'A') { rasees++; return false; }
+      b.o = pid; n++; return true;
+    });
+    return { convertis: n, rasees: rasees };
   }
 
   /* ---------- effets des unités spéciales ---------- */
@@ -392,9 +398,13 @@
       case 'pelerin': return t.blds.some(function (b) { return b.t === 'T' && b.o !== p.id; }) && !p.tyran ? 'Faire pèlerinage' : null;
       case 'colonie': return t.ctrl === null && t.revoltFrom !== p.id ? 'Fonder une colonie' : null;
       case 'exploratrice': return st.phase === 'collect' && t.ctrl === null && t.revoltFrom !== p.id && t.cont !== T(st, p.capital).cont ? 'Revendiquer ce territoire' : null;
-      case 'partisan': return t.ctrl !== null && t.ctrl !== p.id && t.blds.some(function (b) { return b.o === t.ctrl && b.t !== 'T'; }) ? 'Retourner un aménagement' : null;
+      case 'partisan': return t.ctrl !== null && t.ctrl !== p.id && t.blds.some(function (b) { return b.o !== p.id; }) ? 'Soulever tous les aménagements' : null;
       case 'predicateur': return t.ctrl !== null && t.ctrl !== p.id && t.blds.some(function (b) { return b.t === 'T' && b.o !== p.id; }) ? 'Convertir le temple' : null;
-      case 'gouverneur': return t.ctrl === p.id && t.blds.some(function (b) { return b.o !== p.id; }) ? 'Convertir les aménagements' : null;
+      // v1.9.6 — le Gouverneur agit sur TOUS vos territoires, où qu'il se trouve, temples exclus.
+      case 'gouverneur': return FOF.terrOf(st, p.id).some(function (x) { return x.blds.some(function (b) { return b.o !== p.id && b.t !== 'T'; }); }) ? 'Convertir les aménagements adverses' : null;
+      // v1.9.6 — le Trébuchet n'est plus lié à un assaut : posé sur un territoire adverse, il rase
+      // un aménagement adverse et reste en jeu. Une fois par tour.
+      case 'trebuchets': return !u.fought && t.ctrl !== null && t.ctrl !== p.id && t.blds.some(function (b) { return b.o !== p.id; }) ? 'Détruire un aménagement' : null;
     }
     return null;
   };
@@ -411,19 +421,42 @@
         gainDip(st, p, 1, name); gainDip(st, st.players[tb.o], 1, 'pèlerinage reçu'); discardUnit(st, u); break;
       case 'colonie':
         if (t.revoltFrom === p.id) throw new Error('Ce territoire s\u2019est soulevé contre vous : vous ne pouvez plus vous y établir.');
-        t.ctrl = p.id; t.conqStamp = st.turnNo; t.revoltFrom = null; t.takenFrom = null; if (t.blds.length < 2) t.blds.push({ t: 'C', o: p.id });
+        t.ctrl = p.id; t.conqStamp = st.turnNo; t.revoltFrom = null; t.takenFrom = null; if (t.blds.length < FOF.slotsOf(st, p, t.id)) t.blds.push({ t: 'C', o: p.id });
         log(st, 'Des colons de ' + p.name + ' fondent un établissement à ' + t.name + '.', p.id, 'land'); discardUnit(st, u); break;
       case 'exploratrice':
         t.ctrl = p.id; t.conqStamp = st.turnNo; t.revoltFrom = null; t.takenFrom = null; p.gold += 1; log(st, 'L’exploratrice de ' + p.name + ' plante sa bannière à ' + t.name + ' (+1 écu).', p.id, 'land'); discardUnit(st, u); break;
-      case 'partisan':
-        var cand = t.blds.map(function (b, i) { return i; }).filter(function (i) { return t.blds[i].o === t.ctrl && t.blds[i].t !== 'T'; });
-        var idx = arg !== undefined && cand.indexOf(arg) >= 0 ? arg : cand[0];
-        t.blds[idx].o = p.id; log(st, 'Le Partisan de ' + p.name + ' soulève ' + B[t.blds[idx].t].name.toLowerCase() + ' de ' + t.name + ' en sa faveur.', p.id, 'convert'); discardUnit(st, u); break;
+      case 'partisan': {
+        var rp = convertir(st, t, p.id);
+        log(st, 'Le Partisan de ' + p.name + ' soulève toutes les bâtisses de ' + t.name + ' en sa faveur.', p.id, 'convert');
+        if (rp.rasees) log(st, 'L’ambassade de ' + t.name + ' est mise à sac : une cour ne change pas de camp.', p.id, 'bad');
+        discardUnit(st, u); break;
+      }
       case 'predicateur':
         var tp = t.blds.filter(function (b) { return b.t === 'T' && b.o !== p.id; })[0];
         tp.o = p.id; log(st, 'Le Prédicateur de ' + p.name + ' convertit les fidèles du temple de ' + t.name + '.', p.id, 'convert'); discardUnit(st, u); break;
       case 'gouverneur':
-        t.blds.forEach(function (b) { b.o = p.id; }); log(st, 'Le Gouverneur de ' + p.name + ' rallie les bâtisses de ' + t.name + '.', p.id, 'convert'); discardUnit(st, u); break;
+        var nbG = 0, rasG = 0;
+        FOF.terrOf(st, p.id).forEach(function (x) {
+          x.blds = x.blds.filter(function (b) {
+            if (b.o === p.id || b.t === 'T') return true;
+            if (b.t === 'A') { rasG++; return false; }
+            b.o = p.id; nbG++; return true;
+          });
+        });
+        if (rasG) log(st, 'Les ambassades étrangères présentes sur les terres de ' + p.name + ' sont fermées.', p.id, 'bad');
+        log(st, 'Le Gouverneur de ' + p.name + ' rallie ' + nbG + ' bâtisse' + (nbG > 1 ? 's' : '') + ' étrangère' + (nbG > 1 ? 's' : '') + ' sur ses terres.', p.id, 'convert');
+        discardUnit(st, u); break;
+      case 'trebuchets': {
+        var candT = t.blds.map(function (b, i) { return i; }).filter(function (i) { return t.blds[i].o !== p.id; });
+        var iT = arg !== undefined && candT.indexOf(arg) >= 0 ? arg : candT[0];
+        var bT = t.blds[iT];
+        t.blds.splice(iT, 1);
+        // règle générale : raser un temple coûte 1 diplomatie, sauf contre un Tyran
+        if (bT.t === 'T' && t.ctrl !== null && !st.players[t.ctrl].tyran) loseDip(st, p, 1, 'temple détruit');
+        u.fought = true; u.movesLeft = 0;
+        log(st, 'Les Trébuchets de ' + p.name + ' réduisent ' + B[bT.t].name.toLowerCase() + ' de ' + t.name + ' en gravats.', p.id, 'devastate');
+        break;
+      }
     }
     checkWin(st);
   }
@@ -436,7 +469,7 @@
     if (army.length >= 4) return 'Armée complète (4 unités).';
     var el = army.filter(function (u) { return FOF.isElite(u.key); }).length;
     if (FOF.isElite(key) && el >= 3) return 'Déjà 3 unités d’élite.';
-    if (!FOF.isElite(key) && army.length - el >= 2) return 'Déjà 2 unités spéciales.';
+    if (!FOF.isElite(key) && army.length - el >= 3) return 'Déjà 3 unités spéciales.';
     if (p.gold < def.upkeep) return 'Pas assez d’or (' + def.upkeep + ' requis).';
     if (def.req[0] === 'D') {
       if (p.tyran) return 'Un Tyran ne peut pas recruter cette unité.';
@@ -450,14 +483,17 @@
     if (def.req[0] === 'D') return [p.capital];
     return FOF.terrOf(st, p.id).filter(function (t) { return t.blds.some(function (b) { return b.t === def.req[0]; }); }).map(function (t) { return t.id; });
   };
+  // Nombre d'emplacements d'aménagement d'un territoire : 3 dans la capitale de son propriétaire,
+  // 2 partout ailleurs. Utilisé par la construction, la Colonie et le déménagement de capitale.
+  FOF.slotsOf = function (st, p, tid) { return p && p.capital === tid ? 3 : 2; };
   FOF.canBuild = function (st, tid, type) {
     var p = FOF.cur(st), t = T(st, tid);
     if (st.phase !== 'build') return 'Pas en phase de construction.';
     if (t.ctrl !== p.id) return 'Ce territoire ne vous appartient pas.';
-    // l'Ambassade ne compte pas dans la limite : sinon la capitale a toujours ses 2 places prises
-    // v1.9.2 : le temple ne compte plus dans la limite de 2, comme l'Ambassade. Le vrai frein à
-    // la voie religieuse n'était pas l'or mais la place (mesuré : 18 % des victoires à 3 joueurs).
-    if (type !== 'A' && type !== 'T' && t.blds.filter(function (b) { return b.t !== 'A' && b.t !== 'T'; }).length >= 2) return 'Déjà 2 aménagements.';
+    // v1.9.6 — emplacements : 3 sur la capitale, 2 sur tout autre territoire. TOUT compte
+    // désormais, temple et ambassade inclus (les deux exemptions de la v1.9.2 sont annulées).
+    var slots = FOF.slotsOf(st, p, tid);
+    if (t.blds.length >= slots) return 'Déjà ' + slots + ' aménagements.';
     if (type !== 'C' && t.blds.some(function (b) { return b.t === type; })) return 'Déjà un ' + B[type].name.toLowerCase() + ' ici.';
     if (type === 'P' && !t.seas.length) return 'Un port doit être sur la côte.';
     if (type === 'A' && tid !== p.capital) return 'Une ambassade ne se bâtit que dans votre capitale.';
@@ -566,8 +602,15 @@
         var etr = pt.blds.map(function (b, i) { return [b, i]; }).filter(function (x) { return x[0].o !== p.id; });
         var cible = a.idx !== undefined ? pt.blds[a.idx] : etr[0][0];
         if (!cible || cible.o === p.id) throw new Error('Choisissez un aménagement étranger de cette case.');
-        cible.o = p.id; el2.pacif = true; el2.movesLeft = 0;
-        log(st, p.name + ' pacifie ' + B[cible.t].name.toLowerCase() + ' à ' + pt.name + ' : ses habitants se rallient.', p.id, 'convert');
+        el2.pacif = true; el2.movesLeft = 0;
+        if (cible.t === 'A') {
+          // une ambassade ne se rallie pas : elle est rasée (voir convertir()).
+          pt.blds.splice(pt.blds.indexOf(cible), 1);
+          log(st, p.name + ' fait fermer l’ambassade de ' + pt.name + ' : une cour ne change pas de camp.', p.id, 'bad');
+        } else {
+          cible.o = p.id;
+          log(st, p.name + ' pacifie ' + B[cible.t].name.toLowerCase() + ' à ' + pt.name + ' : ses habitants se rallient.', p.id, 'convert');
+        }
         checkWin(st); break;
       }
       case 'effect': {
@@ -592,8 +635,8 @@
       }
       case 'moveCapital': {
         var ct = T(st, a.tid);
-        if (st.phase !== 'build' || ct.ctrl !== p.id || ct.id === p.capital || p.gold < 10) throw new Error('Déplacement de capitale impossible.');
-        p.gold -= 10;
+        if (st.phase !== 'build' || ct.ctrl !== p.id || ct.id === p.capital || p.gold < 8) throw new Error('Déplacement de capitale impossible.');
+        p.gold -= 8;
         // l'Ambassade ne tient qu'à la capitale : la cour partie, elle est rasée.
         var oldCap = T(st, p.capital), razed = false;
         oldCap.blds = oldCap.blds.filter(function (b) {
@@ -603,6 +646,9 @@
         p.capital = ct.id;
         log(st, p.name + ' transfère sa cour à ' + ct.name + '.', p.id, 'build');
         if (razed) log(st, 'L’ambassade de ' + p.name + ' à ' + oldCap.name + ' ferme ses portes : la cour n’y est plus.', p.id, 'bad');
+        // v1.9.6 — l'ancienne capitale redevient un territoire ordinaire : 2 emplacements. Si elle
+        // en occupe encore 3, le joueur doit en raser un avant de poursuivre.
+        if (oldCap.blds.length > FOF.slotsOf(st, p, oldCap.id)) st.pending.push({ type: 'razeSlot', pid: p.id, tid: oldCap.id });
         break;
       }
       case 'cede': {
@@ -656,6 +702,14 @@
       t3.ctrl = null; t3.blds = []; t3.takenFrom = null; t3.revoltFrom = ty.id;   // le tyran ne peut plus la reprendre
       log(st, 'Le peuple de ' + t3.name + ' se soulève contre le tyran ' + ty.name + ' et chasse ses baillis.', ty.id, 'revolt');
       nextPlayer(st);
+    } else if (pend.type === 'razeSlot') {
+      var rp = st.players[pend.pid], rt = T(st, pend.tid), ri2 = a.idx;
+      if (!rt.blds[ri2]) throw new Error('Choisissez un aménagement à raser.');
+      var rb = rt.blds[ri2];
+      st.pending.shift();
+      rt.blds.splice(ri2, 1);
+      log(st, 'La cour partie, ' + B[rb.t].name.toLowerCase() + ' de ' + rt.name + ' est démantelé' + (rb.t === 'Ci' ? 'e' : '') + '.', rp.id, 'bad');
+      checkWin(st);
     } else throw new Error('Décision inconnue.');
   }
 

@@ -85,6 +85,21 @@
         if (m) return m;
       }
     }
+    // Filet de sécurité : une carte sur trois cents environ échouait à trois joueurs et la partie
+    // ne démarrait pas (« Carte impossible à générer »). Plutôt que d'abandonner, on desserre le
+    // filtre de mer par paliers : mieux vaut une carte un peu plus maritime que pas de partie.
+    var seuilInitial = FOF.SEA_EST;
+    try {
+      for (var relache = 0; relache < 4; relache++) {
+        FOF.SEA_EST = (n <= 3 ? 0.215 : 0.48) + 0.04 * (relache + 1);
+        for (var w2 = kVoulu; w2 >= 2; w2--) {
+          for (var a2 = 0; a2 < 200; a2++) {
+            var m2 = tryGenerate(s, n, w2);
+            if (m2) return m2;
+          }
+        }
+      }
+    } finally { FOF.SEA_EST = seuilInitial; }
     throw new Error('Carte impossible à générer');
   };
 

@@ -28,30 +28,33 @@
     inflourde:  { name: 'Infanterie lourde', move: 1, pow: [3,3,3,2], upkeep: 3, req: ['F', 3] },
     arbaletriers:{ name: 'Arbalétriers', move: 1, pow: [3,2,4,3], upkeep: 3, req: ['F', 3] },
     chevaliers: { name: 'Chevaliers', move: 2, pow: [5,3,1,3], upkeep: 3, req: ['F', 3] },
-    archmontes: { name: 'Archers montés', move: 2, pow: [4,3,2,3], upkeep: 3, req: ['F', 4] },
-    cuirassiers:{ name: 'Cuirassiers', move: 2, pow: [6,3,2,2], upkeep: 3, req: ['F', 4] },
-    garde:      { name: 'Garde royale', move: 1, pow: [4,4,4,4], upkeep: 4, req: ['F', 5] }
+    archmontes: { name: 'Archers montés', move: 2, pow: [4,3,2,3], upkeep: 4, req: ['F', 4] },
+    cuirassiers:{ name: 'Cuirassiers', move: 2, pow: [6,3,2,2], upkeep: 4, req: ['F', 4] },
+    garde:      { name: 'Garde royale', move: 1, pow: [4,4,4,4], upkeep: 4, req: ['F', 5] },
+    croises:    { name: 'Croisés', move: 1, pow: [3,3,3,3], upkeep: 2, req: ['T', 4] }
   };
 
   // Unités spéciales : dépl, entretien, condition ('D' = diplomatie), texte
   FOF.SPECIALS = {
-    charpentier: { name: 'Charpentier', move: 1, upkeep: 1, req: ['C', 1], text: 'Le territoire où il se trouve gagne +1 en défense quand vous le défendez. Il reste en jeu.' },
-    corbeau:     { name: 'Corbeau messager', move: 4, upkeep: 1, req: ['Ci', 1], text: 'Prend la mer sans port. Sur une capitale adverse : +1 diplomatie, puis défausse.' },
-    emissaire:   { name: 'Émissaire', move: 1, upkeep: 2, req: ['Ci', 2], text: 'Sur une capitale adverse : +2 diplomatie, puis défausse.' },
-    pelerin:     { name: 'Pèlerin', move: 1, upkeep: 2, req: ['T', 2], text: "Sur un temple adverse : +1 diplomatie pour vous et pour son propriétaire, puis défausse." },
-    heraut:      { name: 'Héraut', move: 1, upkeep: 1, req: ['Ci', 2], text: 'Posé sur une de vos cités. À la collecte, +1 diplomatie si vous n’avez pas attaqué au tour précédent.' },
+    corbeau:     { name: 'Corbeau messager', move: 4, upkeep: 1, req: ['Ci', 1], text: 'Prend la mer sans port. Sur une capitale adverse, défausser pour +1 de diplomatie.' },
+    emissaire:   { name: 'Émissaire', move: 2, upkeep: 2, req: ['Ci', 2], text: 'Sur une capitale adverse, défausser pour +2 de diplomatie.' },
+    pelerin:     { name: 'Pèlerin', move: 2, upkeep: 1, req: ['T', 2], text: 'Sur un temple adverse, défausser pour +1 de diplomatie pour vous et son propriétaire.' },
+    heraut:      { name: 'Héraut', move: 1, upkeep: 2, req: ['Ci', 3], text: 'À la collecte, +1 de diplomatie, sauf si vous avez attaqué au tour précédent.' },
     ambassadeur: { name: 'Ambassadeur', move: 1, upkeep: 2, req: ['D', 3], text: 'Sur une capitale adverse (hors Tyran) : pacte de non-agression tant qu’il y reste.' },
-    colonie:     { name: 'Colonie', move: 1, upkeep: 3, req: ['Ci', 1], text: 'Sur un territoire neutre : vous le prenez et y bâtissez un campement gratuit, puis défausse.' },
-    exploratrice:{ name: 'Exploratrice', move: 1, upkeep: 3, req: ['P', 2], text: 'À la collecte, sur un neutre d’un autre continent : vous le prenez et gagnez 1 or, puis défausse.' },
+    colonie:     { name: 'Colonie', move: 1, upkeep: 3, req: ['Ci', 1], text: 'Sur un territoire neutre, défausser pour le conquérir et y bâtir un campement.' },
+    exploratrice:{ name: 'Exploratrice', move: 2, upkeep: 2, req: ['P', 2], text: 'À la collecte, sur un territoire neutre d’un autre continent que votre capitale, défausser pour conquérir et gagner 1 or.' },
     caboteur:    { name: 'Caboteur', move: 1, upkeep: 1, req: ['P', 1], text: 'À la collecte, sur une case avec le port d’un adversaire : +2 or.' },
     caravanier:  { name: 'Caravanier', move: 1, upkeep: 1, req: ['Ci', 1], text: 'À la collecte, sur une case avec la cité d’un adversaire : +2 or.' },
     espion:      { name: 'Espion', move: 1, upkeep: 0, req: ['Ci', 1], text: 'Aucun entretien. Au recrutement, payez 1 or pour regarder en secret la carte du dessus du deck.' },
-    partisan:    { name: 'Partisan', move: 1, upkeep: 2, req: ['Ci', 2], text: 'Sur un territoire adverse : convertit un de ses aménagements (sauf un temple). Puis défausse.' },
+    partisan:    { name: 'Partisan', move: 1, upkeep: 2, req: ['Ci', 3], text: 'Sur un territoire adverse, défausser pour convertir tous les aménagements.' },
     predicateur: { name: 'Prédicateur', move: 1, upkeep: 2, req: ['T', 3], text: 'Sur un territoire adverse : convertit son temple. Puis défausse.' },
-    gouverneur:  { name: 'Gouverneur', move: 1, upkeep: 3, req: ['Ci', 4], text: 'Sur votre territoire : convertit tous les aménagements adverses. Puis défausse.' },
-    pretresse:   { name: 'Prêtresse', move: 1, upkeep: 2, req: ['T', 4], text: 'Lors d’un combat sur sa case, vous relancez votre dé une fois (automatique si vous perdez).' },
-    trebuchets:  { name: 'Trébuchets', move: 1, upkeep: 5, req: ['F', 5], text: 'Quand vous attaquez sa case ou une case voisine : détruit un aménagement adverse, même si vous perdez.' }
+    gouverneur:  { name: 'Gouverneur', move: 1, upkeep: 5, req: ['F', 4], text: 'Défausser pour convertir tous les aménagements adverses sur vos territoires, sauf les temples.' },
+    pretresse:   { name: 'Prêtresse', move: 1, upkeep: 3, req: ['T', 1], text: 'Lors d’un combat sur sa case, si vous perdez, vous pouvez relancer le dé.' },
+    trebuchets:  { name: 'Trébuchets', move: 1, upkeep: 4, req: ['F', 5], text: 'Sur un territoire adverse, peut détruire un aménagement adverse.' },
+    maitre:      { name: 'Maître d’œuvre', move: 1, upkeep: 1, req: ['T', 1], text: 'Vos temples coûtent 1 or de moins.' },
+    prelat:      { name: 'Prélat', move: 1, upkeep: 3, req: ['T', 4], text: 'À la collecte, gagner +1 or pour chaque temple que vous possédez.' }
   };
+
 
   FOF.LEADERS = {
     odon:    { name: 'Odon le Brave', mod: 2, text: 'Chacune de ses unités d’élite engagée dans un assaut lui donne +1, qu’il mène l’assaut ou non.' },
@@ -72,6 +75,17 @@
     { id: 'violet',  name: 'Pourpre',  hex: '#8b5cb8' },
     { id: 'teal',    name: 'Sarcelle', hex: '#2aa3a9' }
   ];
+
+  /* Dirigeants à débloquer : jouables seulement après que le joueur a laissé son e-mail et accepté
+     d'être recontacté. Le déblocage vaut pour ce navigateur. Les bots, eux, peuvent les jouer. */
+  FOF.LOCKED_LEADERS = ['hugues', 'alienor'];
+  FOF.heroesUnlocked = function () { try { return localStorage.getItem('fof-heroes') === '1'; } catch (e) { return false; } };
+  FOF.leaderLocked = function (k) { return FOF.LOCKED_LEADERS.indexOf(k) >= 0 && !FOF.heroesUnlocked(); };
+  // dirigeant au hasard pour un joueur humain : jamais un dirigeant verrouillé
+  FOF.randomHumanLeader = function (used) {
+    var pool = Object.keys(FOF.LEADERS).filter(function (k) { return !FOF.leaderLocked(k) && (used || []).indexOf(k) < 0; });
+    return pool.length ? pool[Math.floor(Math.random() * pool.length)] : FOF.randomFreeLeader(used || []);
+  };
 
   FOF.isElite = function (key) { return !!FOF.ELITES[key]; };
   FOF.unitDef = function (key) { return FOF.ELITES[key] || FOF.SPECIALS[key]; };

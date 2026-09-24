@@ -9,7 +9,19 @@
   var DEFAULT_NAMES = ['Aurèle', 'Bérénice', 'Corentin', 'Daphné', 'Élouan', 'Faustine'];
   var LEAD_KEYS = Object.keys(FOF.LEADERS);
   var TRIAL = ['hugues', 'alienor'];
-  function shuffled() { return LEAD_KEYS.slice().sort(function () { return Math.random() - 0.5; }); }
+  /* ---------- dirigeants à débloquer ----------
+     Hugues et Aliénor ne sont pas jouables tant que le joueur n'a pas laissé son adresse e-mail et
+     accepté d'être recontacté. Le déblocage est mémorisé dans le navigateur. Les bots peuvent les
+     jouer : c'est ce qui donne envie de les débloquer. */
+  var LOCKED = FOF.LOCKED_LEADERS;
+  function isLocked(k) { return FOF.leaderLocked(k); }
+  // Les dirigeants verrouillés sont repoussés en fin de liste : avec 6 sièges au plus pour 8
+  // dirigeants, ils ne sont jamais distribués tant qu'ils ne sont pas débloqués — ni au joueur,
+  // ni aux autres sièges de la partie locale, qui sont eux aussi des humains.
+  function shuffled() {
+    var l = LEAD_KEYS.slice().sort(function () { return Math.random() - 0.5; });
+    return l.filter(function (k) { return !isLocked(k); }).concat(l.filter(isLocked));
+  }
   function colorHex(id) { return FOF.PLAYER_COLORS.filter(function (c) { return c.id === id; })[0].hex; }
   // les seuils étaient figés dans une table et ne suivaient plus l'équilibrage : on les calcule.
   function winText(n) {
@@ -142,11 +154,55 @@
       '<div class="gallery">' + LEAD_KEYS.map(function (k) {
         var o = owner[k], mine = k === myKey, taken = o !== undefined && !mine;
         var name = taken ? (online ? room.row.seats[o].name : rows[o].name) : '';
-        var note = mine ? 'actuel' : taken ? 'pris par ' + name + (online ? '' : ' · échanger') : TRIAL.indexOf(k) >= 0 ? 'à l’essai' : '';
-        return FOF.heroHTML(k, { button: true, cls: mine ? 'chosen' : taken ? 'taken' : '', attrs: 'type="button" data-hero="' + k + '"' + (online && taken ? ' disabled' : ''), note: note });
+        var lock = isLocked(k);
+        var note = lock ? 'à débloquer' : mine ? 'actuel' : taken ? 'pris par ' + name + (online ? '' : ' · échanger') : TRIAL.indexOf(k) >= 0 ? 'à l’essai' : '';
+        return FOF.heroHTML(k, { button: true, cls: (lock ? 'locked ' : '') + (mine ? 'chosen' : taken ? 'taken' : ''), attrs: 'type="button" data-hero="' + k + '"' + (online && taken ? ' disabled' : ''), note: note });
       }).join('') + '</div><div class="actions"><button class="btn" type="button" data-closepick="1">Fermer</button></div></div></div>';
   }
 
+
+  /* ---------- déblocage des deux dirigeants ---------- */
+  function showUnlock(k) {
+    var el = $('heroPick'); if (!el) return;
+    var nom = FOF.LEADERS[k] ? FOF.LEADERS[k].name : 'ce dirigeant';
+    el.hidden = false;
+    el.innerHTML = '<div class="modal-bg"><div class="modal" style="max-width:520px">' +
+      '<h2>Débloquer ' + esc(nom) + '</h2>' +
+      '<p class="muted">' + esc(nom) + ' et ' + esc(FOF.LEADERS[LOCKED[0] === k ? LOCKED[1] : LOCKED[0]].name) +
+      ' se débloquent ensemble, définitivement, sur ce navigateur.</p>' +
+      '<label class="fld"><span>Votre adresse e-mail</span>' +
+      '<input id="unlockMail" type="email" inputmode="email" autocomplete="email" placeholder="vous@exemple.fr" maxlength="120"></label>' +
+      '<label class="chk"><input id="unlockOk" type="checkbox"> <span>J’accepte d’être recontacté par Nube Games au sujet de l’avancée de Fields of Fire (conseils de jeu, statistiques des dirigeants et des cartes, nouvelles versions). Désinscription à tout moment.</span></label>' +
+      '<p class="muted" style="font-size:12px">Votre adresse ne sert qu’à cela et n’est transmise à personne.</p>' +
+      '<p id="unlockErr" class="err" role="alert"></p>' +
+      '<div class="actions"><button class="btn" type="button" data-unlockclose="1">Plus tard</button>' +
+      '<button class="btn primary" type="button" data-unlockgo="1">Débloquer</button></div></div></div>';
+    var f = $('unlockMail'); if (f) f.focus();
+  }
+  function doUnlock() {
+    var mail = (($('unlockMail') || {}).value || '').trim();
+    var okBox = $('unlockOk'), err = $('unlockErr'), btn = document.querySelector('[data-unlockgo]');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(mail)) { err.textContent = 'Entrez une adresse e-mail valide.'; return; }
+    if (!okBox || !okBox.checked) { err.textContent = 'Cochez la case pour accepter d’être recontacté.'; return; }
+    err.textContent = ''; if (btn) btn.disabled = true;
+    var row = { message: 'Déblocage des dirigeants', contact: mail.slice(0, 120),
+      context: { source: 'unlock-heroes', consent: true, version: FOF.CONFIG.version, url: location.href } };
+    function fini() {
+      try { localStorage.setItem('fof-heroes', '1'); } catch (e) {}
+      $('heroPick').innerHTML = '<div class="modal-bg"><div class="modal" style="max-width:480px;text-align:center">' +
+        '<h2>C’est débloqué</h2><p>' + esc(FOF.LEADERS.hugues.name) + ' et ' + esc(FOF.LEADERS.alienor.name) +
+        ' sont désormais jouables. Merci, vous serez tenu au courant de la suite.</p>' +
+        '<div class="actions" style="justify-content:center"><button class="btn primary" type="button" data-unlockdone="1">Choisir mon dirigeant</button></div></div></div>';
+    }
+    if (!FOF.sbReq || !FOF.CONFIG.supabaseUrl) { fini(); return; }
+    FOF.sbReq('POST', 'newsletter_signups', { email: mail.slice(0, 120), consent: true, source: 'unlock-heroes' }, 'return=minimal')
+      .then(fini, function () {
+        // la table dédiée n'existe pas encore : on retombe sur celle des signalements, qui marche déjà
+        FOF.sbReq('POST', 'bug_reports', row, 'return=minimal').then(fini, function (e) {
+          err.textContent = 'Envoi impossible : ' + e.message; if (btn) btn.disabled = false;
+        });
+      });
+  }
   FOF.showSetup = function () {
     $('setup').hidden = false; $('game').hidden = true; picking = null; renderPicker();
     initRows(); setErr('');
@@ -183,7 +239,7 @@
         return room.mutate(function (row) {
           if (row.status !== 'lobby' || row.seats.length >= 6 || row.host_id !== room.cid) return null;
           var usedC = row.seats.map(function (s) { return s.color; }), usedL = row.seats.map(function (s) { return s.leader; });
-          var col = FOF.PLAYER_COLORS.filter(function (c) { return usedC.indexOf(c.id) < 0; })[0].id, ld = FOF.randomFreeLeader(usedL);
+          var col = FOF.PLAYER_COLORS.filter(function (c) { return usedC.indexOf(c.id) < 0; })[0].id, ld = FOF.randomHumanLeader(usedL);
           row.seats.push({ cid: 'bot-' + Math.random().toString(36).slice(2, 8), name: 'Bot ' + FOF.LEADERS[ld].name.split(' ')[0], color: col, leader: ld, bot: true });
           return { seats: row.seats };
         }).catch(function (err) { setErr(err.message); });
@@ -237,9 +293,12 @@
     });
     $('setup').addEventListener('keydown', function (e) { if (e.target.id === 'seatName' && e.key === 'Enter') e.target.blur(); if (e.target.id === 'joinCode' && e.key === 'Enter') $('joinBtn').click(); });
     $('heroPick').addEventListener('click', function (e) {
+      if (e.target.closest('[data-unlockgo]')) return doUnlock();
+      if (e.target.closest('[data-unlockclose]') || e.target.closest('[data-unlockdone]')) return renderPicker();
       if (e.target.classList.contains('modal-bg') || e.target.closest('[data-closepick]')) { picking = null; return renderPicker(); }
       var b = e.target.closest('[data-hero]'); if (!b || b.disabled) return;
       var k = b.dataset.hero;
+      if (isLocked(k)) return showUnlock(k);
       if (picking.online) {
         picking = null; renderPicker();
         return mySeatUpdate(function (s, row) { if (row.seats.some(function (x) { return x.leader === k && x.cid !== room.cid; })) return false; s.leader = k; });
@@ -254,7 +313,10 @@
       if (e.target.dataset.osea !== undefined) { wideSea = e.target.checked; try { localStorage.setItem('fof-widesea', wideSea ? '1' : '0'); } catch (x) {} }
     });
     $('setup').addEventListener('input', function (e) { if (e.target.dataset.name !== undefined) rows[+e.target.dataset.name].name = e.target.value; if (e.target.id === 'joinCode') e.target.value = FOF.normCode(e.target.value); });
-    $('shuffleBtn').addEventListener('click', function () { var ls = shuffled(); rows.forEach(function (r, i) { r.leader = ls[i]; }); renderLocal(); });
+    $('shuffleBtn').addEventListener('click', function () {
+      var ls = shuffled();
+      rows.forEach(function (r, i) { r.leader = ls[i]; }); renderLocal();
+    });
     $('startBtn').addEventListener('click', function () {
       var players = rows.slice(0, count).map(function (r, i) { return { name: (r.name || 'Joueur ' + (i + 1)).trim(), color: r.color, leader: r.leader, bot: !!r.bot }; });
       var chk = document.getElementById('tutoChk'), sea = document.getElementById('seaChk');

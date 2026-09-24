@@ -3,13 +3,27 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Fields of Fire</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alegreya+Sans:wght@400;700;800&family=Cinzel:wght@500;700&family=Grenze:wght@600;700&family=IBM+Plex+Mono:wght@500&display=swap">
-<link rel="stylesheet" href="css/style.css?v=1.9.5">
+<title>Fields of Fire · jeu de société de conquête, 3 à 6 joueurs</title>
+<meta name="description" content="Prototype jouable de Fields of Fire : conquérez, bâtissez et choisissez votre voie — l’épée, la foi ou la diplomatie. De 3 à 6 joueurs, sur un même écran ou en ligne.">
+<meta name="theme-color" content="#1b1a1f">
+<meta name="color-scheme" content="dark">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://nubegames.fr/fields-of-fire/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Nube Games">
+<meta property="og:url" content="https://nubegames.fr/fields-of-fire/">
+<meta property="og:title" content="Fields of Fire · le prototype jouable">
+<meta property="og:description" content="Jeu de société de conquête, 3 à 6 joueurs. Gratuit, dans le navigateur.">
+<meta property="og:image" content="https://nubegames.fr/assets/images/og-image.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="assets/icons/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="assets/icons/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+<link rel="preload" href="assets/fonts/cinzel-700.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/fonts/alegreya-sans-400.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="css/style.css?v=1.9.6">
 </head>
 <body>
-
 <section id="setup" hidden>
   <div class="setup-music" data-music-slot></div>
   <button class="btn ghost icon-btn setup-bug" type="button" id="bugBtn2" onclick="document.getElementById('bugBtn').click()" title="Signaler un bug" data-ic="bug"></button>
@@ -34,8 +48,9 @@
         <p class="err" id="netErr" role="alert"></p>
         <p class="note" id="onlineNote" hidden>Le jeu en ligne n’est pas encore activé sur ce site.</p>
         <div class="setup-actions" id="resumeBox"></div>
-        <p class="note">Version 1.9.5 · prototype. Les parties sont enregistrées de façon anonyme (durée, tours, dirigeants, type de victoire…) pour équilibrer le jeu. Hugues le Bâtisseur et Aliénor l’Amirale sont à l’essai.</p>
-        <p class="note">Les illustrations des cartes et des dirigeants sont utilisées à titre illustratif uniquement et n’appartiennent en aucun cas à Nube Games. Musique : RandomMind, domaine public (CC0).</p>
+        <p class="note">Version 1.9.6 · prototype. Les parties sont enregistrées de façon anonyme (durée, tours, dirigeants, type de victoire…) pour équilibrer le jeu. Hugues le Bâtisseur et Aliénor l’Amirale se débloquent en laissant votre adresse e-mail.</p>
+        <p class="note">Les illustrations des cartes et des dirigeants sont utilisées à titre illustratif uniquement et n’appartiennent en aucun cas à Nube Games. Musique : RandomMind, domaine public (CC0). Polices sous licence SIL OFL 1.1, hébergées sur notre serveur.</p>
+        <p class="note setup-legal"><a href="/">Nube Games</a> · <a href="/mentions-legales.html">Mentions légales</a> · <a href="/confidentialite.html">Confidentialité</a> · <a href="/conditions.html">CGU</a></p>
       </div>
       <div id="stepLocal" hidden>
         <button class="btn ghost small" type="button" data-back="1">← Retour</button>
@@ -91,23 +106,23 @@
 <div id="bugModal" hidden></div>
 <div id="chatPanel" hidden><div class="chat-head"><b><span data-ic="chat"></span> Tchat de la partie</b><button class="btn small ghost" data-chatclose="1" aria-label="Fermer">✕</button></div><div id="chatList"></div><div class="chat-in"><input id="chatInput" maxlength="300" placeholder="Votre message…" autocomplete="off"><button class="btn small primary" data-chatsend="1">Envoyer</button></div></div>
 
-<script src="js/config.js?v=1.9.5"></script>
-<script src="js/icons.js?v=1.9.5"></script>
-<script src="js/data.js?v=1.9.5"></script>
-<script src="js/map.js?v=1.9.5"></script>
-<script src="js/engine.js?v=1.9.5"></script>
-<script src="js/cards.js?v=1.9.5"></script>
-<script src="js/board.js?v=1.9.5"></script>
-<script src="js/net.js?v=1.9.5"></script>
-<script src="js/stats.js?v=1.9.5"></script>
-<script src="js/sfx.js?v=1.9.5"></script>
-<script src="js/fx.js?v=1.9.5"></script>
-<script src="js/music.js?v=1.9.5"></script>
-<script src="js/bot.js?v=1.9.5"></script>
-<script src="js/tutorial.js?v=1.9.5"></script>
-<script src="js/extras.js?v=1.9.5"></script>
-<script src="js/ui.js?v=1.9.5"></script>
-<script src="js/main.js?v=1.9.5"></script>
+<script src="js/config.js?v=1.9.6"></script>
+<script src="js/icons.js?v=1.9.6"></script>
+<script src="js/data.js?v=1.9.6"></script>
+<script src="js/map.js?v=1.9.6"></script>
+<script src="js/engine.js?v=1.9.6"></script>
+<script src="js/cards.js?v=1.9.6"></script>
+<script src="js/board.js?v=1.9.6"></script>
+<script src="js/net.js?v=1.9.6"></script>
+<script src="js/stats.js?v=1.9.6"></script>
+<script src="js/sfx.js?v=1.9.6"></script>
+<script src="js/fx.js?v=1.9.6"></script>
+<script src="js/music.js?v=1.9.6"></script>
+<script src="js/bot.js?v=1.9.6"></script>
+<script src="js/tutorial.js?v=1.9.6"></script>
+<script src="js/extras.js?v=1.9.6"></script>
+<script src="js/ui.js?v=1.9.6"></script>
+<script src="js/main.js?v=1.9.6"></script>
 
 </body>
 </html>

@@ -62,6 +62,15 @@
   function resolveFor(st) {
     var pd = st.pending[0], p = st.players[pd.pid];
     if (pd.type === 'conquest') return { type: 'resolve', choice: 'conquer' };
+    if (pd.type === 'razeSlot') {
+      // on rase ce qui vaut le moins : d'abord une bâtisse étrangère, sinon la moins chère
+      var rt = st.map.terr[pd.tid], ordre = ['C', 'P', 'F', 'Ci', 'T', 'A'], pick = 0, bv = 1e9;
+      rt.blds.forEach(function (b, i) {
+        var v = (b.o === pd.pid ? 10 : 0) + ordre.indexOf(b.t);
+        if (v < bv) { bv = v; pick = i; }
+      });
+      return { type: 'resolve', idx: pick };
+    }
     if (pd.type === 'deficit') {
       var u = FOF.army(st, pd.pid).filter(function (x) { return x.gold > 0; }).sort(function (a, b) { return FOF.unitDef(a.key).upkeep - FOF.unitDef(b.key).upkeep; })[0];
       return u ? { type: 'deficitTake', uid: u.uid } : null;
@@ -101,7 +110,8 @@
       case 'caravanier': return anyT('caravanier') ? 1.8 : 0;
       case 'ambassadeur': return anyT('ambassadeur') ? 1.5 : 0;
       case 'pretresse': return FOF.army(st, p.id).some(function (u) { return FOF.isElite(u.key); }) ? 2.3 : 1.0;
-      case 'charpentier': return 2.1;
+      case 'maitre': return FOF.countBld(st, p.id, 'T') >= 1 ? 2.1 : 0.8;
+      case 'prelat': return FOF.countBld(st, p.id, 'T') >= 3 ? 2.8 : 1.4;
       case 'trebuchets': return 2.6;
       case 'espion': return 1.3;
       default: return 0.5;
@@ -185,7 +195,13 @@
     for (i = 0; i < army.length; i++) {
       if (FOF.isElite(army[i].key) || army[i].key === 'exploratrice' || !FOF.effectAvailable(st, army[i])) continue;
       var ea = { type: 'effect', uid: army[i].uid };
-      if (army[i].key === 'partisan') { var tt = T(st, tid(army[i].pos)), ix = -1, bestRank = -1, RANK = { Ci: 4, F: 3, P: 2, C: 1 }; tt.blds.forEach(function (b, k) { if (b.o === tt.ctrl && b.t !== 'T' && RANK[b.t] > bestRank) { bestRank = RANK[b.t]; ix = k; } }); ea.arg = ix; }
+      // v1.9.6 — le Partisan retourne tout le territoire d'un coup : plus de cible à choisir.
+      // Le Trébuchet, lui, vise l'aménagement adverse le plus précieux.
+      if (army[i].key === 'trebuchets') {
+        var tt = T(st, tid(army[i].pos)), ix = -1, bestRank = -1, RANK = { Ci: 5, F: 4, T: 3, P: 2, C: 1, A: 6 };
+        tt.blds.forEach(function (b, k) { if (b.o !== p.id && RANK[b.t] > bestRank) { bestRank = RANK[b.t]; ix = k; } });
+        ea.arg = ix;
+      }
       if (ok(st, ea)) return ea;
     }
     // 4. attaques favorables
