@@ -58,7 +58,7 @@
 
   FOF.bldCost = function (st, p, type) {
     var c = B[type].cost;
-    if (type === 'Ci' && p.leader === 'gustave') c = 5;
+    if (type === 'Ci' && p.leader === 'gustave') c = 6;   // voulu : ses cités coûtent plus cher
     if (type === 'Ci' && p.leader === 'mathilde' && FOF.countBld(st, p.id, 'Ci') === 0) c = 4;
     if (type === 'T' && p.leader === 'adele') c = 6;
     if (type === 'P' && p.leader === 'alienor') c = 2;
@@ -178,7 +178,7 @@
     FOF.army(st, p.id).forEach(function (u) { u.fromSea = false; });
     FOF.army(st, p.id).forEach(function (u) { u.moved = 0; u.fought = false; u.pacif = false; u.movesLeft = FOF.unitMove(st, u); });
     p.lMovesLeft = 1;
-    st.phase = 'collect';
+    st.phase = 'collect'; st.phaseClean = true;
     doCollect(st, p);
   }
   function doCollect(st, p) {
@@ -390,8 +390,8 @@
         var host = others.filter(function (q) { return q.capital === t.id && t.ctrl === q.id; })[0];
         return host && !host.tyran && !p.tyran && p.pact === null && host.pact === null ? 'Conclure un pacte avec ' + host.name : null;
       case 'pelerin': return t.blds.some(function (b) { return b.t === 'T' && b.o !== p.id; }) && !p.tyran ? 'Faire pèlerinage' : null;
-      case 'colonie': return t.ctrl === null ? 'Fonder une colonie' : null;
-      case 'exploratrice': return st.phase === 'collect' && t.ctrl === null && t.cont !== T(st, p.capital).cont ? 'Revendiquer ce territoire' : null;
+      case 'colonie': return t.ctrl === null && t.revoltFrom !== p.id ? 'Fonder une colonie' : null;
+      case 'exploratrice': return st.phase === 'collect' && t.ctrl === null && t.revoltFrom !== p.id && t.cont !== T(st, p.capital).cont ? 'Revendiquer ce territoire' : null;
       case 'partisan': return t.ctrl !== null && t.ctrl !== p.id && t.blds.some(function (b) { return b.o === t.ctrl && b.t !== 'T'; }) ? 'Retourner un aménagement' : null;
       case 'predicateur': return t.ctrl !== null && t.ctrl !== p.id && t.blds.some(function (b) { return b.t === 'T' && b.o !== p.id; }) ? 'Convertir le temple' : null;
       case 'gouverneur': return t.ctrl === p.id && t.blds.some(function (b) { return b.o !== p.id; }) ? 'Convertir les aménagements' : null;
@@ -433,7 +433,6 @@
     var p = FOF.cur(st), def = FOF.unitDef(key), army = FOF.army(st, p.id);
     if (st.phase !== 'recruit') return 'Pas en phase de recrutement.';
     if (p.flags.bought) return 'Vous avez déjà acheté une unité ce tour.';
-    if (p.flags.released) return 'Vous avez libéré une unité ce tour : achat impossible.';
     if (army.length >= 4) return 'Armée complète (4 unités).';
     var el = army.filter(function (u) { return FOF.isElite(u.key); }).length;
     if (FOF.isElite(key) && el >= 3) return 'Déjà 3 unités d’élite.';
@@ -456,7 +455,9 @@
     if (st.phase !== 'build') return 'Pas en phase de construction.';
     if (t.ctrl !== p.id) return 'Ce territoire ne vous appartient pas.';
     // l'Ambassade ne compte pas dans la limite : sinon la capitale a toujours ses 2 places prises
-    if (type !== 'A' && t.blds.filter(function (b) { return b.t !== 'A'; }).length >= 2) return 'Déjà 2 aménagements.';
+    // v1.9.2 : le temple ne compte plus dans la limite de 2, comme l'Ambassade. Le vrai frein à
+    // la voie religieuse n'était pas l'or mais la place (mesuré : 18 % des victoires à 3 joueurs).
+    if (type !== 'A' && type !== 'T' && t.blds.filter(function (b) { return b.t !== 'A' && b.t !== 'T'; }).length >= 2) return 'Déjà 2 aménagements.';
     if (type !== 'C' && t.blds.some(function (b) { return b.t === type; })) return 'Déjà un ' + B[type].name.toLowerCase() + ' ici.';
     if (type === 'P' && !t.seas.length) return 'Un port doit être sur la côte.';
     if (type === 'A' && tid !== p.capital) return 'Une ambassade ne se bâtit que dans votre capitale.';
@@ -472,7 +473,18 @@
     var p = FOF.cur(st);
     var pend = st.pending[0];
     if (pend && a.type !== 'resolve' && a.type !== 'deficitTake' && a.type !== 'surrender') throw new Error('Une décision est en attente.');
+    // v1.9.2 — anti-mauvais-clic : tant qu'aucune action n'a été jouée dans la phase en cours, on
+    // peut revenir à la précédente. Toute action qui change l'état salit la phase.
+    if (a.type !== 'nextPhase' && a.type !== 'prevPhase' && a.type !== 'surrender') st.phaseClean = false;
     switch (a.type) {
+      case 'prevPhase': {
+        var ordp = ['collect', 'recruit', 'military', 'build'], ip = ordp.indexOf(st.phase);
+        if (ip <= 0) throw new Error('Vous êtes déjà à la première phase de votre tour.');
+        if (!st.phaseClean) throw new Error('Vous avez déjà agi pendant cette phase : impossible de revenir en arrière.');
+        st.phase = ordp[ip - 1]; st.phaseClean = true;
+        log(st, p.name + ' revient à la phase précédente.', p.id, 'card');
+        break;
+      }
       case 'deficitTake': {
         var u = st.units.filter(function (x) { return x.uid === a.uid; })[0];
         if (!pend || pend.type !== 'deficit' || !u || u.owner !== pend.pid || u.gold <= 0) throw new Error('Impossible.');
@@ -484,7 +496,7 @@
       case 'nextPhase': {
         var order = ['collect', 'recruit', 'military', 'build'];
         var i = order.indexOf(st.phase);
-        if (i < 3) { st.phase = order[i + 1]; if (st.phase === 'recruit') st.spy = null; }
+        if (i < 3) { st.phase = order[i + 1]; st.phaseClean = true; if (st.phase === 'recruit') st.spy = null; }
         else endTurn(st);
         break;
       }
@@ -515,8 +527,10 @@
       }
       case 'release': {
         var ur = st.units.filter(function (x) { return x.uid === a.uid && x.owner === p.id; })[0];
-        if (!ur || st.phase !== 'recruit' || p.flags.bought) throw new Error('Libération impossible.');
-        log(st, p.name + ' libère ses ' + FOF.unitDef(ur.key).name + ' de leur serment.', p.id, 'card');
+        // v1.9.2 : on licencie POUR racheter dans le même tour (bouton tête de mort).
+        if (!ur || st.phase !== 'recruit') throw new Error('On ne licencie qu\u2019en phase de recrutement.');
+        if (p.flags.released) throw new Error('Une seule unité licenciée par tour.');
+        log(st, p.name + ' licencie ses ' + FOF.unitDef(ur.key).name + ' : les pièces engagées sont perdues.', p.id, 'card');
         discardUnit(st, ur); p.flags.released = true; break;
       }
       case 'move': {
@@ -547,8 +561,14 @@
         var pt = T(st, a.tid), el2 = st.units.filter(function (x) { return x.uid === a.uid && x.owner === p.id; })[0];
         if (st.phase !== 'military' || pt.ctrl !== p.id || !(pt.conqStamp < st.turnNo) || !el2 || !FOF.isElite(el2.key) || el2.pos !== 't' + pt.id || el2.arr >= st.turnNo || el2.moved || el2.fought || !pt.blds.some(function (b) { return b.o !== p.id; }))
           throw new Error('Pacification impossible : une élite doit être en garnison ici depuis votre tour précédent.');
-        pt.blds.forEach(function (b) { b.o = p.id; }); el2.pacif = true; el2.movesLeft = 0;
-        log(st, p.name + ' pacifie ' + pt.name + ' : ses habitants se rallient.', p.id, 'convert'); checkWin(st); break;
+        // v1.9.2 : un seul aménagement par pacification. Le joueur désigne lequel (a.idx) ; sans
+        // précision, le premier aménagement étranger de la case.
+        var etr = pt.blds.map(function (b, i) { return [b, i]; }).filter(function (x) { return x[0].o !== p.id; });
+        var cible = a.idx !== undefined ? pt.blds[a.idx] : etr[0][0];
+        if (!cible || cible.o === p.id) throw new Error('Choisissez un aménagement étranger de cette case.');
+        cible.o = p.id; el2.pacif = true; el2.movesLeft = 0;
+        log(st, p.name + ' pacifie ' + B[cible.t].name.toLowerCase() + ' à ' + pt.name + ' : ses habitants se rallient.', p.id, 'convert');
+        checkWin(st); break;
       }
       case 'effect': {
         var eu = st.units.filter(function (x) { return x.uid === a.uid && x.owner === p.id; })[0];

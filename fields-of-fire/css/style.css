@@ -986,3 +986,34 @@ header.bar { position: relative; z-index: 96; }
 .modal.help ul.rules-l, .modal.help ol.rules-l { margin: 0 0 12px; padding-left: 20px; color: var(--bone-dim); line-height: 1.55; }
 .modal.help ul.rules-l li, .modal.help ol.rules-l li { margin-bottom: 6px; }
 .modal.help b { color: var(--bone); }
+
+/* v1.9.2 — licencier une unité, et la liste des pions d'une case surchargée */
+.mini { position: relative; }
+.mini-kill { position: absolute; right: 3px; top: 3px; z-index: 2; width: 24px; height: 24px; padding: 0;
+  display: flex; align-items: center; justify-content: center; border-radius: 50%;
+  background: rgba(24,20,20,.88); border: 1px solid #a8453b; color: #f2a79c; cursor: pointer; }
+.mini-kill:hover { background: #7a2c25; color: #fff; border-color: #f2a79c; }
+#tokens .tmore { cursor: pointer; pointer-events: auto; }
+#tokens .tmore:hover circle { fill: #33313a; stroke: #f1d488; }
+.stacklist .pc-row:first-child { border-top: 0; }
+.stacklist img { width: 44px; height: 44px; }
+
+/* v1.9.2 — la zone de recrutement consultable depuis « Deck », et la fiche d'un adversaire */
+.zonestrip { display: flex; gap: 8px; flex-wrap: wrap; margin: 6px 0 4px; }
+.zcard { width: 104px; border-radius: 8px; overflow: hidden; border: 2px solid #cfa94e; background: var(--parch); color: var(--parch-ink); cursor: help; }
+.zcard img { width: 100%; height: 62px; object-fit: cover; display: block; }
+.zcard span { display: block; font-size: 12.5px; padding: 3px 5px; line-height: 1.15; }
+.decklist li[data-key] { cursor: help; }
+.decklist li[data-key]:hover { background: rgba(212,176,79,.12); border-radius: 6px; }
+.opp[data-heroinfo] { cursor: pointer; }
+.opp[data-heroinfo]:hover { border-color: var(--gold-deep); }
+#tokens.nohit .tmore { pointer-events: auto; }
+
+/* v1.9.2 — encart des Trébuchets dans la fenêtre d'assaut */
+.treb-box { border: 1px solid #8a5a2b; background: rgba(60,38,18,.35); border-radius: 10px; padding: 9px 11px; margin: 10px 0 2px; }
+.treb-box .treb-h { display: flex; align-items: center; gap: 7px; font-size: 15.5px; color: #f1d488; }
+.treb-box p { margin: 4px 0 8px; font-size: 14px; line-height: 1.35; }
+.treb-opts { display: flex; gap: 6px; flex-wrap: wrap; }
+.treb-opts .btn { display: inline-flex; align-items: center; gap: 6px; }
+.treb-opts .btn img { height: 18px; }
+#hoverTip .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 5px; vertical-align: 0; }

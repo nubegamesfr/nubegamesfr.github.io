@@ -42,17 +42,25 @@
   function continentSizes(s, n) {
     var total = 7 * n;
     for (var tries = 0; tries < 400; tries++) {
-      var k = Math.max(2, Math.min(n + 1, n - 1 + ri(s, 3)));
+      // v1.9.2 : moins de continents, plus gros. Chaque continent impose une ceinture d'eau ;
+      // n continents de 7 cases rendaient impossible de descendre sous ~60 % de mer. Deux ou trois
+      // masses (quatre à partir de cinq joueurs) tiennent le budget « mer ≤ 55 % ».
+      // à trois joueurs il y a peu de terres : deux masses seulement, sinon la ceinture d'eau
+      // de chaque continent fait exploser la part de mer.
+      var kmax = n >= 5 ? 4 : 3;
+      var k = n <= 3 ? 1 + ri(s, 2) : 2 + ri(s, kmax - 1);
+      var vmax = Math.max(8, Math.ceil(total / k) + 5);
       var sizes = [], left = total;
       for (var i = 0; i < k; i++) {
-        var rest = k - i - 1, lo = Math.max(4, left - rest * 12), hi = Math.min(12, left - rest * 4);
+        var rest = k - i - 1, lo = Math.max(5, left - rest * vmax), hi = Math.min(vmax, left - rest * 5);
         if (lo > hi) break;
         var v = i === k - 1 ? left : lo + ri(s, hi - lo + 1);
         sizes.push(v); left -= v;
       }
-      if (sizes.length === k && left === 0 && sizes.every(function (v) { return v >= 4 && v <= 12; })) return { sizes: sizes, extra: 0 };
+      if (sizes.length === k && left === 0 && sizes.every(function (v) { return v >= 5 && v <= vmax; })) return { sizes: sizes, extra: 0 };
     }
-    var base = []; for (var q = 0; q < n; q++) base.push(7);
+    var base = [], k2 = n >= 5 ? 3 : (n <= 3 ? 1 : 2), q0 = Math.floor(total / k2);
+    for (var q = 0; q < k2; q++) base.push(q === k2 - 1 ? total - q0 * (k2 - 1) : q0);
     return { sizes: base, extra: 0 };
   }
 
@@ -68,7 +76,22 @@
     var wide = !(s && s.wideSea === false);   // « mer élargie » : choix fait à la création de la partie
     var cs = continentSizes(s, n);
     var targets = cs.sizes.slice(); if (cs.extra) targets.push(cs.extra);
-    var W = 3 + 2 * n, H = 5 + n;
+    // v1.9.2 : grille choisie pour que la carte rendue tienne dans un rapport ~2:1, qui remplit
+    // mieux un écran large et se lit plus clairement. Géométrie hexagonale : un pas en x vaut
+    // √3·R, un pas en y vaut 1,5·R, donc le rapport rendu est 1,155 × W/H — on vise W/H ≈ 1,73.
+    // La grille est dimensionnée pour que les terres occupent au moins ~45 % de la carte rendue :
+    // au-delà, la mer mange l'écran (mesuré à 60-74 % avant cette correction).
+    var aire = Math.round(7 * n / (FOF.LAND_TARGET || (n <= 3 ? 0.40 : 0.46)));
+    // Grilles retenues après mesure : rapport rendu entre 1,7 et 1,9 (paysage, sans bande grise
+    // en haut) ET mer ≤ 55 % de la surface affichée, ce qui est le plafond fixé par le créateur.
+    //   3 j : 8×6  → mer 50 %      5 j : 10×8 → mer 52 %
+    //   4 j : 9×7  → mer 50 %      6 j : 11×9 → mer 55 %
+    var TABLE = { 3: [8, 6], 4: [9, 7], 5: [10, 8], 6: [11, 9] };
+    var ASP = FOF.MAP_ASPECT || 1.56;   // rapport rendu ≈ 1,155 × W/H
+    var H = Math.max(5, Math.round(Math.sqrt(aire / ASP)));
+    var W = Math.round(ASP * H);
+    var tb = (FOF.MAP_WH && FOF.MAP_WH[n]) || TABLE[n];
+    if (tb) { W = tb[0]; H = tb[1]; }
     var N = W * H, owner = new Array(N).fill(-1);
     function ok(i, c) { // case libre, pas au bord, pas collée à un autre continent
       var col = i % W, row = Math.floor(i / W);
@@ -103,7 +126,19 @@
           nbrs(i % W, Math.floor(i / W), W, H).forEach(function (j) { if (ok(j, c) && front.indexOf(j) < 0) front.push(j); });
         });
         if (!front.length) return null;
-        var pick = front[ri(s, front.length)];
+        // v1.9.2 : croissance compacte — on tire trois candidats et on garde le plus proche du
+        // centre du continent. Des masses ramassées laissent beaucoup moins de mer à l'écran
+        // qu'une croissance purement aléatoire, qui étire les continents en filaments.
+        var cx = 0, cy = 0;
+        members[c].forEach(function (i2) { cx += i2 % W; cy += Math.floor(i2 / W); });
+        cx /= members[c].length; cy /= members[c].length;
+        var pick = null, pd = 1e9;
+        for (var tg = 0; tg < 3; tg++) {
+          var cand2 = front[ri(s, front.length)];
+          var dx2 = (cand2 % W) - cx, dy2 = Math.floor(cand2 / W) - cy;
+          var dd2 = dx2 * dx2 + dy2 * dy2 * 1.6;
+          if (dd2 < pd) { pd = dd2; pick = cand2; }
+        }
         owner[pick] = c; members[c].push(pick); grew = true;
       }
     }
@@ -175,6 +210,17 @@
       z.anchor = bestA;
     });
     names(s, terr);
+    // Garde-fou : la mer ne doit jamais recouvrir plus de 55 % de la carte rendue. La zone rendue
+    // est la boîte englobante des centres de territoires (voir Board.prepare) ; on compte, dans
+    // cette boîte, la part de cases qui ne sont pas des terres.
+    var R0 = 10, bx0 = 1e9, bx1 = -1e9, by0 = 1e9, by1 = -1e9;
+    terr.forEach(function (t) { var c = FOF.hexCenter(t.hex, W, R0); bx0 = Math.min(bx0, c.x); bx1 = Math.max(bx1, c.x); by0 = Math.min(by0, c.y); by1 = Math.max(by1, c.y); });
+    var dansBoite = 0;
+    for (var ci = 0; ci < N; ci++) {
+      var cc = FOF.hexCenter(ci, W, R0);
+      if (cc.x >= bx0 && cc.x <= bx1 && cc.y >= by0 && cc.y <= by1) dansBoite++;
+    }
+    if (dansBoite && 1 - terr.length / dansBoite > (n <= 3 ? 0.505 : 0.48)) return null;   // marge : la boîte rendue déborde d'un rayon d'hexagone
     return { W: W, H: H, terr: terr, seas: seas, zoneOf: zoneOf, nCont: targets.length };
   }
 

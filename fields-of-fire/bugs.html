@@ -93,7 +93,15 @@
         (r.state ? '<details><summary>État de la partie au moment du signalement</summary><pre>' +
           esc(JSON.stringify(r.state, null, 1).slice(0, 12000)) + '</pre></details>' : '') +
         '</article>';
-    }).join('') : '<p class="lead">Aucun signalement pour le moment.</p>';
+    }).join('') : '<div class="rep" style="border-left-color:#f2a79c">' +
+      '<p class="msg"><b>Aucune ligne renvoyée — et ce n\u2019est probablement pas parce qu\u2019il n\u2019y a rien.</b></p>' +
+      '<p class="ctx">La base répond <code>200</code> avec une liste vide. C\u2019est la signature d\u2019une table protégée par RLS ' +
+      'qui accepte l\u2019écriture (le jeu enregistre bien les signalements) mais n\u2019autorise aucune lecture : PostgREST renvoie alors ' +
+      '<code>[]</code> au lieu d\u2019une erreur. Les signalements sont donc bien dans la table, mais cette page ne peut pas les lire.</p>' +
+      '<p class="ctx" style="margin-top:8px">Pour les voir ici, exécutez ceci une fois dans <b>Supabase → SQL Editor</b> :</p>' +
+      '<pre>create policy "lecture publique des signalements"\n  on public.bug_reports for select\n  to anon\n  using (true);</pre>' +
+      '<p class="ctx">Cela rend les signalements lisibles par quiconque connaît cette URL. Si vous préférez les garder privés, ' +
+      'consultez-les directement dans <b>Supabase → Table Editor → bug_reports</b> et ne publiez pas cette page.</p></div>';
   }
 
   function csv() {

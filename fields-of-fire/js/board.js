@@ -244,6 +244,8 @@
   }
   var EST_PAL = [[228, 218, 198], [196, 168, 110], [122, 140, 86], [48, 78, 58], [92, 88, 80], [28, 36, 48], [20, 16, 12]];
 
+  // couleur exacte écrite par le rendu de base pour la limite entre deux zones de mer
+  function isSeaBorder(r, g, b) { return Math.abs(r - 170) < 9 && Math.abs(g - 214) < 9 && Math.abs(b - 245) < 9; }
   function styleBase(canvas, style) {
     var w = canvas.width, h = canvas.height;
     if (!w || !h) return;
@@ -253,6 +255,8 @@
     if (style === 'estampe') {
       for (i = 0; i < a.length; i += 4) {
         if (!a[i + 3]) continue;
+        // le test du pointillé passe AVANT killGlow, qui modifie la couleur
+        if (isSeaBorder(a[i], a[i + 1], a[i + 2])) { a[i] = 168; a[i + 1] = 186; a[i + 2] = 204; continue; }
         killGlow(a, i);
         r = a[i]; g = a[i + 1]; b = a[i + 2];
         if (isSea8(r, g, b)) { a[i] = 28; a[i + 1] = 36; a[i + 2] = 48; continue; }
@@ -278,6 +282,7 @@
     for (i = 0; i < a.length; i += 4) {
       if (!a[i + 3]) continue;
       r = a[i]; g = a[i + 1]; b = a[i + 2]; L = lum8(r, g, b) / 255;
+      if (isSeaBorder(r, g, b)) { a[i] = 196; a[i + 1] = 226; a[i + 2] = 248; continue; }   // pointillé de zone
       if (isSea8(r, g, b)) {
         a[i] = clamp8(22 + L * 46); a[i + 1] = clamp8(46 + L * 62); a[i + 2] = clamp8(118 + L * 92);
       } else {
@@ -339,7 +344,9 @@
         if (s0 < 1.1) col = [236, 250, 252];                                          // écume
         else if (s0 < 1.7) col = [150, 222, 236];
         if (s0 >= 1.1) { var sx = lx - shx, sy = ly - shy; if (sx >= 0 && sy >= 0 && LK[sy * lw + sx] === 1) col = [col[0] * 0.78, col[1] * 0.8, col[2] * 0.86]; }
-        if (k === 2 && dist[i] < 0.6 * S && ((lx + ly) % Math.round(7 * u)) < 3.5 * u) {
+        // v1.9.2 : trait pointillé des zones de mer — plus épais, tirets plus longs, et repris
+        //          tel quel par les deux styles d'affichage (voir styleBase).
+        if (k === 2 && dist[i] < 1.05 * S && ((lx + ly) % Math.round(11 * u)) < 6.5 * u) {
           var nb = [i - 1, i + 1, i - gw, i + gw].some(function (q) { return q >= 0 && q < N && kind[q] === 2 && id[q] !== id[i]; });
           if (!nb) nb = [i - P, i + P, i - gw * P, i + gw * P].some(function (q) { return q >= 0 && q < N && kind[q] === 2 && id[q] !== id[i]; });
           if (nb) col = [170, 214, 245];
@@ -538,11 +545,57 @@
     var i = gy * rs.gw + gx;
     return rs.kind[i] === 1 && rs.id[i] === tid;
   }
+  // v1.9.2 — « mieux montrer les capitales » : on souligne le contour entier de la case en or.
+  // Le tracé est construit une fois par carte et par taille de canevas, puis simplement rempli.
+  var outCache = { key: null, v: {} };
+  function capOutlinePath(tid) {
+    var rs = cache; if (!rs || !amb.cv) return null;
+    var kk = rs.key + ':' + amb.cv.width;
+    if (outCache.key !== kk) outCache = { key: kk, v: {} };
+    if (outCache.v[tid] !== undefined) return outCache.v[tid];
+    var pth = new Path2D(), n = 0, gw = rs.gw, gh = rs.gh;
+    for (var gy = 1; gy < gh - 1; gy++) {
+      for (var gx = 1; gx < gw - 1; gx++) {
+        var i = gy * gw + gx;
+        if (rs.kind[i] !== 1 || rs.id[i] !== tid) continue;
+        // on trace un liseré À L'INTÉRIEUR de la case : sur le bord exact, le calque des couleurs
+        // de joueur (en « multiply ») mangerait l'or.
+        var e = Math.max(2, Math.round(rs.S * 1.6));
+        function hors(k) { return k < 0 || k >= rs.kind.length || rs.kind[k] !== 1 || rs.id[k] !== tid; }
+        var surBord = hors(i - 1) || hors(i + 1) || hors(i - gw) || hors(i + gw);
+        var pres = hors(i - e) || hors(i + e) || hors(i - gw * e) || hors(i + gw * e);
+        if (surBord || !pres) continue;
+        var x = gx * 0.5, y = gy * 0.5;
+        pth.moveTo(x + 1.3, y); pth.arc(x, y, 1.3, 0, 7); n++;
+      }
+    }
+    return (outCache.v[tid] = n ? pth : null);
+  }
+  // rayon du plus grand anneau qui tient sur la case de la capitale (ou null)
+  var ringCache = { key: null, v: {} };
+  function capRing(tid, an) {
+    var rs = cache; if (!rs) return null;
+    if (ringCache.key !== rs.key) ringCache = { key: rs.key, v: {} };
+    if (ringCache.v[tid] !== undefined) return ringCache.v[tid];
+    var res = null;
+    var RS = [21, 18, 15.5, 13];
+    for (var si = 0; si < RS.length && !res; si++) {
+      var r = RS[si], ok = true;
+      for (var q = 0; q < 16 && ok; q++) {
+        var ang = q / 16 * Math.PI * 2;
+        if (!inTerr(an.x + Math.cos(ang) * r, an.y + Math.sin(ang) * r, tid)) ok = false;
+      }
+      if (ok) res = r;
+    }
+    return (ringCache.v[tid] = res);
+  }
   function flagFit(tid, an) {
     var rs = cache; if (!rs) return null;
     if (flagCache.key !== rs.key) flagCache = { key: rs.key, v: {} };
     if (flagCache.v[tid] !== undefined) return flagCache.v[tid];
-    var SCALES = [1, 0.8, 0.62, 0.48, 0.36], DX = [-13, -6.5, 0, -19, 4], DY = [-1, 4, -6, 9, -11];
+    // v1.9.2 : drapeau plus petit, et placé à l'écart des aménagements (dessinés juste au-dessus
+    // de l'ancre) et des pions (juste en dessous). On privilégie les côtés.
+    var SCALES = [0.72, 0.58, 0.46, 0.36], DX = [-19, 12, -24, 17, -13, 0], DY = [6, 6, -2, -2, 12, 12];
     var res = null;
     for (var si = 0; si < SCALES.length && !res; si++) {
       var f = SCALES[si];
@@ -616,6 +669,8 @@
       var an = rs.anchor['t' + pl.capital]; if (!an) return;
       // le drapeau ne doit JAMAIS déborder de la case : on cherche le plus grand format et le
       // décalage qui tiennent entièrement sur le territoire, sinon on ne le dessine pas.
+      // v1.9.2 : anneau doré autour de la capitale — statique, sous l'interface, pour qu'on la
+      // repère d'un coup d'œil même quand le drapeau est petit.
       var fit = flagFit(pl.capital, an);
       if (fit) {
         var F = fit.s, fx0 = X(fit.x), fy0 = Y(fit.y), wv = Math.sin(ts / 520 + pi) * 1.1 * K * F;
@@ -779,6 +834,13 @@
         var col = colorOf(t.ctrl);
         paint(ctx, rs, 't' + t.id, 'fill', col, 0.3);
         paint(ctx, rs, 't' + t.id, 'band', col, 0.95);
+        // v1.9.2 — la capitale se repère au premier coup d'œil : sa case vire à l'or et son
+        // liseré est doublé d'un trait doré.
+        var pl = st.players[t.ctrl];
+        if (pl && pl.alive && pl.capital === t.id) {
+          paint(ctx, rs, 't' + t.id, 'fill', '#e8b73a', 0.34);
+          paint(ctx, rs, 't' + t.id, 'band', '#8a6410', 1);
+        }
       });
       (view.picks || []).forEach(function (tid) { paint(ctx, rs, 't' + tid, 'fill', '#46c46e', 0.45); paint(ctx, rs, 't' + tid, 'band', '#2fa857', 1); });
       if (view.sel) paint(ctx, rs, view.sel, 'band', '#ffffff', 1);

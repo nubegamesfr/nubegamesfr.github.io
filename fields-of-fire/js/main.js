@@ -87,6 +87,8 @@
       var lbl = n < 3 ? 'En attente de joueurs (' + n + '/3 minimum)'
         : !allRdy ? 'En attente des joueurs prêts (' + nRdy + '/' + n + ')'
         : 'Lancer la partie à ' + n + ' joueurs';
+      // v1.9.2 : l'hôte choisit aussi la mer élargie depuis le salon en ligne
+      h.push('<label class="tuto-check" style="margin-right:12px" title="Plus de zones de mer et un large plus vaste"><input type="checkbox" data-osea="1"' + (wideSea ? ' checked' : '') + '> ⚓ Mer élargie</label>');
       h.push('<button class="btn primary" type="button" data-ostart="1" ' + (lock ? 'disabled' : '') + '>' + lbl + '</button>');
     } else h.push('<span class="waiting">' + (allRdy ? 'Tout le monde est prêt — en attente du lancement par l’hôte…' : 'Déclarez-vous prêt quand vous êtes installé (' + nRdy + '/' + n + ' prêts).') + '</span>');
     h.push('<button class="btn" type="button" data-oleave="1">Quitter le salon</button></div>');
@@ -248,6 +250,9 @@
       rows[picking.idx].leader = k; picking = null; renderPicker(); renderLocal();
     });
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && picking) { picking = null; renderPicker(); } });
+    $('setup').addEventListener('change', function (e) {
+      if (e.target.dataset.osea !== undefined) { wideSea = e.target.checked; try { localStorage.setItem('fof-widesea', wideSea ? '1' : '0'); } catch (x) {} }
+    });
     $('setup').addEventListener('input', function (e) { if (e.target.dataset.name !== undefined) rows[+e.target.dataset.name].name = e.target.value; if (e.target.id === 'joinCode') e.target.value = FOF.normCode(e.target.value); });
     $('shuffleBtn').addEventListener('click', function () { var ls = shuffled(); rows.forEach(function (r, i) { r.leader = ls[i]; }); renderLocal(); });
     $('startBtn').addEventListener('click', function () {

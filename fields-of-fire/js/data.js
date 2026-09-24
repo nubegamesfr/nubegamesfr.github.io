@@ -39,13 +39,13 @@
     corbeau:     { name: 'Corbeau messager', move: 4, upkeep: 1, req: ['Ci', 1], text: 'Prend la mer sans port. Sur une capitale adverse : +1 diplomatie, puis défausse.' },
     emissaire:   { name: 'Émissaire', move: 1, upkeep: 2, req: ['Ci', 2], text: 'Sur une capitale adverse : +2 diplomatie, puis défausse.' },
     pelerin:     { name: 'Pèlerin', move: 1, upkeep: 2, req: ['T', 2], text: "Sur un temple adverse : +1 diplomatie pour vous et pour son propriétaire, puis défausse." },
-    heraut:      { name: 'Héraut', move: 1, upkeep: 1, req: ['D', 7], text: 'Posé sur la capitale. À la collecte, +1 diplomatie si vous n’avez pas attaqué au tour précédent.' },
+    heraut:      { name: 'Héraut', move: 1, upkeep: 1, req: ['Ci', 2], text: 'Posé sur une de vos cités. À la collecte, +1 diplomatie si vous n’avez pas attaqué au tour précédent.' },
     ambassadeur: { name: 'Ambassadeur', move: 1, upkeep: 2, req: ['D', 3], text: 'Sur une capitale adverse (hors Tyran) : pacte de non-agression tant qu’il y reste.' },
     colonie:     { name: 'Colonie', move: 1, upkeep: 3, req: ['Ci', 1], text: 'Sur un territoire neutre : vous le prenez et y bâtissez un campement gratuit, puis défausse.' },
     exploratrice:{ name: 'Exploratrice', move: 1, upkeep: 3, req: ['P', 2], text: 'À la collecte, sur un neutre d’un autre continent : vous le prenez et gagnez 1 or, puis défausse.' },
     caboteur:    { name: 'Caboteur', move: 1, upkeep: 1, req: ['P', 1], text: 'À la collecte, sur une case avec le port d’un adversaire : +2 or.' },
     caravanier:  { name: 'Caravanier', move: 1, upkeep: 1, req: ['Ci', 1], text: 'À la collecte, sur une case avec la cité d’un adversaire : +2 or.' },
-    espion:      { name: 'Espion', move: 1, upkeep: 1, req: ['Ci', 1], text: 'Au recrutement, payez 1 or pour regarder en secret la carte du dessus du deck.' },
+    espion:      { name: 'Espion', move: 1, upkeep: 0, req: ['Ci', 1], text: 'Aucun entretien. Au recrutement, payez 1 or pour regarder en secret la carte du dessus du deck.' },
     partisan:    { name: 'Partisan', move: 1, upkeep: 2, req: ['Ci', 2], text: 'Sur un territoire adverse : convertit un de ses aménagements (sauf un temple). Puis défausse.' },
     predicateur: { name: 'Prédicateur', move: 1, upkeep: 2, req: ['T', 3], text: 'Sur un territoire adverse : convertit son temple. Puis défausse.' },
     gouverneur:  { name: 'Gouverneur', move: 1, upkeep: 3, req: ['Ci', 4], text: 'Sur votre territoire : convertit tous les aménagements adverses. Puis défausse.' },
@@ -54,14 +54,14 @@
   };
 
   FOF.LEADERS = {
-    odon:    { name: 'Odon le Brave', mod: 1, text: 'Chacune de ses unités d’élite engagée dans un assaut lui donne +1, qu’il mène l’assaut ou non.' },
-    gustave: { name: 'Gustave l’Irascible', mod: 2, text: 'Ses campements, forts et ports : +1 défense. Ses cités coûtent 5 or.' },
-    edouard: { name: 'Edouard le Sage', mod: 1, text: 'À la collecte, s’il a 3 de diplomatie ou moins : 4 or pour +1 diplomatie. Une seule fois par partie, et seulement s’il n’a ni attaqué ni été attaqué.' },
-    mathilde:{ name: 'Mathilde la Bien-Aimée', mod: 1, text: 'Sa première cité coûte 4 or ; les suivantes sont au prix normal.' },
-    adele:   { name: 'Adèle la Pieuse', mod: 2, text: 'Ses temples coûtent 6 or et donnent +1 défense.' },
-    henri:   { name: 'Henri le Stratège', mod: 1, text: 'Toutes ses unités d’élite se déplacent d’1 case de plus.' },
-    hugues:  { name: 'Hugues le Bâtisseur', mod: 2, text: 'Ses campements, forts et ports coûtent 1 or de moins (minimum 1).' },
-    alienor: { name: 'Aliénor l’Amirale', mod: 1, text: 'Ses ports coûtent 2 or.' }
+    odon:    { name: 'Odon le Brave', mod: 2, text: 'Chacune de ses unités d’élite engagée dans un assaut lui donne +1, qu’il mène l’assaut ou non.' },
+    gustave: { name: 'Gustave l’Irascible', mod: 3, text: 'Ses campements, forts et ports : +1 défense. Ses cités coûtent 6 or.' },
+    edouard: { name: 'Edouard le Sage', mod: 2, text: 'À la collecte, s’il a 3 de diplomatie ou moins : 4 or pour +1 diplomatie. Une seule fois par partie, et seulement s’il n’a ni attaqué ni été attaqué.' },
+    mathilde:{ name: 'Mathilde la Bien-Aimée', mod: 2, text: 'Sa première cité coûte 4 or ; les suivantes sont au prix normal.' },
+    adele:   { name: 'Adèle la Pieuse', mod: 3, text: 'Ses temples coûtent 6 or et donnent +1 défense.' },
+    henri:   { name: 'Henri le Stratège', mod: 2, text: 'Toutes ses unités d’élite se déplacent d’1 case de plus.' },
+    hugues:  { name: 'Hugues le Bâtisseur', mod: 3, text: 'Ses campements, forts et ports coûtent 1 or de moins (minimum 1).' },
+    alienor: { name: 'Aliénor l’Amirale', mod: 2, text: 'Ses ports coûtent 2 or.' }
   };
 
   FOF.PLAYER_COLORS = [
