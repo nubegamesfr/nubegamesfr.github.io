@@ -35,11 +35,21 @@
     </div>
     <div class="setup-form">
       <div id="stepMode">
-        <h2>Jouer à Fields of Fire</h2>
-        <p class="lead">Trois à six dirigeants. Chacun part d’une capitale sur son propre continent : conquérez, bâtissez, et choisissez votre voie - l’épée, la foi ou la diplomatie.</p>
+        <p class="eyebrow">Prototype jouable · 3 à 6 joueurs</p>
+        <h2>Prenez la tête d’un royaume</h2>
+        <p class="lead">Chacun part d’une capitale sur son propre continent : conquérez, bâtissez, et choisissez votre voie - l’épée, la foi ou la diplomatie.</p>
         <div class="mode-grid">
-          <button class="mode-card" type="button" data-mode="local"><span class="mc-ico">🖥</span><b>Jeu local</b><span>Un seul écran pour tout le monde : on se passe la main à chaque tour.</span></button>
-          <div class="mode-card online-only"><span class="mc-ico">🌐</span><b>Jeu en ligne</b><span>Chacun sur son ordinateur. Créez un salon et partagez son code, ou rejoignez celui d’un ami.</span>
+          <button class="mode-card" type="button" data-mode="local">
+            <span class="mc-ico" data-ic="dice"></span>
+            <b>Jeu local</b>
+            <span>Un seul écran pour tout le monde : on se passe la main à chaque tour.</span>
+            <span class="mc-list"><i>Sièges tenus par l’ordinateur</i><i>Didacticiel de 3 tours</i><i>Rien à installer</i></span>
+            <span class="mc-go">Choisir les dirigeants →</span>
+          </button>
+          <div class="mode-card online-only">
+            <span class="mc-ico" data-ic="chat"></span>
+            <b>Jeu en ligne</b>
+            <span>Chacun sur son ordinateur. Créez un salon et partagez son code, ou rejoignez celui d’un ami.</span>
             <label class="fld">Votre nom<input id="myName" maxlength="16" autocomplete="nickname" placeholder="ex. Aurèle"></label>
             <button class="btn primary" type="button" data-mode="create">Créer un salon</button>
             <div class="join-row"><input id="joinCode" maxlength="5" placeholder="CODE" aria-label="Code du salon" autocomplete="off"><button class="btn" type="button" id="joinBtn" data-mode="join">Rejoindre</button></div>
@@ -48,9 +58,11 @@
         <p class="err" id="netErr" role="alert"></p>
         <p class="note" id="onlineNote" hidden>Le jeu en ligne n’est pas encore activé sur ce site.</p>
         <div class="setup-actions" id="resumeBox"></div>
-        <p class="note">Version beta 1.9.9 · prototype. Les parties sont enregistrées de façon anonyme (durée, tours, dirigeants, type de victoire…) pour équilibrer le jeu. Hugues le Bâtisseur et Aliénor l’Amirale se débloquent en laissant votre adresse e-mail.</p>
-        <p class="note">Toutes les illustrations des cartes, les portraits de dirigeants et les icônes de bâtiments appartiennent à Nube Games. Musique : pistes en domaine public (CC0) d’OpenGameArt ; le détail figure dans le fichier CREDITS. Polices sous licence SIL OFL 1.1, hébergées sur notre serveur.</p>
-        <p class="note setup-legal"><a href="/">Nube Games</a> · <a href="/mentions-legales.html">Mentions légales</a> · <a href="/confidentialite.html">Confidentialité</a> · <a href="/conditions.html">CGU</a></p>
+        <footer class="setup-foot">
+          <p><b>Version beta 1.9.9</b> · prototype. Les parties sont enregistrées de façon anonyme (durée, tours, dirigeants, type de victoire) pour équilibrer le jeu. Hugues le Bâtisseur et Aliénor l’Amirale se débloquent en laissant votre adresse e-mail.</p>
+          <p>Illustrations, portraits et icônes : Nube Games. Musique : domaine public (CC0) d’OpenGameArt, détail dans CREDITS. Polices sous licence SIL OFL 1.1, hébergées sur notre serveur.</p>
+          <p class="setup-legal"><a href="/">Nube Games</a> · <a href="/mentions-legales.html">Mentions légales</a> · <a href="/confidentialite.html">Confidentialité</a> · <a href="/conditions.html">CGU</a></p>
+        </footer>
       </div>
       <div id="stepLocal" hidden>
         <button class="btn ghost small" type="button" data-back="1">← Retour</button>

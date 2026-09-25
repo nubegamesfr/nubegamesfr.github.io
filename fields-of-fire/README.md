@@ -12,6 +12,14 @@ Jeu 100 % statique (HTML/CSS/JS, sans build). Servi par GitHub Pages sur https:/
   au lion, qui remplace `terr.svg`, supprimé) ; le campement et l'ambassade sont redessinés.
   Formats : unités 800 × 488, dirigeants 576 × 612, icônes détourées sur fond transparent en deux
   teintes (#1E1810 pour les fonds clairs, #806934 pour les fonds sombres).
+- **Accueil refait** : l'écran restait collé en haut de la page avec un grand vide dessous, les deux
+  cartes de mode n'avaient pas la même hauteur (celle du jeu local se terminait dans le blanc), et
+  les pictogrammes étaient des émojis au milieu d'un jeu entièrement dessiné. Désormais : bloc centré
+  verticalement (`align-content: safe center`, qui repart du haut dès que le contenu dépasse),
+  jaquette agrandie avec cadre doré et titre en dégradé, deux cartes de même hauteur finissant toutes
+  les deux par une action, pictogrammes pris dans les icônes du jeu, bouton principal doré au lieu du
+  bleu (limité à `#setup`), et les trois paragraphes de mentions regroupés dans un pied de page
+  compact. Le bandeau musique ne recouvre plus la jaquette sur téléphone.
 - **Ambassadeur - pacte** : le pacte de non-agression ne tient plus que tant qu'un ambassadeur se
   trouve sur la capitale de l'autre, comme l'annonçait déjà le texte de la carte. Dès qu'il part,
   meurt ou que la capitale déménage, le pacte tombe SANS perte de diplomatie : ce n'est pas une

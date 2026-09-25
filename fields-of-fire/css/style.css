@@ -108,14 +108,47 @@ button.hero { cursor: pointer; font: inherit; }
 button.hero:hover:not(:disabled) { transform: translateY(-2px); }
 
 /* ---------- accueil ---------- */
-#setup { position: fixed; inset: 0; overflow: auto; z-index: 50; background: radial-gradient(ellipse at 50% 0%, #2b2a31 0%, #111113 75%); padding: 24px 16px 40px; }
-.setup-inner { max-width: 1060px; margin: 0 auto; display: grid; grid-template-columns: 280px 1fr; gap: 36px; align-items: start; }
-.cover { border: 1px solid #5d5647; outline: 1px dotted #5d5647; outline-offset: 6px; padding: 28px 18px; text-align: center; background: #19191b; margin: 8px; }
-.cover h1 { font-family: var(--f-display); font-weight: 700; font-size: 36px; line-height: 1.05; margin: 0 0 14px; letter-spacing: .04em; }
-.cover img { width: 150px; margin: 4px auto 14px; display: block; }
-.cover .proto { font-family: var(--f-display); letter-spacing: .3em; color: var(--bone-dim); font-size: 15px; border-top: 1px dotted #5d5647; padding-top: 12px; }
-.setup-form h2 { font-family: var(--f-display); font-size: 22px; margin: 6px 0 4px; }
-.setup-form p.lead { color: var(--bone-dim); margin: 0 0 16px; max-width: 62ch; }
+/* v1.9.9 - accueil refait : l'écran restait collé en haut avec un grand vide dessous, les deux
+   cartes n'avaient pas la même hauteur (celle du jeu local était presque vide), et les pictogrammes
+   étaient des émojis au milieu d'un jeu entièrement dessiné à la main. */
+#setup { position: fixed; inset: 0; overflow: auto; z-index: 50; padding: 32px 20px 28px;
+  background:
+    radial-gradient(1100px 620px at 50% -8%, rgba(217,180,95,.10) 0%, rgba(217,180,95,0) 60%),
+    radial-gradient(ellipse at 50% 0%, #2b2a31 0%, #111113 72%);
+  /* 'safe' : quand le contenu dépasse (écran des dirigeants), on repart du haut au lieu de centrer,
+     sinon le début du contenu passe au-dessus du bord et devient inatteignable. */
+  display: grid; align-content: center; align-content: safe center; }
+#setup::before { content: ''; position: fixed; inset: 0; pointer-events: none; opacity: .5;
+  background: repeating-linear-gradient(115deg, rgba(255,255,255,.012) 0 2px, transparent 2px 5px); }
+.setup-inner { position: relative; max-width: 1120px; width: 100%; margin: 0 auto; display: grid;
+  grid-template-columns: 320px 1fr; gap: 48px; align-items: center; }
+
+/* la jaquette : cadre doré, léger halo, elle porte le titre du jeu */
+.cover { position: relative; text-align: center; padding: 34px 22px 26px; margin: 0;
+  background: linear-gradient(#1a1a1d, #141416);
+  border: 1px solid transparent; border-radius: 4px;
+  background-origin: border-box; background-clip: padding-box, border-box;
+  background-image: linear-gradient(#1a1a1d, #141416), linear-gradient(160deg, #6d5a2c, #d9b45f 45%, #5b4a24);
+  box-shadow: 0 26px 60px -30px #000, 0 0 60px -30px rgba(217,180,95,.7); }
+.cover::after { content: ''; position: absolute; inset: 9px; border: 1px solid rgba(217,180,95,.28);
+  border-radius: 2px; pointer-events: none; }
+.cover h1 { font-family: var(--f-display); font-weight: 700; font-size: 40px; line-height: 1.04;
+  margin: 0 0 18px; letter-spacing: .05em;
+  background: linear-gradient(#f7ead0 15%, #d9b45f 55%, #9c7a2c);
+  -webkit-background-clip: text; background-clip: text; color: transparent; }
+.cover img { width: 168px; margin: 2px auto 18px; display: block; filter: drop-shadow(0 6px 18px rgba(217,180,95,.25)); }
+.cover .proto { font-family: var(--f-display); letter-spacing: .34em; color: var(--bone-dim);
+  font-size: 14px; padding-top: 14px; position: relative; }
+.cover .proto::before { content: ''; position: absolute; top: 0; left: 22%; right: 22%; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(217,180,95,.55), transparent); }
+
+.setup-form .eyebrow { font-family: var(--f-display); letter-spacing: .24em; text-transform: uppercase;
+  font-size: 12.5px; color: var(--gold-deep); margin: 0 0 10px; }
+.setup-form h2 { font-family: var(--f-display); font-size: 34px; line-height: 1.12; margin: 0 0 10px;
+  letter-spacing: .01em; color: var(--bone); }
+.setup-form #stepMode > h2::after { content: ''; display: block; width: 74px; height: 2px; margin: 14px 0 0;
+  background: linear-gradient(90deg, var(--gold), rgba(217,180,95,0)); }
+.setup-form p.lead { color: var(--bone-dim); margin: 14px 0 24px; max-width: 58ch; font-size: 17px; }
 .count-pick { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; align-items: center; }
 .count-pick button { width: 42px; height: 42px; border-radius: 50%; border: 1px solid var(--line); background: var(--panel); font-family: var(--f-display); font-size: 19.5px; }
 .count-pick button[aria-pressed="true"] { background: var(--gold); color: #1d160a; border-color: var(--gold); }
@@ -292,7 +325,10 @@ aside.right { border-left: 1px solid var(--line); display: flex; flex-direction:
   #board { height: 70vh; }
   .mat { grid-template-columns: 1fr; }
   .cta { align-items: stretch; max-width: none; } .cta .hint { text-align: left; }
-  .setup-inner { grid-template-columns: 1fr; } .cover { max-width: 300px; margin: 8px auto; }
+  .setup-inner { grid-template-columns: 1fr; gap: 24px; } .cover { max-width: 300px; margin: 0 auto; }
+  /* le bandeau musique est en haut à droite : on lui laisse la place au-dessus de la jaquette */
+  #setup { align-content: start; padding-top: 68px; } .setup-form h2 { font-size: 27px; }
+  .mode-card { height: auto; } .cover h1 { font-size: 33px; } .cover img { width: 132px; }
   .prow { grid-template-columns: 30px 1fr; } .prow .hero { grid-column: 1 / -1; }
   .market-inner { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
@@ -300,12 +336,31 @@ aside.right { border-left: 1px solid var(--line); display: flex; flex-direction:
 
 /* ---------- modes de jeu & salon en ligne ---------- */
 .mode-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 14px; margin: 8px 0 10px; }
-.mode-card { display: flex; flex-direction: column; gap: 8px; text-align: left; padding: 18px; border-radius: 14px; border: 1px solid var(--line); background: var(--panel); color: var(--bone); font: inherit; }
-button.mode-card { cursor: pointer; transition: transform .12s, border-color .12s; }
-button.mode-card:hover { transform: translateY(-2px); border-color: var(--gold); }
-.mode-card b { font-family: var(--f-display); font-size: 22px; }
-.mode-card > span:not(.mc-ico) { color: var(--bone-dim); font-size: 16px; }
-.mc-ico { font-size: 26px; line-height: 1; }
+/* v1.9.9 - les deux cartes ont la même hauteur et finissent toutes les deux par une action :
+   la carte du jeu local se terminait dans le vide, ce qui déséquilibrait toute la page. */
+.mode-grid { align-items: stretch; }
+.mode-card { display: flex; flex-direction: column; gap: 10px; text-align: left; padding: 22px 22px 20px;
+  border-radius: 14px; border: 1px solid var(--line); color: var(--bone); font: inherit; height: 100%;
+  background: linear-gradient(#26252c, #1e1d23);
+  box-shadow: 0 18px 40px -28px #000; }
+button.mode-card { cursor: pointer; transition: transform .14s, border-color .14s, box-shadow .14s; }
+button.mode-card:hover { transform: translateY(-3px); border-color: var(--gold-deep);
+  box-shadow: 0 24px 46px -26px #000, 0 0 0 1px rgba(217,180,95,.18) inset; }
+button.mode-card:hover .mc-go { color: var(--gold-hi); }
+button.mode-card:hover .mc-ico { border-color: rgba(217,180,95,.55); }
+.mode-card b { font-family: var(--f-display); font-size: 23px; letter-spacing: .01em; }
+.mode-card > span:not(.mc-ico):not(.mc-go):not(.mc-list) { color: var(--bone-dim); font-size: 16px; line-height: 1.5; }
+.mc-ico { width: 46px; height: 46px; border-radius: 50%; display: inline-flex; align-items: center;
+  justify-content: center; border: 1px solid rgba(217,180,95,.3); background: rgba(217,180,95,.08);
+  color: var(--gold); margin-bottom: 4px; transition: border-color .14s; }
+.mc-ico svg { width: 25px; height: 25px; }
+.mc-list { display: flex; flex-direction: column; gap: 5px; margin-top: 2px; }
+.mc-list i { font-style: normal; color: var(--muted); font-size: 14.5px; padding-left: 17px; position: relative; }
+.mc-list i::before { content: ''; position: absolute; left: 3px; top: .55em; width: 5px; height: 5px;
+  border-radius: 50%; background: var(--gold-deep); }
+.mc-go { margin-top: auto; padding-top: 14px; color: var(--gold); font-family: var(--f-display);
+  font-size: 15.5px; letter-spacing: .03em; transition: color .14s; }
+.online-only .fld { margin-top: auto; }
 .mode-card .fld { display: flex; flex-direction: column; gap: 4px; font-size: 14px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-top: 4px; }
 .mode-card input, .linkbox input, .seat input { background: #19191d; border: 1px solid var(--line); color: var(--bone); border-radius: 8px; padding: 9px 10px; font-family: inherit; font-size: 17px; width: 100%; text-transform: none; letter-spacing: 0; }
 .join-row { display: flex; gap: 8px; align-items: stretch; padding-top: 8px; border-top: 1px dashed var(--line); }
@@ -1052,6 +1107,17 @@ header.bar { position: relative; z-index: 96; }
 #hoverTip .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 5px; vertical-align: 0; }
 
 /* Liens obligatoires vers les pages légales, depuis l'écran d'accueil du jeu. */
-.setup-legal { margin-top: 14px; }
+/* v1.9.9 - le bleu du bouton principal détonnait sur l'accueil, tout le reste du jeu étant
+   à l'or et au parchemin. Le changement est limité à l'écran d'accueil et au salon. */
+#setup .btn.primary { background: linear-gradient(#e3c274, #c19a3e); border-color: #8d6d25;
+  color: #241a06; text-shadow: none; font-weight: 700; }
+#setup .btn.primary:hover:not(:disabled) { background: linear-gradient(#f2dc9e, #cfa848); }
+
+/* pied de page : trois paragraphes gris mangeaient la moitié de l'écran */
+.setup-foot { margin-top: 26px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,.07);
+  display: grid; gap: 7px; max-width: 78ch; }
+.setup-foot p { margin: 0; color: var(--muted); font-size: 13.5px; line-height: 1.5; max-width: none; }
+.setup-foot b { color: var(--bone-dim); font-weight: 700; }
+.setup-legal { margin-top: 4px; }
 .setup-legal a { color: #b9a77e; text-decoration: none; border-bottom: 1px solid rgba(185,167,126,.35); }
 .setup-legal a:hover, .setup-legal a:focus-visible { color: #e0c274; border-bottom-color: currentColor; }
