@@ -40,7 +40,7 @@
     emissaire:   { name: 'Émissaire', move: 2, upkeep: 2, req: ['Ci', 2], text: 'Sur une capitale adverse, défausser pour +2 de diplomatie.' },
     pelerin:     { name: 'Pèlerin', move: 2, upkeep: 1, req: ['T', 2], text: 'Sur un temple adverse, défausser pour +1 de diplomatie pour vous et son propriétaire.' },
     heraut:      { name: 'Héraut', move: 1, upkeep: 2, req: ['Ci', 3], text: 'À la collecte, +1 de diplomatie, sauf si vous avez attaqué au tour précédent.' },
-    ambassadeur: { name: 'Ambassadeur', move: 1, upkeep: 2, req: ['D', 3], text: 'Sur une capitale adverse (hors Tyran) : pacte de non-agression tant qu’il y reste.' },
+    ambassadeur: { name: 'Ambassadeur', move: 1, upkeep: 2, req: ['A', 1], text: 'Sur une capitale adverse (hors Tyran) : pacte de non-agression tant qu’il y reste.' },
     colonie:     { name: 'Colonie', move: 1, upkeep: 3, req: ['Ci', 1], text: 'Sur un territoire neutre, défausser pour le conquérir et y bâtir un campement.' },
     exploratrice:{ name: 'Exploratrice', move: 2, upkeep: 2, req: ['P', 2], text: 'À la collecte, sur un territoire neutre d’un autre continent que votre capitale, défausser pour conquérir et gagner 1 or.' },
     caboteur:    { name: 'Caboteur', move: 1, upkeep: 1, req: ['P', 1], text: 'À la collecte, sur une case avec le port d’un adversaire : +2 or.' },

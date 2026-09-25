@@ -19,6 +19,9 @@
     el.dataset.sig = html; el.innerHTML = html;
   }
   function color(pid) { var p = st.players[pid]; return FOF.PLAYER_COLORS.filter(function (c) { return c.id === p.color; })[0].hex; }
+  // v1.9.9 - l'icône de diplomatie est désormais le dessin du créateur (deux mains qui se serrent).
+  // La classe .icn l'éclaircit par filtre, comme terr.png et bld-T.png à côté d'elle.
+  function dipIcon(h) { return '<img class="icn" src="assets/icons/dip.png" alt=""' + (h ? ' style="height:' + h + 'px"' : '') + '>'; }
   function bIcon(t, h) { return '<img src="assets/icons/bld-' + t + '.png" alt="' + FOF.BUILDINGS[t].name + '"' + (h ? ' style="height:' + h + 'px"' : '') + '>'; }
   // v1.9.6 - variante dorée, pour les boutons à fond sombre (construction, remplacement).
   function bIconOr(t, h) { return '<img src="assets/icons/bld-' + t + '-or.png" alt="' + FOF.BUILDINGS[t].name + '"' + (h ? ' style="height:' + h + 'px"' : '') + '>'; }
@@ -63,6 +66,14 @@
   function isBotActor() { var w = st && st.players[actor()]; return !!(w && w.bot); }
   function myTurn() { if (isBotActor()) return false; return !net || net.seatIndex() === actor(); }
   FOF.myTurn = function () { return !!st && myTurn(); };
+  /* v1.9.9 - « ma fiche de dirigeant » doit être la mienne. Jusqu'ici le portrait du bandeau du bas
+     ouvrait la fiche du joueur ACTIF : en ligne, quand ce n'était pas mon tour, on tombait sur le
+     pouvoir du voisin. moiPid() rend mon siège quand on joue en ligne, et le joueur courant en
+     partie locale (où le joueur actif est bien celui qui tient la souris). */
+  function moiPid() {
+    if (net) { var i = net.seatIndex(); if (i >= 0 && st.players[i]) return i; }
+    return FOF.cur(st).id;
+  }
   FOF.currentNet = function () { return net; };
   FOF.currentState = function () { return st; };
   FOF.rerender = function () { if (st) render(); };
@@ -103,7 +114,7 @@
   /* ================= rendu ================= */
   function render() {
     if (!st) return;
-    var viewModal = modal && (modal.kind === 'gloss' || modal.kind === 'deck' || modal.kind === 'help' || modal.kind === 'endstats' || modal.kind === 'hero' || modal.kind === 'edouardc' || modal.kind === 'settings' || modal.kind === 'capitalc' || modal.kind === 'killc' || modal.kind === 'stack');
+    var viewModal = modal && (modal.kind === 'gloss' || modal.kind === 'deck' || modal.kind === 'help' || modal.kind === 'endstats' || modal.kind === 'hero' || modal.kind === 'edouardc' || modal.kind === 'settings' || modal.kind === 'capitalc' || modal.kind === 'replacec' || modal.kind === 'killc' || modal.kind === 'stack');
     if (st.turnNo !== lastTurnShown && !st.winner && !viewModal && !modal) { lastTurnShown = st.turnNo; if ((!net || net.seatIndex() === st.cur) && !st.players[st.cur].bot) modal = { kind: 'turn' }; }
     if (st.winner && !viewModal) modal = { kind: 'victory' };
     var before = FOF.FX ? FOF.FX.before() : null;
@@ -193,8 +204,8 @@
       return '<div class="opp ' + (p.id === st.cur ? 'active ' : '') + (busy ? 'thinking ' : '') + (!p.alive ? 'dead' : '') + '" data-heroinfo="' + p.id + '" title="Voir la fiche de ' + esc(FOF.LEADERS[p.leader].name) + '" style="--pc:' + color(p.id) + '">' + FOF.heroImg(p.leader) +
         '<div><div class="nm"><span>' + esc(p.name) + (p.bot ? ' <small title="Ordinateur" class="botmark">' + FOF.ic('helm', 13) + '</small>' : '') + '</span>' + pills + '</div><div class="ld">' + esc(FOF.LEADERS[p.leader].name) + '</div>' +
         '<div class="st"><span title="Or"><span class="coin" style="width:11px;height:11px;vertical-align:-1px"></span> <b>' + p.gold + '</b></span>' +
-        '<span title="Diplomatie">' + FOF.ic('branch', 17) + ' <b>' + (p.tyran ? '-' : p.dip) + '</b></span>' +
-        '<span title="Territoires"><img class="icn" src="assets/icons/terr.svg" alt=""> <b>' + terr + '/' + st.victory.mil + '</b></span>' +
+        '<span title="Diplomatie">' + dipIcon(13) + ' <b>' + (p.tyran ? '-' : p.dip) + '</b></span>' +
+        '<span title="Territoires"><img class="icn" src="assets/icons/terr.png" alt=""> <b>' + terr + '/' + st.victory.mil + '</b></span>' +
         '<span title="Temples"><img class="icn" src="assets/icons/bld-T.png" alt=""> <b>' + tem + '/' + st.victory.rel + '</b></span></div>' +
         (busy ? '<div class="thinking-row">' + FOF.ic(p.bot ? 'helm' : 'crown', 13) + ' <span>' + (p.bot ? 'réfléchit' : PHASE_SHORT[st.phase]) + '</span><i class="d"></i><i class="d"></i><i class="d"></i></div>' : '') +
         '</div></div>';
@@ -727,11 +738,11 @@
     var h = ['<div class="me' + (p.tyran ? ' tyran' : '') + '" style="--pc:' + color(p.id) + '"><div class="pwrap">' + FOF.heroImg(p.leader) + (p.tyran ? '<div class="flames" aria-hidden="true">' + '<i></i>'.repeat(14) + '</div>' : '') + '</div>' + '<div class="who"><div class="ribbon" style="background:' + color(p.id) + ';color:#fff;border-color:#1b1a1d">' + esc(p.name) + '</div>' +
       '<div class="line"><span class="star gold" style="width:24px;height:24px;font-size:13px">' + p.mod + '</span><span>' + esc(FOF.LEADERS[p.leader].name) + '</span>' + (p.tyran ? '<span class="pill tyran">Tyran</span>' : '') + (p.pact !== null ? '<span class="pill pact">Pacte avec ' + esc(st.players[p.pact].name) + '</span>' : '') + '</div>' +
       '<div class="purse" data-gold="' + p.id + ':' + p.gold + '" title="Revenu : ' + inc.total + ' − entretien ' + inc.upkeep + '"><span class="coin"></span><b>' + p.gold + '</b><span class="muted" style="font-size:12.5px">or · revenu ' + (inc.total - inc.upkeep >= 0 ? '+' : '') + (inc.total - inc.upkeep) + '/tour</span></div></div></div>'];
-    h[0] = h[0].replace('<div class="me', '<div data-heroinfo="1" title="Voir la fiche du dirigeant" class="me');
+    h[0] = h[0].replace('<div class="me', '<div data-heroinfo="' + moiPid() + '" title="Voir la fiche du dirigeant" class="me');
     h.push('<div style="display:flex;gap:18px;align-items:center;min-width:0;flex-wrap:wrap"><div class="tracks" style="--pc:' + color(p.id) + '">' +
-      track('Territoires', '<img class="icn" src="assets/icons/terr.svg" alt="">', FOF.terrOf(st, p.id).length, v.mil) +
+      track('Territoires', '<img class="icn" src="assets/icons/terr.png" alt="">', FOF.terrOf(st, p.id).length, v.mil) +
       track('Temples', '<img class="icn" src="assets/icons/bld-T.png" alt="">', FOF.countBld(st, p.id, 'T'), v.rel) +
-      (p.tyran ? '<div class="track"><span class="lbl">' + FOF.ic('branch', 19) + ' Diplomatie</span><span class="pill tyran">Tyran : plus de diplomatie</span></div>' : track('Diplomatie', FOF.ic('branch', 19) + ' ', p.dip, v.dip)) + '</div>' +
+      (p.tyran ? '<div class="track"><span class="lbl">' + dipIcon(15) + ' Diplomatie</span><span class="pill tyran">Tyran : plus de diplomatie</span></div>' : track('Diplomatie', dipIcon(15) + ' ', p.dip, v.dip)) + '</div>' +
       '<div class="army">' + (army.length ? army.map(function (u) {
         var a = FOF.unitArt(u.key), done = u.fought || u.pacif || u.movesLeft <= 0;
         // v1.9.2 : bouton tête de mort - licencier une unité pour libérer une place et racheter
@@ -869,12 +880,25 @@
         '<p class="warn-line">La capitale donne +2 en défense et un troisième emplacement d’aménagement. Perdre la capitale vous élimine.</p>' +
         '<div class="actions"><button class="btn" data-close="1">Annuler</button><button class="btn gold" data-capitalgo="1">Oui, transférer · 8 or</button></div></div>';
     }
+    else if (modal && modal.kind === 'replacec') {
+      var rt = st.map.terr[modal.tid], rp = FOF.cur(st), vieux = rt.blds[modal.idx];
+      if (!vieux) { modal = prevModal; prevModal = null; }
+      else {
+        var av = FOF.BUILDINGS[vieux.t], ap = FOF.BUILDINGS[modal.btype], rcout = FOF.bldCost(st, rp, modal.btype);
+        h = '<div class="modal edouardc"><h2>' + FOF.ic('hammer', 20) + ' Remplacer cet aménagement ?</h2>' +
+          '<p>Sur <b>' + esc(rt.name) + '</b>, <b>' + esc(av.name.toLowerCase()) + '</b> serait rasé pour y élever <b>' + esc(ap.name.toLowerCase()) + '</b>.</p>' +
+          '<div class="ed-ledger"><span>Coût</span><b class="num">' + rcout + ' <i class="coin"></i></b><span>Après</span><b class="num' + (rp.gold - rcout < 2 ? ' low' : '') + '">' + (rp.gold - rcout) + ' <i class="coin"></i></b></div>' +
+          '<p class="warn-line danger">' + FOF.ic('warn', 16) + ' L’ancien aménagement est <b>perdu</b>, son coût n’est pas remboursé.</p>' +
+          (vieux.t === 'T' ? '<p class="warn-line danger">' + FOF.ic('warn', 16) + ' Un <b>temple</b> de moins vous éloigne de la victoire religieuse.</p>' : '') +
+          '<div class="actions"><button class="btn" data-close="1">Annuler</button><button class="btn gold" data-replacego="1">Oui, remplacer · ' + rcout + ' or</button></div></div>';
+      }
+    }
     else if (modal && modal.kind === 'settings') h = settingsHTML();
     else if (modal && modal.kind === 'help') h = helpHTML();
     else if (modal && modal.kind === 'gloss') h = glossHTML();
     else if (modal && modal.kind === 'deck') h = deckHTML();
     else if (modal && modal.kind === 'hero') {
-      var hp = modal.pid !== undefined ? st.players[modal.pid] : FOF.cur(st);
+      var hp = modal.pid !== undefined && st.players[modal.pid] ? st.players[modal.pid] : st.players[moiPid()];
       h = '<div class="modal"><h2 style="color:' + color(hp.id) + '">' + esc(hp.name) + '</h2>' + FOF.heroHTML(hp.leader) +
         '<div class="actions"><button class="btn primary" data-close="1">Fermer</button></div></div>';
     }
@@ -894,7 +918,7 @@
     }
     else if (modal && modal.kind === 'edouardc') {
       var ep = FOF.cur(st), after = ep.gold - 4;
-      h = '<div class="modal edouardc"><h2>' + FOF.ic('branch', 20) + ' Acheter 1 diplomatie ?</h2>' +
+      h = '<div class="modal edouardc"><h2>' + dipIcon(18) + ' Acheter 1 diplomatie ?</h2>' +
         '<p>Le pouvoir d’Edouard le Sage vous coûtera <b class="num">4</b> or et vous fera passer de <b class="num">' + ep.dip + '</b> à <b class="num">' + (ep.dip + 1) + '</b> en diplomatie' + (FOF.countBld(st, ep.id, 'A') ? ', <b>+2 avec votre Ambassade</b>' : '') + '.</p><p class="warn-line">Ce pouvoir ne sert qu’<b>une seule fois par partie</b>.</p>' +
         '<div class="ed-ledger"><span>Trésor</span><b class="num">' + ep.gold + ' <i class="coin"></i></b><span>Après l’achat</span><b class="num' + (after < 2 ? ' low' : '') + '">' + after + ' <i class="coin"></i></b></div>' +
         (st.round <= 1 ? '<p class="warn-line">Nous sommes au <b>tour 1</b> : avec ' + after + ' or il vous restera peu de quoi recruter. La plupart des unités coûtent 1 à 3 or.</p>'
@@ -917,7 +941,7 @@
   function collectHTML() {
     var cp = FOF.cur(st), c = st.collect, inc = c ? c.inc : FOF.income(st, cp), rows = [];
     function row(lbl, v, cls) { rows.push('<div class="lg ' + (cls || '') + '"><span>' + lbl + '</span><b>' + (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v) + '</b></div>'); }
-    row('<img class="icn" src="assets/icons/terr.svg" alt=""> Territoires × ' + inc.terr, inc.terr, 'plus');
+    row('<img class="icn" src="assets/icons/terr.png" alt=""> Territoires × ' + inc.terr, inc.terr, 'plus');
     if (inc.cities) row('<img class="icn" src="assets/icons/bld-Ci.png" alt=""> Cités × ' + inc.cities, inc.cities, 'plus');
     if (inc.ports) row('<img class="icn" src="assets/icons/bld-P.png" alt=""> Ports d’Aliénor × ' + inc.ports, inc.ports, 'plus');
     FOF.army(st, cp.id).forEach(function (u) {
@@ -954,7 +978,7 @@
     units = units || [];
     var troops = units.map(function (k) { var a = FOF.unitArt(k); return '<div class="trp' + (FOF.isElite(k) ? ' el' : '') + '">' + (a ? '<img src="' + a + '" alt="">' : '<div class="noart">' + esc(FOF.unitDef(k).name.slice(0, 2)) + '</div>') + '<span>' + esc(FOF.unitDef(k).name) + '</span></div>'; });
     if (lead) troops.unshift('<div class="trp lead">' + FOF.heroImg(q.leader, '') + '<span>' + esc(FOF.LEADERS[q.leader].name) + '</span></div>');
-    if (!troops.length) troops.push('<div class="trp none"><img src="assets/icons/terr.svg" alt=""><span>Garnison (aménagements)</span></div>');
+    if (!troops.length) troops.push('<div class="trp none"><img src="assets/icons/terr-or.png" alt=""><span>Garnison (aménagements)</span></div>');
     return '<div class="side" style="--sc:' + color(q.id) + '"><h4>' + esc(q.name) + '</h4><div class="troops">' + troops.join('') + '</div>' + det.map(function (x) { return '<div class="kv"><span>' + esc(x[0]) + '</span><b class="num">+' + x[1] + '</b></div>'; }).join('') +
       (die ? dieHTML(die, color(q.id)) + '<div class="total num reveal">' + tot + '</div>' : '<div class="total num">' + tot + ' + ' + FOF.ic('dice', 16) + '</div>') + '</div>';
   }
@@ -1116,7 +1140,7 @@
     if (!st) return;
     if (radial && !e.target.closest('#radial')) radial = null;
     if (e.target.closest('#boardWrap') && !e.target.closest('#popover') && !e.target.closest('#radial')) { if (!dragMoved) boardClick(e); return; }
-    var el = e.target.closest('[data-capitalgo],[data-setstyle],[data-setspeed],[data-setanim],[data-pause],[data-surrender],[data-endstats],[data-closestats],[data-closeradial],[data-act],[data-buy],[data-discard],[data-move],[data-conquer],[data-pacify],[data-effect],[data-build],[data-replace],[data-capital],[data-cede],[data-attack],[data-close],[data-resolve],[data-take],[data-tsel],[data-go],[data-next],[data-closepop],[data-cancel],[data-mini],[data-hidemarket],[data-showmarket],[data-heroinfo],[data-collectgo],[data-undo],[data-release],[data-killgo],[data-stack],[data-backphase]');
+    var el = e.target.closest('[data-capitalgo],[data-replacego],[data-setstyle],[data-setspeed],[data-setanim],[data-pause],[data-surrender],[data-endstats],[data-closestats],[data-closeradial],[data-act],[data-buy],[data-discard],[data-move],[data-conquer],[data-pacify],[data-effect],[data-build],[data-replace],[data-capital],[data-cede],[data-attack],[data-close],[data-resolve],[data-take],[data-tsel],[data-go],[data-next],[data-closepop],[data-cancel],[data-mini],[data-hidemarket],[data-showmarket],[data-heroinfo],[data-collectgo],[data-undo],[data-release],[data-killgo],[data-stack],[data-backphase]');
     if (!el) return;
     var ds = el.dataset, p = FOF.cur(st);
     var VIEW = ds.undo || ds.release || ds.stack || ds.capital || ds.capitalgo || ds.setstyle !== undefined || ds.setspeed !== undefined || ds.setanim !== undefined || ds.pause || ds.surrender || ds.closeradial || ds.closepop || ds.cancel || ds.hidemarket || ds.showmarket || ds.close || ds.heroinfo || ds.endstats || ds.closestats || ds.act === 'newgame';
@@ -1128,7 +1152,7 @@
     }
     if (ds.endstats) { modal = { kind: 'endstats' }; return render(); }
     if (ds.closestats) { modal = null; return render(); }
-    if (ds.close && modal && (modal.kind === 'gloss' || modal.kind === 'deck' || modal.kind === 'edouardc' || modal.kind === 'settings' || modal.kind === 'capitalc' || modal.kind === 'killc' || modal.kind === 'stack')) { modal = prevModal; prevModal = null; return render(); }
+    if (ds.close && modal && (modal.kind === 'gloss' || modal.kind === 'deck' || modal.kind === 'edouardc' || modal.kind === 'settings' || modal.kind === 'capitalc' || modal.kind === 'replacec' || modal.kind === 'killc' || modal.kind === 'stack')) { modal = prevModal; prevModal = null; return render(); }
     if (ds.heroinfo) { modal = { kind: 'hero' }; if (ds.heroinfo !== '1') modal.pid = +ds.heroinfo; return render(); }
     if (ds.closeradial) { radial = null; return render(); }
     if (radial && (ds.move || ds.conquer || ds.attack)) radial = null;
@@ -1187,7 +1211,9 @@
     if (ds.pacify) return dispatch({ type: 'pacify', uid: +ds.pacify, tid: +sel.slice(1) }, true);
     if (ds.effect) return dispatch({ type: 'effect', uid: +ds.effect, arg: ds.arg !== undefined ? +ds.arg : undefined }, true);
     if (ds.build) return dispatch({ type: 'build', tid: +ds.tid, btype: ds.build }, true);
-    if (ds.replace) return dispatch({ type: 'replace', tid: +ds.tid, idx: +ds.idx, btype: ds.replace }, true);
+    // v1.9.9 - un remplacement rase un aménagement payé : on demande confirmation.
+    if (ds.replace) { openOver('replacec'); modal.tid = +ds.tid; modal.idx = +ds.idx; modal.btype = ds.replace; return render(); }
+    if (ds.replacego) { var rm = modal; modal = prevModal; prevModal = null; return dispatch({ type: 'replace', tid: rm.tid, idx: rm.idx, btype: rm.btype }, true); }
     // v1.8 : un clic malheureux transférait la cour et coûtait 10 or sans prévenir (signalé en playtest).
     if (ds.capital) { openOver('capitalc'); modal.tid = +ds.capital; return render(); }
     if (ds.capitalgo) { var tidc = modal.tid; modal = prevModal; prevModal = null; return dispatch({ type: 'moveCapital', tid: tidc }); }

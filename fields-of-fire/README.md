@@ -1,6 +1,48 @@
-# Fields of Fire - version web (beta 1.9.8, prototype)
+# Fields of Fire - version web (beta 1.9.9, prototype)
 
 Jeu 100 % statique (HTML/CSS/JS, sans build). Servi par GitHub Pages sur https://nubegames.fr/fields-of-fire/ (dossier `fields-of-fire/` du repo `nubegamesfr.github.io`).
+
+## v1.9.9 - illustrations propres, pacte de l'Ambassadeur, retours de playtest (25/09/2026)
+
+- **Illustrations** : les 33 cartes d'unités, les 8 portraits de dirigeants et les 6 icônes de
+  bâtiments sont remplacés par des visuels appartenant à Nube Games. Plus aucune œuvre extérieure
+  dans le jeu : `CREDITS.md`, les mentions légales, les CGU et les pages du site sont mis à jour.
+  Second lot : les quatre icônes de terrain (`biome-*`), l'icône de diplomatie (`dip`, un traité scellé,
+  qui remplace le pictogramme SVG) et l'icône de territoires (`terr`, une bannière
+  au lion, qui remplace `terr.svg`, supprimé) ; le campement et l'ambassade sont redessinés.
+  Formats : unités 800 × 488, dirigeants 576 × 612, icônes détourées sur fond transparent en deux
+  teintes (#1E1810 pour les fonds clairs, #806934 pour les fonds sombres).
+- **Ambassadeur - pacte** : le pacte de non-agression ne tient plus que tant qu'un ambassadeur se
+  trouve sur la capitale de l'autre, comme l'annonçait déjà le texte de la carte. Dès qu'il part,
+  meurt ou que la capitale déménage, le pacte tombe SANS perte de diplomatie : ce n'est pas une
+  trahison. Corrige le bug signalé en playtest (conquérir un territoire donnait un point de
+  diplomatie à l'adversaire au titre d'une rupture de pacte dont l'ambassadeur était déjà parti).
+- **Ambassadeur - recrutement** : condition passée de « 3 diplomatie » à « 1 ambassade ». Un Tyran
+  ne peut toujours pas le recruter.
+- **Ambassade** : le remplacement d'aménagement permettait d'en poser une hors de sa capitale, et
+  à un Tyran d'en avoir une. Les deux contrôles manquants sont ajoutés.
+- **Remplacer un aménagement** demande désormais confirmation (coût, perte sèche de l'ancien,
+  avertissement si c'est un temple).
+- **Drapeau de capitale** retiré de la carte : le contour doré et la couronne suffisent.
+- **Musique** : volume nettement baissé. La réglette était linéaire et montait jusqu'à pleine
+  échelle ; elle suit maintenant une courbe perceptive plafonnée (-8 dB au maximum, environ -25 dB
+  au réglage par défaut, soit 15 dB sous la version précédente). Piste « Exploring Town » retirée.
+- **Fiche de dirigeant** : cliquer son propre portrait ouvrait la fiche du joueur ACTIF quand ce
+  n'était pas son tour en ligne. C'est bien la sienne désormais.
+- **Mers - RÈGLE NOUVELLE du créateur** : *une mer ne doit pas permettre de débarquer sur plus de
+  4 territoires à la fois* (`FOF.MAX_DEBARQUEMENTS`). Le découpage ne vise donc plus une taille en
+  cases mais un nombre de débarquements. Conséquence acceptée par le créateur : **une mer peut ne
+  border aucune terre** - c'est de la pleine mer, on y navigue, on n'y débarque pas. C'est ce qui
+  rend possibles les coupes au large, qui isolent forcément de telles poches.
+  Trois corrections rendaient la chose faisable : les traits peuvent désormais partir de n'importe
+  quel sommet de la mer visée (auparavant seulement d'un trait existant, donc jamais du large) ;
+  une coupe se juge sur la liste complète des mers et non sur la seule plus grande (deux mers à
+  égalité bloquaient toute coupe) ; une fusion de petites mers ne peut plus dépasser la règle des 4.
+  Mesuré sur 200 cartes : **0 échec de génération, 85 % des cartes respectent la règle** (max 4),
+  les 15 % restantes gardent une mer à 5. Toutes à 4 ou 5 joueurs : certaines côtes n'offrent
+  aucun tracé possible. Dans ce cas la meilleure carte rencontrée est servie plutôt que de refuser
+  de lancer la partie (`FOF.dernierePireDeb` donne le chiffre servi).
+  La plus grande mer passe de 26 cases à 10 au maximum ; comptez ~165 ms pour générer une carte.
 
 ## Modes
 - **Jeu local** : 3 à 6 joueurs sur un seul écran, sauvegarde automatique dans le navigateur.

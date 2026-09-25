@@ -23,7 +23,6 @@
       { t: 'Defeat Theme', a: 'RandomMind', f: 'defeat-theme.mp3', u: OGA + 'defeat_0.mp3' },
       { t: 'Lament for a Warrior\u2019s Soul', a: 'RandomMind', f: 'lament-for-a-warriors-soul.mp3', u: OGA + 'Lament_for_a_Warriors_Soul.mp3' },
       { t: 'GrassLands Theme', a: 'DST', f: 'grasslands-theme.mp3', u: OGA + 'DST-GrassLands.mp3' },
-      { t: 'Exploring Town', a: 'Spring Spring', f: 'exploring-town.ogg', u: OGA + 'Exploring%20Town_0.ogg' },
       { t: 'The Ancient Legend', a: 'vitalezzz', f: 'the-ancient-legend.mp3', u: OGA + 'the_ancient_legend_2.mp3' },
       { t: 'Adventurer\u2019s Path', a: 'vitalezzz', f: 'adventurers-path.mp3', u: OGA + 'adventurers_path_0.mp3' },
       { t: 'Journey With No Name', a: 'iamoneabe', f: 'journey-with-no-name.mp3', u: OGA + 'cresttest_0.mp3' }
@@ -37,7 +36,13 @@
       { t: 'Hope', a: 'MintoDog', f: 'hope.ogg', u: OGA + 'hope_orchestral_battle_music_bpm165_0.ogg' }
     ]
   };
-  var prefs = { vol: 0.35, sfx: 0.8, muted: false }, localOK = null; // localOK : les fichiers music/ existent-ils sur ce site ?
+  /* v1.9.9 - le volume était bien trop fort : la réglette était linéaire (1 % = amplitude 0,01)
+     et surtout le maximum tapait à pleine échelle, alors que les pistes sont masterisées fort.
+     Désormais la réglette suit une courbe perceptive et ne dépasse jamais PLAFOND : à réglette
+     pleine on est à -8 dB, au réglage par défaut à -25 dB environ, soit 15 dB sous l'ancien. */
+  var PLAFOND = 0.4;
+  function ampli(v) { v = Math.max(0, Math.min(1, v)); return PLAFOND * Math.pow(v, 2.5); }
+  var prefs = { vol: 0.45, sfx: 0.8, muted: false }, localOK = null; // localOK : les fichiers music/ existent-ils sur ce site ?
   try { var sv = JSON.parse(localStorage.getItem('fof-music')); if (sv) { if (typeof sv.vol === 'number') prefs.vol = sv.vol; if (typeof sv.sfx === 'number') prefs.sfx = sv.sfx; prefs.muted = !!sv.muted; } } catch (e) {}
   function savePrefs() { try { localStorage.setItem('fof-music', JSON.stringify(prefs)); } catch (e) {} }
 
@@ -88,7 +93,7 @@
   };
   Deck.prototype.next = function () { this.pos++; if (this.pos >= this.order.length) this.shuffle(); this.load(); if (this.level > 0) this.play(); ui(); };
   Deck.prototype.play = function () { if (!this.audio) this.load(); if (started && !prefs.muted) this.audio.play().catch(function () {}); };
-  Deck.prototype.apply = function () { if (this.audio) { this.audio.volume = Math.max(0, Math.min(1, prefs.vol * this.level)); this.audio.muted = prefs.muted; } };
+  Deck.prototype.apply = function () { if (this.audio) { this.audio.volume = Math.max(0, Math.min(1, ampli(prefs.vol) * this.level)); this.audio.muted = prefs.muted; } };
 
   var decks = { calm: new Deck('calm'), battle: new Deck('battle') }, active = 'calm', started = false, fadeT = null;
   decks.calm.level = 1;
@@ -140,7 +145,7 @@
   document.addEventListener('click', function (e) {
     var m = e.target.closest && e.target.closest('.music');
     if (m && e.target.closest('[data-mute]')) {
-      prefs.muted = !prefs.muted; if (!prefs.muted && prefs.vol === 0) prefs.vol = 0.35;
+      prefs.muted = !prefs.muted; if (!prefs.muted && prefs.vol === 0) prefs.vol = 0.45;
       savePrefs(); applyAll(); if (!started) start(); else if (!prefs.muted) decks[active].play();
       return ui();
     }

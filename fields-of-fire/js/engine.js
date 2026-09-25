@@ -166,6 +166,30 @@
     gainDip(st, def, 1, 'trahi par un pacte');
   }
 
+  /* v1.9.9 - un pacte ne vaut QUE tant qu'un ambassadeur se tient sur la capitale de l'autre,
+     comme l'annonce le texte de la carte (« tant qu'il y reste »). Dès qu'il la quitte, meurt,
+     est défaussé, ou que la capitale déménage, le pacte tombe de lui-même. Ce n'est PAS une
+     trahison : personne ne perd ni ne gagne de diplomatie. Avant cette version, le pacte survivait
+     au départ de l'ambassadeur, et une attaque ultérieure était comptée comme rupture. */
+  function ambassadeurEnPlace(st, p, q) {
+    return st.units.some(function (u) {
+      return u.key === 'ambassadeur' &&
+        ((u.owner === p.id && q.capital !== null && u.pos === 't' + q.capital) ||
+         (u.owner === q.id && p.capital !== null && u.pos === 't' + p.capital));
+    });
+  }
+  function verifierPactes(st) {
+    st.players.forEach(function (p) {
+      if (p.pact === null || p.pact === undefined) return;
+      var q = st.players[p.pact];
+      if (!q || !q.alive || q.pact !== p.id) { p.pact = null; return; }
+      if (ambassadeurEnPlace(st, p, q)) return;
+      p.pact = null; q.pact = null;
+      log(st, 'Plus d’ambassadeur sur la capitale : le pacte entre ' + p.name + ' et ' + q.name + ' ne tient plus.', p.id, 'pact');
+    });
+  }
+  FOF.pactActif = function (st, p, q) { return p.pact === q.id && q.pact === p.id && ambassadeurEnPlace(st, p, q); };
+
   /* ---------- unités ---------- */
   function discardUnit(st, u) {
     var i = st.units.indexOf(u); if (i < 0) return;
@@ -474,6 +498,10 @@
       if (p.tyran) return 'Un Tyran ne peut pas recruter cette unité.';
       if (p.dip < def.req[1]) return def.req[1] + ' de diplomatie requis.';
     } else if (FOF.countBld(st, p.id, def.req[0]) < def.req[1]) return 'Condition : ' + def.req[1] + ' × ' + B[def.req[0]].name + '.';
+    // v1.9.9 - la condition de l'Ambassadeur est passée de « 3 diplomatie » à « 1 ambassade ».
+    // L'interdiction faite au Tyran, portée jusqu'ici par la branche 'D', est conservée telle quelle :
+    // un tyran devenu tel APRÈS avoir bâti son ambassade la garde, mais ne recrute pas d'ambassadeur.
+    if (key === 'ambassadeur' && p.tyran) return 'Un Tyran ne peut pas recruter cette unité.';
     if (!FOF.deploySpots(st, key).length) return 'Aucun territoire pour la déployer.';
     return null;
   };
@@ -628,6 +656,10 @@
         if (st.phase !== 'build' || rt.ctrl !== p.id || !old || old.o !== p.id || old.t === a.btype) throw new Error('Remplacement impossible.');
         if (a.btype !== 'C' && rt.blds.some(function (b, i) { return i !== a.idx && b.t === a.btype; })) throw new Error('Déjà présent sur ce territoire.');
         if (a.btype === 'P' && !rt.seas.length) throw new Error('Un port doit être sur la côte.');
+        // v1.9.9 - le remplacement contournait les deux règles de l'ambassade : on pouvait en poser
+        // une hors de sa capitale, et un tyran pouvait s'en offrir une.
+        if (a.btype === 'A' && a.tid !== p.capital) throw new Error('Une ambassade ne se bâtit que dans votre capitale.');
+        if (a.btype === 'A' && p.tyran) throw new Error('Un tyran n’a plus de cour étrangère.');
         var rc = FOF.bldCost(st, p, a.btype); if (p.gold < rc) throw new Error('Pas assez d’or.');
         p.gold -= rc; rt.blds[a.idx] = { t: a.btype, o: p.id };
         log(st, p.name + ' fait raser ' + B[old.t].name.toLowerCase() + ' de ' + rt.name + ' pour y élever ' + B[a.btype].name.toLowerCase() + '.', p.id, 'build'); checkWin(st); break;
@@ -667,6 +699,7 @@
       }
       default: throw new Error('Action inconnue : ' + a.type);
     }
+    verifierPactes(st);
     advancePending(st);
     return st;
   };

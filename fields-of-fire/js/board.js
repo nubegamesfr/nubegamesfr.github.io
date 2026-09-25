@@ -616,9 +616,6 @@
     amb.fish = []; amb.nextFish = 2;
     amb.fox = null; amb.birds = null; amb.nextFox = 3; amb.nextBirds = 4;
   }
-  // Le drapeau de capitale est confiné à sa case. On teste, du plus grand au plus petit format et
-  // sur quelques décalages, si le mât et le battant tombent tous sur le territoire visé.
-  var flagCache = { key: null, v: {} };
   function inTerr(ux, uy, tid) {
     var rs = cache; if (!rs) return false;
     var gx = Math.floor((ux - rs.minX) * rs.S), gy = Math.floor((uy - rs.minY) * rs.S);
@@ -669,27 +666,6 @@
       if (ok) res = r;
     }
     return (ringCache.v[tid] = res);
-  }
-  function flagFit(tid, an) {
-    var rs = cache; if (!rs) return null;
-    if (flagCache.key !== rs.key) flagCache = { key: rs.key, v: {} };
-    if (flagCache.v[tid] !== undefined) return flagCache.v[tid];
-    // v1.9.2 : drapeau plus petit, et placé à l'écart des aménagements (dessinés juste au-dessus
-    // de l'ancre) et des pions (juste en dessous). On privilégie les côtés.
-    var SCALES = [0.72, 0.58, 0.46, 0.36], DX = [-19, 12, -24, 17, -13, 0], DY = [6, 6, -2, -2, 12, 12];
-    var res = null;
-    for (var si = 0; si < SCALES.length && !res; si++) {
-      var f = SCALES[si];
-      for (var di = 0; di < DX.length && !res; di++) {
-        var bx = an.x + DX[di] * f, by = an.y + DY[di] * f;
-        // points à vérifier : pied du mât, sommet, et les quatre coins du battant
-        var pts = [[0, 0], [0, -19], [0.8, -18.5], [13, -17.5], [13, -9], [6, -14]], all = true;
-        for (var q3 = 0; q3 < pts.length && all; q3++)
-          if (!inTerr(bx + pts[q3][0] * f, by + pts[q3][1] * f, tid)) all = false;
-        if (all) res = { x: bx, y: by, s: f };
-      }
-    }
-    return (flagCache.v[tid] = res);
   }
   function capHex(cid) { var c = (FOF.PLAYER_COLORS || []).filter(function (x) { return x.id === cid; })[0]; return c ? c.hex : '#b33'; }
   function newWave(anyAge) { var p = amb.seaPts[(Math.random() * amb.seaPts.length) | 0]; return { x: p.x, y: p.y, age: anyAge ? rnd(0, 4) : 0, life: rnd(3, 5), s: rnd(3, 5.5) }; }
@@ -752,20 +728,8 @@
       // décalage qui tiennent entièrement sur le territoire, sinon on ne le dessine pas.
       // v1.9.2 : anneau doré autour de la capitale - statique, sous l'interface, pour qu'on la
       // repère d'un coup d'œil même quand le drapeau est petit.
-      var fit = flagFit(pl.capital, an);
-      if (fit) {
-        var F = fit.s, fx0 = X(fit.x), fy0 = Y(fit.y), wv = Math.sin(ts / 520 + pi) * 1.1 * K * F;
-        c.strokeStyle = '#2a2118'; c.lineWidth = 1.6 * K * F; c.lineCap = 'round';
-        c.beginPath(); c.moveTo(fx0, fy0); c.lineTo(fx0, fy0 - 19 * K * F); c.stroke();
-        c.fillStyle = capHex(pl.color);
-        c.beginPath(); c.moveTo(fx0 + 0.8 * K * F, fy0 - 18.5 * K * F);
-        c.quadraticCurveTo(fx0 + 6 * K * F, fy0 - 20.5 * K * F + wv, fx0 + 13 * K * F, fy0 - 17.5 * K * F);
-        c.lineTo(fx0 + 13 * K * F, fy0 - 9 * K * F);
-        c.quadraticCurveTo(fx0 + 6 * K * F, fy0 - 12 * K * F + wv, fx0 + 0.8 * K * F, fy0 - 10 * K * F);
-        c.closePath(); c.fill();
-        c.strokeStyle = '#1b1712'; c.lineWidth = 0.7 * K * F; c.stroke();
-        c.fillStyle = '#e2b448'; c.beginPath(); c.arc(fx0, fy0 - 19.5 * K * F, 1.4 * K * F, 0, 7); c.fill();
-      }
+      // v1.9.9 - le drapeau de capitale est retiré : le contour doré de la case et la couronne
+      // le rendaient redondant, et il encombrait une case déjà chargée.
       for (var k2 = 0; k2 < 4; k2++) {
         var ph = ((ts / 1000 + pi * 0.37 + k2 * 0.8) % 3.2) / 3.2;
         var sx2 = X(an.x - 14 + Math.sin(ph * 5 + k2) * 1.5 + ph * 4), sy2 = Y(an.y - 20 - ph * 16);

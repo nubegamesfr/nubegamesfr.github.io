@@ -3,6 +3,10 @@
   'use strict';
 
   // RNG déterministe (mulberry32) : l'état du RNG vit dans la partie pour le futur multijoueur
+  /* Règle du créateur (25/09/2026) : une mer ne doit pas permettre de débarquer sur plus de
+     4 territoires à la fois. Une mer qui n'en borde aucun est permise : c'est de la pleine mer. */
+  FOF.MAX_DEBARQUEMENTS = 4;
+
   FOF.rng = function (state) {
     state.seed = (state.seed + 0x6D2B79F5) | 0;
     var t = state.seed;
@@ -79,10 +83,17 @@
     // et on ne descend d'un cran que s'il est réellement impossible à placer.
     var kmax = KMAX[n] || Math.min(n + 1, 4);
     var kVoulu = FOF.FORCE_K || (2 + ri(s, kmax - 1));
+    /* v1.9.9 - « une mer ne doit pas permettre de débarquer sur plus de 4 territoires ». La
+       découpe y arrive presque toujours, mais certaines configurations de côte n'offrent aucun
+       tracé possible : il reste alors une mer à 5. Plutôt que de refuser de lancer la partie, on
+       retient la meilleure carte rencontrée et on la sert en dernier recours. FOF.dernierePireDeb
+       donne le chiffre effectivement servi. */
+    var meilleure = null;
+    function garder(m) { if (m && (!meilleure || m.pireDeb < meilleure.pireDeb)) meilleure = m; return m; }
     for (var want = kVoulu; want >= 2; want--) {
       for (var attempt = 0; attempt < 300; attempt++) {
-        var m = tryGenerate(s, n, want);
-        if (m) return m;
+        var m = garder(tryGenerate(s, n, want));
+        if (m && m.pireDeb <= FOF.MAX_DEBARQUEMENTS) { FOF.dernierePireDeb = m.pireDeb; return m; }
       }
     }
     // Filet de sécurité : une carte sur trois cents environ échouait à trois joueurs et la partie
@@ -94,12 +105,13 @@
         FOF.SEA_EST = (n <= 3 ? 0.215 : 0.48) + 0.04 * (relache + 1);
         for (var w2 = kVoulu; w2 >= 2; w2--) {
           for (var a2 = 0; a2 < 200; a2++) {
-            var m2 = tryGenerate(s, n, w2);
-            if (m2) return m2;
+            var m2 = garder(tryGenerate(s, n, w2));
+            if (m2 && m2.pireDeb <= FOF.MAX_DEBARQUEMENTS) { FOF.dernierePireDeb = m2.pireDeb; return m2; }
           }
         }
       }
     } finally { FOF.SEA_EST = seuilInitial; }
+    if (meilleure) { FOF.dernierePireDeb = meilleure.pireDeb; return meilleure; }
     throw new Error('Carte impossible à générer');
   };
 
@@ -240,12 +252,16 @@
     var seas = decoupe.seas, nz = seas.length;
     terr.forEach(function (t) { t.seas = decoupe.seasOfT[t.id] || []; });
     if (terr.every(function (t) { return !t.seas.length; })) return null;
-    if (seas.some(function (z) { return !z.adjT.length; })) return null;
+    // v1.9.9 - une mer sans rivage est désormais permise (pleine mer). En revanche, aucune ne doit
+    // ouvrir sur plus de MAX_DEBARQUEMENTS territoires. On ne jette pas la carte ici : on note le
+    // pire chiffre, et generateMap garde la meilleure carte vue si aucune ne tient la règle.
+    var pireDeb = 0;
+    seas.forEach(function (z) { if (z.adjT.length > pireDeb) pireDeb = z.adjT.length; });
     var seen = { 0: true }, st = [0];
     while (st.length) { var a = st.pop(); seas[a].adjS.forEach(function (b2) { if (!seen[b2]) { seen[b2] = true; st.push(b2); } }); }
     if (Object.keys(seen).length !== nz) return null;
     names(s, terr);
-    return { W: W, H: H, terr: terr, seas: seas, water: water, seaRays: decoupe.rayons, seaTri: decoupe.triSea, nCont: targets.length };
+    return { W: W, H: H, terr: terr, seas: seas, water: water, seaRays: decoupe.rayons, seaTri: decoupe.triSea, nCont: targets.length, pireDeb: pireDeb };
   }
 
   /* ============================================================================
@@ -566,13 +582,27 @@
       liste = liste || rayons;
       function unir(a, b) { var ra = trouve(a), rb = trouve(b); if (ra === rb) return; pere[rb] = ra; }
       var aCote = {};
+      /* v1.9.9 - on suit aussi les territoires accessibles par mer : fusionner deux petites mers
+         pouvait faire passer le total au-dessus de la règle des 4 débarquements, et la coupe qui
+         suivait n'avait plus toujours de tracé possible pour réparer. */
+      var terrsDe = {};
       terr.forEach(function (t) {
         nbrs(t.hex % W, Math.floor(t.hex / W), W, H).forEach(function (j) {
           if (!waterSet[j]) return;
           var kv = areteVers(j, t.hex);
-          if (kv >= 0) aCote[trouve(triDe[j] + kv)] = true;
+          if (kv < 0) return;
+          var r0 = trouve(triDe[j] + kv);
+          aCote[r0] = true;
+          if (!terrsDe[r0]) terrsDe[r0] = {};
+          terrsDe[r0][t.id] = 1;
         });
       });
+      function debarqFusion(a, b) {
+        var u = {}, k;
+        for (k in (terrsDe[a] || {})) u[k] = 1;
+        for (k in (terrsDe[b] || {})) u[k] = 1;
+        return Object.keys(u).length;
+      }
       var rayMort = {}, bloque = {};
       for (var tour = 0; tour < 400; tour++) {
         var petite = -1, ps = 1e9;
@@ -597,6 +627,7 @@
             if (ra === rb || (ra !== petite && rb !== petite)) return;
             var autre = ra === petite ? rb : ra;
             if (strict && tailles[autre] + tailles[petite] > PLAFOND) return;
+            if (strict && debarqFusion(autre, petite) > FOF.MAX_DEBARQUEMENTS) return;
             if (tailles[autre] < cs) { cs = tailles[autre]; choix = l.ray; }
           });
         });
@@ -606,10 +637,13 @@
           if (l.ray !== choix) return;
           var ra = trouve(l.a), rb = trouve(l.b);
           if (ra === rb) return;
+          var fu = {}, kk;
+          for (kk in (terrsDe[ra] || {})) fu[kk] = 1;
+          for (kk in (terrsDe[rb] || {})) fu[kk] = 1;
           var na = tailles[ra] + tailles[rb];
           unir(ra, rb);
           var nr = trouve(ra);
-          tailles[nr] = na; aCote[nr] = aCote[ra] || aCote[rb];
+          tailles[nr] = na; aCote[nr] = aCote[ra] || aCote[rb]; terrsDe[nr] = fu;
           if (nr !== ra) delete tailles[ra];
           if (nr !== rb) delete tailles[rb];
         });
@@ -715,21 +749,95 @@
           if (ch) out.push(ch);
         }
       });
+      /* v1.9.9 - TROISIÈME famille de points de départ : les sommets de la mer visée elle-même.
+         Les deux familles précédentes ne partent que de traits EXISTANTS ; au milieu d'une grande
+         mer il n'y en a aucun, donc aucun candidat, donc aucune coupe possible : c'est pour cela
+         que des mers de 25 cases survivaient au plafond. On prend donc les coins des cases d'eau
+         de cette mer et on tire dans les six directions. Les garde-fous ne changent pas :
+         droitDepuis refuse toujours de longer une côte hors jonction. */
+      var vus = {};
+      water.forEach(function (h) {
+        if (out.length >= 90) return;
+        var appartient = false;
+        for (var q4 = 0; q4 < 6; q4++) if (G.trouve(triDe[h] + q4) === cible) appartient = true;
+        if (!appartient) return;
+        var cs4 = coinsDe(h, W);
+        for (var k4 = 0; k4 < 6; k4++) {
+          var k5 = cle(cs4[k4]);
+          if (vus[k5] || !som[k5]) continue;
+          vus[k5] = 1;
+          if (som[k5].terres > 0 && !estJonction[k5]) continue;
+          for (var d4 = 0; d4 < 6; d4++) {
+            var ch4 = droitDepuis(k5, d4, surTrait);
+            if (ch4 && ch4.length > 2) out.push(ch4);
+          }
+        }
+      });
       out.sort(function (a, b) { return b.length - a.length; });
-      return out.slice(0, 14);
+      return out.slice(0, 16);
     }
 
+    /* v1.9.9 - RÈGLE DU CRÉATEUR : « une mer ne doit pas permettre de débarquer sur plus de
+       4 territoires à la fois ». C'est donc le nombre de territoires accessibles, et non la taille
+       en cases, qui pilote le découpage. Une mer qui ne borde aucune terre est désormais permise :
+       c'est de la pleine mer, on y navigue, on n'y débarque pas. C'est précisément ce qui rend les
+       coupes en haute mer possibles, puisqu'elles isolent forcément des poches sans rivage.
+
+       terrDeTri[i] : le territoire sur lequel le triangle i permet de débarquer, ou -1. Un triangle
+       est une demi-arête d'une case d'eau : en face il y a une seule case, terre ou eau. */
+    var terrDeTri = new Int32Array(NT);
+    for (var iT = 0; iT < NT; iT++) terrDeTri[iT] = -1;
+    terr.forEach(function (t) {
+      nbrs(t.hex % W, Math.floor(t.hex / W), W, H).forEach(function (j) {
+        if (!waterSet[j]) return;
+        var kv = areteVers(j, t.hex);
+        if (kv >= 0) terrDeTri[triDe[j] + kv] = t.id;
+      });
+    });
+    // un seul balayage donne les deux classements : débarquements par mer, et tailles
+    function profil(G) {
+      var acc = {}, tail = {};
+      for (var i = 0; i < NT; i++) {
+        var r = G.trouve(i);
+        tail[r] = (tail[r] || 0) + 1;
+        if (!acc[r]) acc[r] = {};
+        if (terrDeTri[i] >= 0) acc[r][terrDeTri[i]] = 1;
+      }
+      var T = [], S = [], pire = null, n = -1;
+      Object.keys(acc).forEach(function (r) {
+        var k = Object.keys(acc[r]).length;
+        T.push(k); S.push(tail[r]);
+        if (k > n) { n = k; pire = +r; }
+      });
+      T.sort(function (a, b) { return b - a; }); S.sort(function (a, b) { return b - a; });
+      return { T: T, S: S, pire: pire, terres: n };
+    }
+
+    /* on compare des listes triées, pas un simple maximum : quand deux mers sont à égalité, couper
+       l'une ne fait pas baisser le maximum et aucune coupe ne serait jamais retenue.
+       [5,3,2] est meilleur que [5,5]. */
+    function mieuxQue(a, b) {
+      var n2 = Math.max(a.length, b.length);
+      for (var i = 0; i < n2; i++) { var x = a[i] || 0, y = b[i] || 0; if (x !== y) return x < y; }
+      return false;
+    }
     var F = construire(rayons), MORT = equilibrer(F, rayons);
     for (var ronde = 0; ronde < 20; ronde++) {
-      var pg = plusGrande(F);
-      if (pg.taille <= PLAFOND) break;
-      var cands = embranchements(F, pg.root, MORT.rayMort), mieux = null;
+      var ref = profil(F), pg = plusGrande(F);
+      var tropOuverte = ref.terres > FOF.MAX_DEBARQUEMENTS;
+      if (!tropOuverte && pg.taille <= PLAFOND) break;
+      var cible2 = tropOuverte ? ref.pire : pg.root;
+      var cands = embranchements(F, cible2, MORT.rayMort), mieux = null;
       cands.forEach(function (pts) {
         var liste = rayons.concat([{ pts: pts, fixe: true }]);
         var G = construire(liste);
-        var M = equilibrer(G, liste), p2 = plusGrande(G);
-        if (p2.taille >= pg.taille) return;
-        if (!mieux || p2.taille < mieux.t) mieux = { pts: pts, t: p2.taille, G: G, M: M };
+        var M = equilibrer(G, liste);
+        var pr = profil(G);
+        // on n'accepte que si l'on progresse : sur les débarquements d'abord, sur la taille ensuite
+        var gagneT = mieuxQue(pr.T, ref.T), egalT = !gagneT && !mieuxQue(ref.T, pr.T);
+        if (tropOuverte ? !gagneT : !(gagneT || (egalT && mieuxQue(pr.S, ref.S)))) return;
+        if (!mieux || mieuxQue(pr.T, mieux.pr.T) || (!mieuxQue(mieux.pr.T, pr.T) && mieuxQue(pr.S, mieux.pr.S)))
+          mieux = { pts: pts, pr: pr, G: G, M: M };
       });
       if (!mieux) break;
       rayons.push({ pts: mieux.pts, fixe: true });
