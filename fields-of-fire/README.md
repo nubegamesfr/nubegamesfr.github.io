@@ -1,6 +1,73 @@
-# Fields of Fire - version web (beta 1.9.9, prototype)
+# Fields of Fire - version web (beta 1.9.12, prototype)
 
 Jeu 100 % statique (HTML/CSS/JS, sans build). Servi par GitHub Pages sur https://nubegames.fr/fields-of-fire/ (dossier `fields-of-fire/` du repo `nubegamesfr.github.io`).
+
+## v1.9.12 - bots réécrits, direction artistique « table de guerre », catalogue (27/09/2026)
+
+- **Bots entièrement réécrits** (`js/bot.js`) : un plan par tour (la voie de victoire la plus
+  proche, avec un penchant pour celle du dirigeant), une économie tournée vers ce plan, des assauts
+  préparés (les élites convergent puis frappent ensemble), une garnison quand la capitale est
+  menacée, le harcèlement de celui qui court vers la victoire diplomatique, et le refus de lui
+  offrir des cessions. Mesuré sur 120 parties à 3-6 joueurs, moitié nouveaux / moitié anciens
+  bots : **92 % des victoires pour les nouveaux**, médiane 13 tours (parties humaines : 15).
+  Ce ne sont pas des mesures d'équilibrage.
+- **Direction artistique « table de guerre »** : plateau de bois, sous-mains de cuir cousus,
+  ferrures de laiton, sceau de cire pour les actions décisives, feutre vert pour le marché.
+  Tout en CSS, aucun fichier ajouté.
+- **Accueil** : un catalogue montre les 8 dirigeants et les 33 cartes du deck (filtre élites /
+  spéciales).
+- **Règles (décisions du créateur)** : Pèlerin - l'Ambassade ne s'ajoute qu'au gain de celui qui
+  joue la carte, pas au gain reçu ; Héraut et Prêtresse cumulables ; si l'hôte d'un ambassadeur
+  devient Tyran, le propriétaire de l'ambassadeur perd 1 ; seuls les aménagements que l'on a bâtis
+  soi-même peuvent être cédés (le bâtisseur est désormais noté sur chaque aménagement).
+
+## v1.9.11 - retours de playtest et décisions du créateur (27/09/2026)
+
+- **Un seul type de mer** : la « mer classique » est supprimée (case à cocher retirée de l'accueil et
+  du salon). Toutes les cartes suivent la règle stricte des 4 débarquements. Mesuré sur 400 cartes
+  (100 par effectif) : 0 hors règle ; génération médiane 36 à 295 ms, pire cas 1,5 s à 4 joueurs.
+- **Écran de génération** : carte d'hexagones qui se lève en vagues sous une rose des vents.
+- **Ambassadeur** : si l'ambassadeur n'est plus sur la capitale, quelle qu'en soit la raison
+  (rappel, licenciement, solde impayée, destruction, déménagement de la capitale hôte), son
+  propriétaire perd 1 diplomatie. La rupture par une attaque garde son régime (-2 / +1).
+- **Trébuchets** : un tir est une attaque contre le propriétaire de l'aménagement : 1 diplomatie
+  (sauf contre un Tyran), rupture d'un pacte, et il compte comme « avoir attaqué / été attaqué »
+  (Ambassade, Héraut, Edouard). Le joueur choisit l'aménagement visé, coût affiché. Peut viser
+  l'aménagement d'un tiers sur le territoire adverse.
+- **Partisan** : convertit tout sauf les temples.
+- **Maître d'œuvre, Prélat** : cumulables (deux exemplaires = double effet).
+- **Espion** : gratuit, sans entretien. Usage unique, à tout moment, même au tour d'un autre joueur :
+  1 or, il regarde la carte du dessus du deck, on la défausse ou non, puis l'Espion est défaussé.
+  Bouton dans le panneau des joueurs.
+- **Héraut** : bloqué aussi si l'on a été attaqué depuis son tour précédent (signalé en playtest),
+  et l'Ambassade n'ajoute plus rien à son gain.
+- **Ambassade** : le relais tenait compte des attaques du tour précédent mais pas de celles du tour
+  en cours. Attaquer puis livrer un Émissaire le même tour ne donne plus le +1.
+- **Bug corrigé - construction bloquée** : la fenêtre de confirmation de remplacement s'ouvrait
+  sans savoir quel aménagement remplacer ; l'interface plantait à chaque affichage et la phase de
+  construction restait bloquée. Même défaut sur la confirmation de déménagement de capitale.
+- **Passage en Tyran annoncé à tous** : l'annonce se perdait souvent, pour deux raisons. Les effets
+  visuels comparaient l'état d'une partie par sa graine aléatoire, qui change à chaque lancer de
+  dés : après un combat, toutes les annonces étaient sautées. Et le Tyran n'était cherché que dans
+  les 4 dernières lignes de chronique. Il est maintenant détecté sur l'état des joueurs, affiché
+  aussi avec les animations réduites, et se ferme d'un clic.
+- **Pions en mer hors de la carte** : une mer coupée par le bord du cadre plaçait ses pions contre
+  ce bord. Le bord compte désormais comme une frontière, et les pions restent dans le cadre
+  (1 500 pions posés en mer sur 30 cartes : 0 hors cadre).
+
+## v1.9.10 - règle stricte des 4 débarquements, rappel de l'Ambassadeur (27/09/2026)
+
+- **Mers (mer élargie)** : la règle des 4 débarquements devient stricte. Une carte dont une mer
+  ouvre sur plus de 4 territoires n'est plus jamais servie : on en génère une autre. Pendant ce
+  temps, un écran « Génération de la carte en cours » s'affiche ; personne n'est renvoyé du salon.
+  Mesuré sur 400 cartes en mer élargie : 44 hors règle en 1.9.9 (toutes à 4 joueurs, soit 44 %
+  des cartes à 4), 0 en 1.9.10. Conséquence : à 4 joueurs, toutes les cartes ont 3 continents (les
+  cartes à 2 continents n'étaient jamais conformes).
+- **Mer classique** : la règle stricte n'y est PAS appliquée pour l'instant. Aucune carte conforme
+  n'a été obtenue à 4 joueurs en mer classique (1 500 essais par nombre de continents) : la rendre
+  stricte bloquerait le lancement. Comportement de la 1.9.9 conservé en attendant une décision.
+- **Ambassadeur** : le rappeler de la capitale de l'autre coûte désormais 1 diplomatie à son
+  propriétaire, si ce départ fait tomber le pacte. Texte de la carte et glossaire mis à jour.
 
 ## v1.9.9 - illustrations propres, pacte de l'Ambassadeur, retours de playtest (25/09/2026)
 

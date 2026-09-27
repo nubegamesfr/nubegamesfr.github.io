@@ -114,7 +114,7 @@
   /* ================= rendu ================= */
   function render() {
     if (!st) return;
-    var viewModal = modal && (modal.kind === 'gloss' || modal.kind === 'deck' || modal.kind === 'help' || modal.kind === 'endstats' || modal.kind === 'hero' || modal.kind === 'edouardc' || modal.kind === 'settings' || modal.kind === 'capitalc' || modal.kind === 'replacec' || modal.kind === 'killc' || modal.kind === 'stack');
+    var viewModal = modal && (modal.kind === 'gloss' || modal.kind === 'deck' || modal.kind === 'help' || modal.kind === 'endstats' || modal.kind === 'hero' || modal.kind === 'edouardc' || modal.kind === 'settings' || modal.kind === 'capitalc' || modal.kind === 'replacec' || modal.kind === 'killc' || modal.kind === 'stack' || modal.kind === 'spy');
     if (st.turnNo !== lastTurnShown && !st.winner && !viewModal && !modal) { lastTurnShown = st.turnNo; if ((!net || net.seatIndex() === st.cur) && !st.players[st.cur].bot) modal = { kind: 'turn' }; }
     if (st.winner && !viewModal) modal = { kind: 'victory' };
     var before = FOF.FX ? FOF.FX.before() : null;
@@ -196,6 +196,16 @@
     setHTML($('roundChip'), 'Tour ' + st.round + (net ? ' · <span class="room-code" title="Code du salon">' + net.code + '</span> · vous : <b style="color:' + color(net.seatIndex()) + '">' + esc(st.players[net.seatIndex()].name) + '</b>' : ''));
   }
 
+  /* v1.9.11 - l'Espion se joue à tout moment, même au tour d'un autre : son bouton est dans le
+     panneau des joueurs. En ligne, seul son propriétaire le voit ; en local, tout joueur humain. */
+  function peutAgirPour(pid) { var q = st.players[pid]; return !!q && q.alive && !q.bot && !st.winner && (!net || net.seatIndex() === pid); }
+  function espionBtn(p) {
+    if (!peutAgirPour(p.id)) return '';
+    var vu = st.spies && st.spies[p.id];
+    if (vu) return '<button class="btn small gold spy-btn" data-spyview="' + p.id + '">' + FOF.ic('cards', 13) + ' Carte espionnée</button>';
+    if (!FOF.army(st, p.id).some(function (u) { return u.key === 'espion'; })) return '';
+    return '<button class="btn small gold spy-btn" data-spy="' + p.id + '" ' + (p.gold < 1 ? 'disabled title="Il faut 1 or"' : 'title="Usage unique : 1 or, vous regardez la carte du dessus du deck"') + '>' + FOF.ic('cards', 13) + ' Espion · 1 or</button>';
+  }
   function renderOpponents() {
     setHTML($('players'), '<div class="section-title">Dirigeants</div>' + st.players.map(function (p) {
       var terr = FOF.terrOf(st, p.id).length, tem = FOF.countBld(st, p.id, 'T');
@@ -207,6 +217,7 @@
         '<span title="Diplomatie">' + dipIcon(13) + ' <b>' + (p.tyran ? '-' : p.dip) + '</b></span>' +
         '<span title="Territoires"><img class="icn" src="assets/icons/terr.png" alt=""> <b>' + terr + '/' + st.victory.mil + '</b></span>' +
         '<span title="Temples"><img class="icn" src="assets/icons/bld-T.png" alt=""> <b>' + tem + '/' + st.victory.rel + '</b></span></div>' +
+        espionBtn(p) +
         (busy ? '<div class="thinking-row">' + FOF.ic(p.bot ? 'helm' : 'crown', 13) + ' <span>' + (p.bot ? 'réfléchit' : PHASE_SHORT[st.phase]) + '</span><i class="d"></i><i class="d"></i><i class="d"></i></div>' : '') +
         '</div></div>';
     }).join(''));
@@ -303,6 +314,12 @@
       var a = anchorOf(loc, 0, false, false);
       var tb = loc[0] === 't' ? m.terr[+loc.slice(1)].biome : null;
       var list = byLoc[loc], n = Math.min(list.length, 5), gap = 24;
+      // v1.9.11 - la rangée de pions (et le « +N ») reste toujours dans le cadre de la carte
+      var bb = FOF.Board.bounds();
+      if (bb) {
+        var demi = ((list.length > 5 ? 3 : (n - 1) / 2) * gap) + 16;
+        a = { x: Math.max(bb.x + demi, Math.min(bb.x + bb.w - demi, a.x)), y: Math.max(bb.y + 4, Math.min(bb.y + bb.h - 30, a.y)) };
+      }
       list.slice(0, 5).forEach(function (it, i) {
         var x = a.x + (i - (n - 1) / 2) * gap, y = a.y + 13;
         var col = color(it.owner), mine = it.owner === p.id, piece = it.leader ? 'L' : it.uid;
@@ -585,7 +602,7 @@
 
     if (st.phase === 'build' && t) {
       if (t.ctrl === p.id) h.push(buildPanel(p, t));
-      else if (t.ctrl !== null && t.blds.some(function (b) { return b.o === p.id; }) && !p.tyran) h.push('<button class="btn primary" data-cede="' + t.id + '">Céder mes aménagements (+1 diplomatie)</button>');
+      else if (t.ctrl !== null && t.blds.some(function (b) { return FOF.cedable(b, p.id); }) && !p.tyran) h.push('<button class="btn primary" data-cede="' + t.id + '">Céder mes aménagements (+1 diplomatie)</button>');
     }
     // pièces
     var rows = [];
@@ -626,9 +643,14 @@
       }
     }
     var eff = FOF.effectAvailable(st, u);
-    if (eff && u.key === 'partisan' && st.phase === 'military' && t) {
-      // le joueur choisit l'aménagement à retourner
-      t.blds.forEach(function (b, i) { if (b.o === t.ctrl && b.t !== 'T') acts.push('<button class="btn small primary" data-effect="' + u.uid + '" data-arg="' + i + '">Retourner : ' + esc(FOF.BUILDINGS[b.t].name) + '</button>'); });
+    if (eff && u.key === 'trebuchets' && st.phase === 'military' && t) {
+      // v1.9.11 - le joueur choisit l'aménagement visé ; le tir est une attaque, son coût est affiché.
+      // (Le Partisan affichait ici un bouton par aménagement alors qu'il les convertit tous.)
+      t.blds.forEach(function (b, i) {
+        if (b.o === p.id) return;
+        var q = st.players[b.o], cout = q.tyran ? 0 : 1 + (b.t === 'T' ? 1 : 0) + (p.pact === q.id ? 2 : 0);
+        acts.push('<button class="btn small primary" data-effect="' + u.uid + '" data-arg="' + i + '" title="' + (cout ? '-' + cout + ' diplomatie' + (p.pact === q.id ? ', rupture du pacte' : '') : 'gratuit : cible Tyran') + '">Détruire : ' + esc(FOF.BUILDINGS[b.t].name) + (b.o !== t.ctrl ? ' (' + esc(q.name) + ')' : '') + (cout ? ' · -' + cout + ' diplo.' : '') + '</button>');
+      });
     } else if (eff && (st.phase === 'military' || (u.key === 'exploratrice' && st.phase === 'collect'))) acts.push('<button class="btn small primary" data-effect="' + u.uid + '">' + esc(eff) + '</button>');
     return '<div class="pc-row" style="--pc:' + color(p.id) + '">' + (a ? '<img src="' + a + '" alt="">' : '') + '<div class="t"><b>' + esc(d.name) + '</b><small>' + info + '</small></div>' + acts.join('') + '</div>';
   }
@@ -640,7 +662,7 @@
     P:  ['+1 déf.',             'Port - +1 en défense, et vos unités peuvent embarquer depuis cette case.'],
     Ci: ['+1 or/tour',          'Cité - +1 or à chaque collecte. Beaucoup de cartes exigent des cités.'],
     T:  ['victoire religieuse', 'Temple - compte pour la victoire religieuse. Il occupe un emplacement d’aménagement. Le détruire coûte 1 diplomatie à l’assaillant.'],
-    A:  ['+1 par gain diplo.',  'Ambassade - chaque gain de diplomatie obtenu par une action (unité, carte, pouvoir, cession) en rapporte 1 de plus. Uniquement si vous n’avez ni attaqué ni été attaqué depuis votre dernier tour. Une seule, dans votre capitale, où elle occupe un emplacement.']
+    A:  ['+1 par gain diplo.',  'Ambassade - chaque gain de diplomatie obtenu par une action (unité, carte, pouvoir, cession) en rapporte 1 de plus, sauf celui du Héraut. Uniquement si vous n’avez ni attaqué ni été attaqué depuis votre dernier tour. Une seule, dans votre capitale, où elle occupe un emplacement.']
   };
   function buildPanel(p, t) {
     var slots = FOF.slotsOf(st, p, t.id);
@@ -654,7 +676,7 @@
     var mine = t.blds.map(function (b, i) { return [b, i]; }).filter(function (x) { return x[0].o === p.id; });
     mine.forEach(function (x) {
       h.push('<div class="section-title" style="margin-top:10px">Remplacer ' + FOF.BUILDINGS[x[0].t].name.toLowerCase() + ' par</div><div class="bgrid">' + FOF.BUILDING_ORDER.filter(function (b) { return b !== x[0].t; }).map(function (b) {
-        var bad = p.gold < FOF.bldCost(st, p, b) || (b !== 'C' && t.blds.some(function (o, i) { return i !== x[1] && o.t === b; })) || (b === 'P' && !t.seas.length);
+        var bad = p.gold < FOF.bldCost(st, p, b) || (b !== 'C' && t.blds.some(function (o, i) { return i !== x[1] && o.t === b; })) || (b === 'P' && !t.seas.length) || (b === 'A' && (t.id !== p.capital || p.tyran));
         return '<button class="bbtn" data-replace="' + b + '" data-idx="' + x[1] + '" data-tid="' + t.id + '" ' + (bad ? 'disabled' : '') + '>' + bIconOr(b, 20) + '<span class="price">' + FOF.bldCost(st, p, b) + '<span class="coin"></span></span></button>';
       }).join('') + '</div>');
     });
@@ -673,15 +695,13 @@
     if (st.phase !== 'recruit' || st.pending.length || !myTurn()) { el.hidden = true; if (bd0) bd0.style.setProperty('--mh', '0px'); return; }
     var mini = !marketOpen;
     el.className = 'market' + (mini ? ' compact' : '');
-    var spy = FOF.army(st, p.id).some(function (u) { return u.key === 'espion'; });
     var toggle = mini
       ? '<button class="btn small ghost" data-showmarket="1" title="Réafficher les cartes en entier">Agrandir les cartes ▴</button>'
       : '<button class="btn small ghost" data-hidemarket="1" title="Réduire les cartes pour regarder la carte">Regarder la carte ▾</button>';
     var h = ['<h3>Zone de recrutement · 1 achat et 1 défausse par tour ' + toggle + '</h3>' +
       '<div class="market-inner"' + (mini && !(mode && mode.kind === 'deploy') ? ' data-showmarket="1" title="Cliquez pour revoir les cartes en entier"' : '') + '>'];
     h.push('<div class="deckpile"><img src="assets/cardback.jpg" alt="Deck"><span>Deck : <b class="num">' + st.deck.length + '</b><br>Défausse : <b class="num">' + st.discard.length + '</b></span>' +
-      (spy ? '<button class="btn small gold" data-act="spy" ' + (p.flags.spied || p.gold < 1 ? 'disabled' : '') + '>Espion (1 or)</button>' : '') +
-      (st.spy && st.spy.pid === p.id ? '<span>Dessus : <b>' + esc(FOF.unitDef(st.spy.key).name) + '</b></span>' : '') + '</div>');
+      '</div>');
     st.zone.forEach(function (k, i) {
       if (!k) { h.push('<div></div>'); return; }
       var why = FOF.canBuy(st, k), d = FOF.unitDef(k);
@@ -778,7 +798,7 @@
     var h = [];
     var p = FOF.cur(st);
     if (st.phase === 'build') {
-      var ced = st.map.terr.filter(function (t) { return t.ctrl !== null && t.ctrl !== p.id && t.blds.some(function (b) { return b.o === p.id; }); });
+      var ced = st.map.terr.filter(function (t) { return t.ctrl !== null && t.ctrl !== p.id && t.blds.some(function (b) { return FOF.cedable(b, p.id); }); });
       if (ced.length && !p.tyran) h.push('<div class="box"><div class="section-title">Céder (+1 diplomatie)</div>' + ced.map(function (t) { return '<div class="kv"><span>' + esc(t.name) + '</span><button class="btn small" data-cede="' + t.id + '">Céder</button></div>'; }).join('') + '</div>');
     }
     if (err && !pop) h.push('<div class="box"><div class="err" style="margin:0">' + esc(err) + '</div></div>');
@@ -789,9 +809,15 @@
   /* ---------- modales ---------- */
   // ouvre le glossaire / le deck par-dessus ce qui est affiché, et rend la main ensuite
   var prevModal = null;
-  function openOver(kind) {
+  // v1.9.11 - les champs de la modale (props) sont posés AVANT le rendu. Avant, la modale de
+  // remplacement était dessinée sans tid : le rendu plantait à chaque passage et la phase de
+  // construction restait bloquée (signalé en playtest : « impossible de remplacer un campement par
+  // un fort, puis plus rien ne se construit »).
+  function openOver(kind, props) {
     if (modal && modal.kind !== kind) prevModal = modal; else if (!modal) prevModal = null;
-    modal = { kind: kind }; render();
+    modal = { kind: kind };
+    if (props) Object.keys(props).forEach(function (k) { modal[k] = props[k]; });
+    render();
   }
   // v1.8 : réglages regroupés. Le style de carte, la vitesse des bots et les animations
   // occupaient chacun un bouton dans un en-tête déjà très chargé.
@@ -843,6 +869,14 @@
         }).join('') + '</div></div>';
     } else if (modal && modal.kind === 'attack') h = attackHTML(modal);
     else if (modal && modal.kind === 'turn') h = collectHTML();
+    else if (modal && modal.kind === 'spy') {
+      var vs = st.spies && st.spies[modal.pid];
+      h = vs ? '<div class="modal edouardc spy-modal"><h2>' + FOF.ic('cards', 20) + ' Le rapport de votre Espion</h2>' +
+        '<p>' + esc(st.players[modal.pid].name) + ', voici la carte du dessus du deck. Vous seul la voyez.</p>' +
+        '<div class="spy-card">' + FOF.cardHTML(vs.key) + '</div>' +
+        '<div class="actions"><button class="btn" data-spydecide="0">La laisser sur le deck</button><button class="btn gold" data-spydecide="1">La défausser</button></div></div>'
+        : '<div class="modal"><p>Aucune carte espionnée.</p><div class="actions"><button class="btn primary" data-close="1">Fermer</button></div></div>';
+    }
     else if (modal && modal.kind === 'killc') {
       var uk = st.units.filter(function (x) { return x.uid === modal.uid; })[0];
       h = uk ? '<div class="modal edouardc"><h2>' + FOF.ic('skull', 20) + ' Licencier ' + esc(FOF.unitDef(uk.key).name) + ' ?</h2>' +
@@ -1043,10 +1077,10 @@
     ['Pacifier', 'Sur un de vos territoires où restent des aménagements d’un autre joueur : laissez-y une unité d’élite un tour entier et ils deviennent les vôtres.'],
     ['Convertir', 'Changer le propriétaire d’un aménagement.'],
     ['Remplacer', 'Changer le type d’un de vos aménagements en payant le prix du nouveau. L’ancien disparaît.'],
-    ['Céder', 'Donnez vos aménagements situés chez un autre joueur : +1 diplomatie par territoire. Il ne peut pas refuser.'],
+    ['Céder', 'Donnez les aménagements que vous avez bâtis et qui se trouvent chez un autre joueur : +1 diplomatie par territoire. Il ne peut pas refuser. Un aménagement pris par conversion ne se cède pas.'],
     ['Diplomatie', 'Ressource qui dépend de vos interactions avec les autres joueurs. Vous pouvez en gagner et en perdre.'],
     ['Tyran', 'Ce que devient celui qui attaque sans diplomatie : il n’en gagne plus, tout le monde peut l’attaquer gratuitement, et un de ses territoires se révolte à chaque tour.'],
-    ['Pacte', 'Accord de non-agression apporté par l’Ambassadeur. Le rompre coûte 2 diplomatie.'],
+    ['Pacte', 'Accord de non-agression apporté par l’Ambassadeur. Le rompre en attaquant coûte 2 diplomatie. Si l’ambassadeur quitte la capitale, pour quelque raison que ce soit, son propriétaire perd 1 diplomatie.'],
     ['Zone de recrutement', 'Les 5 cartes face visible du marché. Un achat et une défausse par tour.'],
     ['Déployer', 'Poser l’unité achetée sur un de vos territoires qui possède l’aménagement demandé par sa carte.']
   ];
@@ -1125,7 +1159,7 @@
       '<div class="section-title">Diplomatie et tyrannie</div>' +
       '<p>La diplomatie est à la fois une voie de victoire et la monnaie de la guerre.</p>' +
       '<ul class="rules-l"><li>Vous en <b>perdez</b> 1 par attaque, et 1 de plus pour dévaster.</li>' +
-      '<li>Vous en <b>gagnez</b> en jouant des émissaires sur les capitales adverses, et en cédant volontairement vos aménagements chez un autre joueur (+1 par territoire cédé).</li>' +
+      '<li>Vous en <b>gagnez</b> en jouant des émissaires sur les capitales adverses, et en cédant volontairement les aménagements que vous avez bâtis chez un autre joueur (+1 par territoire cédé).</li>' +
       '<li>À <b>0</b>, un joueur qui attaque quand même devient <b>Tyran</b> : il ne gagne plus jamais de diplomatie, tout le monde peut l\'attaquer sans rien payer, et un de ses territoires se révolte à chaque tour.</li>' +
       '<li>Un territoire qui s’est soulevé contre un tyran lui est <b>fermé</b> : il ne peut plus le conquérir ni s’y établir tant qu’un autre joueur ne l\'a pas repris.</li></ul>' +
 
@@ -1140,7 +1174,7 @@
     if (!st) return;
     if (radial && !e.target.closest('#radial')) radial = null;
     if (e.target.closest('#boardWrap') && !e.target.closest('#popover') && !e.target.closest('#radial')) { if (!dragMoved) boardClick(e); return; }
-    var el = e.target.closest('[data-capitalgo],[data-replacego],[data-setstyle],[data-setspeed],[data-setanim],[data-pause],[data-surrender],[data-endstats],[data-closestats],[data-closeradial],[data-act],[data-buy],[data-discard],[data-move],[data-conquer],[data-pacify],[data-effect],[data-build],[data-replace],[data-capital],[data-cede],[data-attack],[data-close],[data-resolve],[data-take],[data-tsel],[data-go],[data-next],[data-closepop],[data-cancel],[data-mini],[data-hidemarket],[data-showmarket],[data-heroinfo],[data-collectgo],[data-undo],[data-release],[data-killgo],[data-stack],[data-backphase]');
+    var el = e.target.closest('[data-capitalgo],[data-replacego],[data-setstyle],[data-setspeed],[data-setanim],[data-pause],[data-surrender],[data-endstats],[data-closestats],[data-closeradial],[data-act],[data-buy],[data-discard],[data-move],[data-conquer],[data-pacify],[data-effect],[data-build],[data-replace],[data-capital],[data-cede],[data-attack],[data-close],[data-resolve],[data-take],[data-tsel],[data-go],[data-next],[data-closepop],[data-cancel],[data-mini],[data-hidemarket],[data-showmarket],[data-heroinfo],[data-collectgo],[data-undo],[data-release],[data-killgo],[data-stack],[data-backphase],[data-spy],[data-spyview],[data-spydecide]');
     if (!el) return;
     var ds = el.dataset, p = FOF.cur(st);
     var VIEW = ds.undo || ds.release || ds.stack || ds.capital || ds.capitalgo || ds.setstyle !== undefined || ds.setspeed !== undefined || ds.setanim !== undefined || ds.pause || ds.surrender || ds.closeradial || ds.closepop || ds.cancel || ds.hidemarket || ds.showmarket || ds.close || ds.heroinfo || ds.endstats || ds.closestats || ds.act === 'newgame';
@@ -1152,11 +1186,15 @@
     }
     if (ds.endstats) { modal = { kind: 'endstats' }; return render(); }
     if (ds.closestats) { modal = null; return render(); }
-    if (ds.close && modal && (modal.kind === 'gloss' || modal.kind === 'deck' || modal.kind === 'edouardc' || modal.kind === 'settings' || modal.kind === 'capitalc' || modal.kind === 'replacec' || modal.kind === 'killc' || modal.kind === 'stack')) { modal = prevModal; prevModal = null; return render(); }
+    if (ds.close && modal && (modal.kind === 'gloss' || modal.kind === 'deck' || modal.kind === 'edouardc' || modal.kind === 'settings' || modal.kind === 'capitalc' || modal.kind === 'replacec' || modal.kind === 'killc' || modal.kind === 'stack' || modal.kind === 'spy')) { modal = prevModal; prevModal = null; return render(); }
     if (ds.heroinfo) { modal = { kind: 'hero' }; if (ds.heroinfo !== '1') modal.pid = +ds.heroinfo; return render(); }
     if (ds.closeradial) { radial = null; return render(); }
     if (radial && (ds.move || ds.conquer || ds.attack)) radial = null;
     if (ds.collectgo) { modal = null; if (st.phase === 'collect' && !st.pending.length) return dispatch({ type: 'nextPhase' }); return render(); }
+    // Espion : action hors tour (force), puis la modale montre la carte à son seul propriétaire
+    if (ds.spy !== undefined) { var spid = +ds.spy; dispatch({ type: 'spy', pid: spid }, true, true); if (!err) openOver('spy', { pid: spid }); return; }
+    if (ds.spyview !== undefined) return openOver('spy', { pid: +ds.spyview });
+    if (ds.spydecide !== undefined) { var sm = modal; modal = prevModal; prevModal = null; return dispatch({ type: 'spyDecide', pid: sm.pid, discard: ds.spydecide === '1' }, true, true); }
     if (!VIEW && !myTurn()) { err = 'Ce n’est pas à vous de jouer.'; pop = null; return render(); }
     if (ds.undo) return undoMove();
     if (ds.backphase) { mode = null; pop = null; modal = null; return dispatch({ type: 'prevPhase' }); }
@@ -1166,7 +1204,6 @@
     if (ds.next) { if (mode && mode.kind === 'deploy') { err = 'Déployez d’abord votre unité sur un territoire qui clignote, ou annulez l’achat.'; marketOpen = true; return render(); } mode = null; pop = null; modal = null; return dispatch({ type: 'nextPhase' }); }
     if (ds.act === 'edouard') { openOver('edouardc'); return; }
     if (ds.act === 'edouardgo') { modal = prevModal; prevModal = null; return dispatch({ type: 'edouard' }); }
-    if (ds.act === 'spy') return dispatch({ type: 'spy' });
     // v1.8 : pause - on quitte l'écran de jeu sans rien abandonner. La sauvegarde locale et le
     // salon en ligne restent en place ; la règle des 48 h existante ferme la partie si personne ne revient.
     if (ds.setstyle !== undefined) {
@@ -1212,10 +1249,10 @@
     if (ds.effect) return dispatch({ type: 'effect', uid: +ds.effect, arg: ds.arg !== undefined ? +ds.arg : undefined }, true);
     if (ds.build) return dispatch({ type: 'build', tid: +ds.tid, btype: ds.build }, true);
     // v1.9.9 - un remplacement rase un aménagement payé : on demande confirmation.
-    if (ds.replace) { openOver('replacec'); modal.tid = +ds.tid; modal.idx = +ds.idx; modal.btype = ds.replace; return render(); }
+    if (ds.replace) return openOver('replacec', { tid: +ds.tid, idx: +ds.idx, btype: ds.replace });
     if (ds.replacego) { var rm = modal; modal = prevModal; prevModal = null; return dispatch({ type: 'replace', tid: rm.tid, idx: rm.idx, btype: rm.btype }, true); }
     // v1.8 : un clic malheureux transférait la cour et coûtait 10 or sans prévenir (signalé en playtest).
-    if (ds.capital) { openOver('capitalc'); modal.tid = +ds.capital; return render(); }
+    if (ds.capital) return openOver('capitalc', { tid: +ds.capital });
     if (ds.capitalgo) { var tidc = modal.tid; modal = prevModal; prevModal = null; return dispatch({ type: 'moveCapital', tid: tidc }); }
     if (ds.cede) return dispatch({ type: 'cede', tid: +ds.cede });
     if (ds.attack) { pop = null; modal = { kind: 'attack', loc: ds.attack, withLeader: false }; return render(); }
@@ -1239,7 +1276,7 @@
     if (ds.go) return 'charge';
     if (ds.attack || ds.tsel) return 'draw';
     if (ds.take) return 'spend';
-    if (ds.act === 'spy') return 'card';
+    if (ds.spy !== undefined || ds.spydecide !== undefined) return 'card';
     return 'click';
   }
   document.addEventListener('change', function (e) { if (e.target.id === 'withLeader' && modal) { modal.withLeader = e.target.checked; render(); } });

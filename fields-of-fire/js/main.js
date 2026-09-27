@@ -5,7 +5,6 @@
   var esc = function (s) { return FOF.esc(s); };
   var count = 4, rows = [], picking = null, room = null, step = 'mode';
   var tutoWanted = true; try { tutoWanted = localStorage.getItem('fof-tuto') !== '0'; } catch (e) {}
-  var wideSea = true; try { wideSea = localStorage.getItem('fof-widesea') !== '0'; } catch (e) {}
   var DEFAULT_NAMES = ['Aurèle', 'Bérénice', 'Corentin', 'Daphné', 'Élouan', 'Faustine'];
   var LEAD_KEYS = Object.keys(FOF.LEADERS);
   var TRIAL = ['hugues', 'alienor'];
@@ -30,11 +29,47 @@
       + (6 + n) + ' temples ou ' + (4 + n) + ' de diplomatie.';
   }
   function setErr(msg) { $('netErr').textContent = msg || ''; }
+  /* v1.9.10 - écran « Génération de la carte en cours ». La carte doit respecter strictement la
+     règle des 4 débarquements : il faut parfois plusieurs passes (jusqu'à ~1 s mesurée à 4 joueurs).
+     Personne n'est renvoyé du salon pendant ce temps : on affiche simplement ce voile. */
+  function ecranGeneration(on) {
+    var el = $('genMap');
+    if (!on) {
+      if (!el || el.classList.contains('fin')) return;
+      el.classList.add('fin'); setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 450);
+      clearInterval(el._t); return;
+    }
+    if (el) return;
+    // v1.9.11 - une carte d'hexagones qui se dessine en vagues depuis le centre, sous une rose des
+    // vents. Tout est en SVG + CSS : aucun fichier ni bibliothèque en plus.
+    var W = 13, H = 8, R = 13, sq = Math.sqrt(3) * R, cx = (W - 1) / 2, cy = (H - 1) / 2, hx = [];
+    var TERRE = ['#b3d65a', '#2d6b2f', '#aca596', '#526043', '#8fb04a'], MER = ['#1d3d62', '#24507d', '#1a3453'];
+    function pts(x, y) { var a = []; for (var k = 0; k < 6; k++) { var an = Math.PI / 180 * (60 * k - 30); a.push((x + R * .94 * Math.cos(an)).toFixed(1) + ',' + (y + R * .94 * Math.sin(an)).toFixed(1)); } return a.join(' '); }
+    for (var r = 0; r < H; r++) for (var c = 0; c < W; c++) {
+      var x = sq * (c + .5 * (r & 1)) + sq, y = R * 1.5 * r + R + 4;
+      var d = Math.sqrt(Math.pow((c - cx) / W * 2, 2) + Math.pow((r - cy) / H * 2, 2));
+      var terre = Math.random() > d * .9 - .05, col = terre ? TERRE[(Math.random() * TERRE.length) | 0] : MER[(Math.random() * MER.length) | 0];
+      hx.push('<polygon class="gh' + (terre ? ' t' : '') + '" points="' + pts(x, y) + '" style="fill:' + col + ';--d:' + (d * .7 + Math.random() * .2).toFixed(2) + 's"/>');
+    }
+    var vw = Math.ceil(sq * (W + 1.5)), vh = Math.ceil(R * 1.5 * H + R + 8);
+    var rose = '<g class="gr-rose"><circle r="46" /><circle r="38" class="fine"/>' +
+      [0, 45, 90, 135, 180, 225, 270, 315].map(function (a, i) { return '<path transform="rotate(' + a + ')" d="M0 -' + (i % 2 ? 30 : 44) + ' L5 0 L0 5 L-5 0 Z" class="' + (i % 2 ? 'b' : 'a') + '"/>'; }).join('') + '<circle r="4" class="c"/></g>';
+    el = document.createElement('div'); el.id = 'genMap'; el.className = 'gen-map';
+    el.setAttribute('role', 'status'); el.setAttribute('aria-live', 'polite');
+    el.innerHTML = '<div class="gen-scene">' +
+      '<svg class="gen-hex" viewBox="0 0 ' + vw + ' ' + vh + '" aria-hidden="true">' + hx.join('') + '</svg><div class="gen-halo" aria-hidden="true"></div>' +
+      '<svg class="gen-rose" viewBox="-50 -50 100 100" aria-hidden="true">' + rose + '</svg>' +
+      '<p class="gen-titre">Génération de la carte en cours…</p><p class="gen-etape" id="genEtape">Levée des continents</p></div>';
+    document.body.appendChild(el);
+    var etapes = ['Levée des continents', 'Tracé des côtes', 'Partage des mers', 'Tracé des frontières'], ie = 0;
+    el._t = setInterval(function () { var e = $('genEtape'); if (!e) return; ie = (ie + 1) % etapes.length; e.classList.remove('in'); void e.offsetWidth; e.textContent = etapes[ie]; e.classList.add('in'); }, 900);
+  }
   function myName() { var v = ($('myName').value || '').trim().slice(0, 16); try { localStorage.setItem('fof-name', v); } catch (e) {} return v; }
 
   function show(s) {
     step = s;
     $('stepMode').hidden = s !== 'mode'; $('stepLocal').hidden = s !== 'local'; $('stepLobby').hidden = s !== 'lobby';
+    var cat = $('catalog'); if (cat) { cat.hidden = s !== 'mode'; if (s === 'mode') renderCatalog(); }
     if (s === 'mode') renderMode(); if (s === 'local') renderLocal(); if (s === 'lobby') renderLobby();
   }
 
@@ -47,6 +82,30 @@
     if (saved && !saved.winner) h.push('<button class="btn" type="button" data-resume="local">Reprendre la partie locale (tour ' + saved.round + ', ' + saved.players.length + ' joueurs)</button>');
     if (on && sOn) h.push('<button class="btn" type="button" data-resume="online">Revenir au salon ' + esc(sOn.code) + '</button>');
     $('resumeBox').innerHTML = h.join('');
+  }
+
+  /* ---------- catalogue : tous les dirigeants et toutes les cartes du deck (v1.9.12) ---------- */
+  var catTab = 'heroes', catFiltre = 'tout';
+  function renderCatalog() {
+    var el = $('catalog'); if (!el) return;
+    var h = ['<div class="cat-head"><h2 id="catTitle">L’arsenal</h2><p>Les dirigeants que l’on peut incarner et les ' + (Object.keys(FOF.ELITES).length + Object.keys(FOF.SPECIALS).length) + ' cartes du deck, chacune en deux exemplaires.</p>' +
+      '<div class="cat-tabs" role="tablist">' +
+      '<button type="button" role="tab" aria-selected="' + (catTab === 'heroes') + '" class="cat-tab' + (catTab === 'heroes' ? ' on' : '') + '" data-cattab="heroes">Dirigeants <b>' + LEAD_KEYS.length + '</b></button>' +
+      '<button type="button" role="tab" aria-selected="' + (catTab === 'cards') + '" class="cat-tab' + (catTab === 'cards' ? ' on' : '') + '" data-cattab="cards">Cartes du deck <b>' + (Object.keys(FOF.ELITES).length + Object.keys(FOF.SPECIALS).length) + '</b></button></div></div>'];
+    if (catTab === 'heroes') {
+      h.push('<div class="cat-grid heroes">' + LEAD_KEYS.map(function (k) {
+        return FOF.heroHTML(k, { note: isLocked(k) ? 'à débloquer' : '' });
+      }).join('') + '</div>');
+    } else {
+      h.push('<div class="cat-filters">' + [['tout', 'Toutes'], ['el', 'Élites'], ['sp', 'Spéciales']].map(function (f) {
+        return '<button type="button" class="chip' + (catFiltre === f[0] ? ' on' : '') + '" data-catf="' + f[0] + '">' + f[1] + '</button>';
+      }).join('') + '</div>');
+      var keys = [];
+      if (catFiltre !== 'sp') keys = keys.concat(Object.keys(FOF.ELITES));
+      if (catFiltre !== 'el') keys = keys.concat(Object.keys(FOF.SPECIALS));
+      h.push('<div class="cat-grid cards">' + keys.map(function (k) { return FOF.cardHTML(k); }).join('') + '</div>');
+    }
+    el.innerHTML = h.join('');
   }
 
   /* ---------- jeu local ---------- */
@@ -65,8 +124,7 @@
     }).join('');
     $('winInfo').textContent = winText(count);
     var tw = document.getElementById('tutoOpt');
-    if (tw) tw.innerHTML = '<label class="tuto-check"><input type="checkbox" id="tutoChk"' + (tutoWanted ? ' checked' : '') + '> ' + FOF.ic('book', 15) + ' Didacticiel (3 tours, on peut l’arrêter à tout moment)</label>'
-      + '<label class="tuto-check" style="margin-left:18px" title="Plus de zones de mer et un large plus vaste : les ports et les unités navales comptent davantage."><input type="checkbox" id="seaChk"' + (wideSea ? ' checked' : '') + '> ⚓ Mer élargie</label>';
+    if (tw) tw.innerHTML = '<label class="tuto-check"><input type="checkbox" id="tutoChk"' + (tutoWanted ? ' checked' : '') + '> ' + FOF.ic('book', 15) + ' Didacticiel (3 tours, on peut l’arrêter à tout moment)</label>';
   }
 
   /* ---------- salon en ligne ---------- */
@@ -99,8 +157,6 @@
       var lbl = n < 3 ? 'En attente de joueurs (' + n + '/3 minimum)'
         : !allRdy ? 'En attente des joueurs prêts (' + nRdy + '/' + n + ')'
         : 'Lancer la partie à ' + n + ' joueurs';
-      // v1.9.2 : l'hôte choisit aussi la mer élargie depuis le salon en ligne
-      h.push('<label class="tuto-check" style="margin-right:12px" title="Plus de zones de mer et un large plus vaste"><input type="checkbox" data-osea="1"' + (wideSea ? ' checked' : '') + '> ⚓ Mer élargie</label>');
       h.push('<button class="btn primary" type="button" data-ostart="1" ' + (lock ? 'disabled' : '') + '>' + lbl + '</button>');
     } else h.push('<span class="waiting">' + (allRdy ? 'Tout le monde est prêt - en attente du lancement par l’hôte…' : 'Déclarez-vous prêt quand vous êtes installé (' + nRdy + '/' + n + ' prêts).') + '</span>');
     h.push('<button class="btn" type="button" data-oleave="1">Quitter le salon</button></div>');
@@ -222,6 +278,8 @@
     FOF.bindBar();
     try { $('myName').value = localStorage.getItem('fof-name') || ''; } catch (e) {}
     $('setup').addEventListener('click', function (e) {
+      var cb = e.target.closest('[data-cattab],[data-catf]');
+      if (cb) { if (cb.dataset.cattab) catTab = cb.dataset.cattab; if (cb.dataset.catf) catFiltre = cb.dataset.catf; return renderCatalog(); }
       var b = e.target.closest('[data-mode],[data-resume],[data-back],[data-count],[data-swatch],[data-pickhero],[data-copy],[data-oswatch],[data-opick],[data-ostart],[data-oready],[data-oleave],[data-bot],[data-addbot],[data-rmbot],[data-allbots]'); if (!b) return;
       var d = b.dataset; setErr('');
       if (d.mode === 'local') return show('local');
@@ -274,14 +332,20 @@
       if (d.oready !== undefined) { var want = d.oready === '1'; return mySeatUpdate(function (s) { s.ready = want; }); }
       if (d.ostart) {
         b.disabled = true;
-        room.mutate(function (row) {
-          if (row.status !== 'lobby' || row.seats.length < 3) return null;
-          if (!row.seats.every(function (s) { return seatReady(s, row); })) return null;
-          var st = FOF.newGame({ wideSea: wideSea, players: row.seats.map(function (s, i) { return { name: s.name || 'Joueur ' + (i + 1), color: s.color, leader: s.leader, bot: !!s.bot }; }) });
-          FOF.statsInit(st, 'online', row.code);
-          FOF.statsTick(st);
-          return { status: 'playing', state: st };
-        }).catch(function (err) { setErr(err.message); b.disabled = false; });
+        var nPrev = room.row ? room.row.seats.length : 0;
+        ecranGeneration(true);
+        // La carte est préparée AVANT l'écriture du salon. Si le nombre de joueurs a changé entre-temps
+        // (départ de dernière seconde), newGame la refait elle-même, de façon synchrone.
+        FOF.prepareMap(nPrev, function (pg) {
+          room.mutate(function (row) {
+            if (row.status !== 'lobby' || row.seats.length < 3) return null;
+            if (!row.seats.every(function (s) { return seatReady(s, row); })) return null;
+            var st = FOF.newGame({ pregen: pg, players: row.seats.map(function (s, i) { return { name: s.name || 'Joueur ' + (i + 1), color: s.color, leader: s.leader, bot: !!s.bot }; }) });
+            FOF.statsInit(st, 'online', row.code);
+            FOF.statsTick(st);
+            return { status: 'playing', state: st };
+          }).then(function () { ecranGeneration(false); }, function (err) { ecranGeneration(false); setErr(err.message); b.disabled = false; });
+        }, function (err) { ecranGeneration(false); setErr(err.message); b.disabled = false; });
         return;
       }
       if (d.oleave) {
@@ -316,9 +380,6 @@
       rows[picking.idx].leader = k; picking = null; renderPicker(); renderLocal();
     });
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && picking) { picking = null; renderPicker(); } });
-    $('setup').addEventListener('change', function (e) {
-      if (e.target.dataset.osea !== undefined) { wideSea = e.target.checked; try { localStorage.setItem('fof-widesea', wideSea ? '1' : '0'); } catch (x) {} }
-    });
     $('setup').addEventListener('input', function (e) { if (e.target.dataset.name !== undefined) rows[+e.target.dataset.name].name = e.target.value; if (e.target.id === 'joinCode') e.target.value = FOF.normCode(e.target.value); });
     $('shuffleBtn').addEventListener('click', function () {
       var ls = shuffled();
@@ -326,12 +387,19 @@
     });
     $('startBtn').addEventListener('click', function () {
       var players = rows.slice(0, count).map(function (r, i) { return { name: (r.name || 'Joueur ' + (i + 1)).trim(), color: r.color, leader: r.leader, bot: !!r.bot }; });
-      var chk = document.getElementById('tutoChk'), sea = document.getElementById('seaChk');
+      var chk = document.getElementById('tutoChk');
       tutoWanted = chk ? chk.checked : tutoWanted;
-      wideSea = sea ? sea.checked : wideSea;
-      try { localStorage.setItem('fof-tuto', tutoWanted ? '1' : '0'); localStorage.setItem('fof-widesea', wideSea ? '1' : '0'); } catch (e) {}
-      FOF.startUI(FOF.newGame({ players: players, wideSea: wideSea }));
-      if (tutoWanted && FOF.tutorialStart) FOF.tutorialStart();
+      try { localStorage.setItem('fof-tuto', tutoWanted ? '1' : '0'); localStorage.removeItem('fof-widesea'); } catch (e) {}
+      var btn = $('startBtn'); if (btn.disabled) return;
+      btn.disabled = true; ecranGeneration(true);
+      FOF.prepareMap(players.length, function (pg) {
+        ecranGeneration(false); btn.disabled = false;
+        FOF.startUI(FOF.newGame({ players: players, pregen: pg }));
+        if (tutoWanted && FOF.tutorialStart) FOF.tutorialStart();
+      }, function (err) {
+        ecranGeneration(false); btn.disabled = false;
+        $('winInfo').textContent = 'La carte n’a pas pu être générée (' + err.message + '). Relancez la partie.';
+      });
     });
     FOF.showSetup();
     // reprise automatique seulement dans l'onglet qui était déjà assis dans ce salon (après un rechargement)

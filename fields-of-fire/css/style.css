@@ -665,6 +665,12 @@ header.bar .phase + .phase::before { width: 10px; margin-right: 6px; }
 .fx-tyran .ty-t { font-family: var(--f-display); font-size: 84px; font-weight: 700; letter-spacing: .25em; color: #ff6b4f; text-shadow: 0 0 40px #d02a14, 0 4px 0 #3b0a05; }
 .fx-tyran .ty-n { font-family: var(--f-display); font-size: 26px; color: #f5dfae; }
 .fx-tyran .ty-s { font-size: 17px; color: #e0c9c0; max-width: 560px; }
+/* v1.9.11 : cliquable pour se fermer, et version fixe quand les animations sont réduites */
+.fx-tyran { pointer-events: auto; cursor: pointer; }
+.fx-tyran .ty-x { margin-top: 14px; font-size: 13px; color: rgba(245,223,174,.6); letter-spacing: .08em; }
+.fx-tyran.still, .fx-tyran.still .ty-crown { animation: none; }
+.fx-tyran.still.out { animation: none; opacity: 0; }
+@media (max-width: 620px) { .fx-tyran .ty-t { font-size: 52px; } .fx-tyran .ty-n { font-size: 20px; } .fx-tyran .ty-s { font-size: 15px; } }
 @keyframes tyIn { from { opacity: 0; } } @keyframes tyOut { to { opacity: 0; } }
 @keyframes tyCrown { from { transform: scale(3) rotate(-30deg); opacity: 0; } }
 
@@ -1121,3 +1127,167 @@ header.bar { position: relative; z-index: 96; }
 .setup-legal { margin-top: 4px; }
 .setup-legal a { color: #b9a77e; text-decoration: none; border-bottom: 1px solid rgba(185,167,126,.35); }
 .setup-legal a:hover, .setup-legal a:focus-visible { color: #e0c274; border-bottom-color: currentColor; }
+/* v1.9.11 - écran « Génération de la carte en cours » : hexagones qui se lèvent en vagues, rose des vents */
+.gen-map { position: fixed; inset: 0; z-index: 60; display: flex; align-items: center; justify-content: center; padding: 16px;
+  background: radial-gradient(ellipse at center, rgba(28,40,58,.985), rgba(8,8,12,.995) 72%); animation: genIn .35s ease both; }
+.gen-map.fin { animation: genOut .45s ease forwards; }
+.gen-scene { position: relative; width: min(560px, 100%); text-align: center; }
+.gen-hex { width: 100%; height: auto; display: block; filter: drop-shadow(0 18px 30px rgba(0,0,0,.6)); }
+.gen-hex .gh { transform-box: fill-box; transform-origin: center; stroke: rgba(10,10,14,.55); stroke-width: 1.2; opacity: 0;
+  animation: genHex 2.6s cubic-bezier(.2,1.3,.4,1) infinite; animation-delay: var(--d); }
+.gen-hex .gh.t { stroke: rgba(241,212,136,.35); }
+.gen-halo { position: absolute; left: 50%; top: 42%; width: 150px; height: 150px; margin: -75px 0 0 -75px; border-radius: 50%; box-shadow: 0 0 0 0 rgba(241,212,136,.5); animation: genHalo 1.6s ease-out infinite; pointer-events: none; }
+.gen-rose { position: absolute; left: 50%; top: 42%; width: 118px; height: 118px; margin: -59px 0 0 -59px; animation: genRose 7s linear infinite; filter: drop-shadow(0 0 14px rgba(241,212,136,.45)); }
+.gen-rose circle { fill: rgba(20,18,24,.55); stroke: #d9b45f; stroke-width: 1.6; }
+.gen-rose circle.fine { fill: none; stroke-width: .7; stroke-dasharray: 2 3; }
+.gen-rose circle.c { fill: #f1d488; stroke: none; }
+.gen-rose path.a { fill: #f1d488; } .gen-rose path.b { fill: #9c7a2c; }
+.gen-titre { margin: 18px 0 4px; font-family: var(--f-display); font-size: clamp(18px, 3.2vw, 24px); color: var(--gold-hi); letter-spacing: .04em; text-shadow: 0 2px 12px rgba(0,0,0,.8); }
+.gen-etape { margin: 0; min-height: 1.4em; font-size: 14px; color: rgba(236,224,196,.72); letter-spacing: .12em; text-transform: uppercase; }
+.gen-etape.in { animation: genEtape .5s ease both; }
+@keyframes genIn { from { opacity: 0; } } @keyframes genOut { to { opacity: 0; transform: scale(1.04); } }
+@keyframes genHex { 0% { opacity: 0; transform: scale(.2) rotate(-30deg); } 18% { opacity: 1; transform: scale(1.06); } 26%, 72% { opacity: 1; transform: scale(1); } 90%, 100% { opacity: 0; transform: scale(.85); } }
+@keyframes genHalo { 0% { box-shadow: 0 0 0 0 rgba(241,212,136,.55); } 100% { box-shadow: 0 0 0 60px rgba(241,212,136,0); } }
+@keyframes genRose { to { transform: rotate(360deg); } }
+@keyframes genEtape { from { opacity: 0; transform: translateY(6px); } }
+@media (prefers-reduced-motion: reduce) { .gen-hex .gh { animation: none; opacity: 1; } .gen-halo, .gen-rose, .gen-etape.in, .gen-map, .gen-map.fin { animation: none; } }
+/* v1.9.11 : Espion joué depuis le panneau des joueurs */
+.opp .spy-btn { margin-top: 6px; padding: 3px 8px; font-size: 12px; }
+.spy-modal .spy-card { display: flex; justify-content: center; margin: 12px 0; }
+.spy-modal .spy-card > * { max-width: 260px; }
+
+/* =====================================================================================
+   v1.9.12 - DIRECTION ARTISTIQUE « TABLE DE GUERRE » (choix du créateur, 27/09/2026)
+   Le jeu se joue sur le bureau d'un stratège : plateau de bois sombre, sous-mains de cuir
+   cousus, ferrures de laiton, sceaux de cire pour les actions décisives, feutre vert pour le
+   marché. Tout est dessiné en CSS (dégradés + bruit SVG en ligne) : aucun fichier en plus.
+   ===================================================================================== */
+:root {
+  --wood-1: #3b2616; --wood-2: #2a1a0f; --wood-3: #1a100a;
+  --leather: #3d2a1c; --leather-2: #4b3322; --leather-edge: #1c120b;
+  --stitch: rgba(232,196,128,.28);
+  --brass-1: #f3d88f; --brass-2: #c99a42; --brass-3: #7a5a22;
+  --brass: linear-gradient(180deg, var(--brass-1) 0%, var(--brass-2) 48%, var(--brass-3) 100%);
+  --wax-1: #b3322a; --wax-2: #6e1712;
+  --felt-1: #20382b; --felt-2: #13241b;
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='240'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.005 0.09' numOctaves='3' seed='7' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.16 0 0 0 0 0.09 0 0 0 0 0.04 0 0 0 0.55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
+  --noise: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.22 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  --panel: #2f2016; --panel-2: #3a281b; --line: #5a3f27;
+}
+body { background: var(--wood-3); }
+
+/* --- le plateau de bois --- */
+#game, #setup {
+  background:
+    radial-gradient(ellipse at 50% 40%, rgba(0,0,0,0) 40%, rgba(0,0,0,.55) 100%),
+    var(--grain), var(--noise),
+    linear-gradient(180deg, var(--wood-1), var(--wood-2) 60%, var(--wood-3));
+  background-size: auto, 900px 360px, 220px 220px, auto;
+}
+#setup::before { opacity: 0; }
+
+/* --- la poutre du haut : bois clair verni, rivets de laiton --- */
+header.bar {
+  position: relative; border-bottom: 0;
+  background: var(--grain), linear-gradient(180deg, #5a3a22, #3a2415 70%, #2a190e);
+  background-size: 700px 280px, auto;
+  box-shadow: inset 0 1px 0 rgba(255,220,160,.18), 0 3px 0 var(--brass-3), 0 4px 0 #120b06, 0 10px 18px -6px rgba(0,0,0,.7);
+  z-index: 4;
+}
+header.bar::before, header.bar::after { content: ''; position: absolute; top: 50%; width: 10px; height: 10px; margin-top: -5px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff3c4, var(--brass-2) 45%, var(--brass-3)); box-shadow: 0 1px 1px rgba(0,0,0,.7); }
+header.bar::before { left: 6px; } header.bar::after { right: 6px; }
+.brand { color: transparent; background: var(--brass); -webkit-background-clip: text; background-clip: text; text-shadow: none; filter: drop-shadow(0 1px 0 rgba(0,0,0,.8)); }
+.round-chip { color: #e9d3a3; }
+.phase .n { border-color: var(--brass-3); }
+.phase.on .n { background: var(--brass); border-color: var(--brass-1); color: #2a1a08; box-shadow: 0 0 10px rgba(241,212,136,.45); }
+.phase.on { color: #fbeccb; }
+
+/* --- sous-mains de cuir cousus --- */
+aside, .mat {
+  background:
+    var(--noise),
+    radial-gradient(ellipse at 30% 0%, rgba(255,210,150,.07), rgba(0,0,0,0) 60%),
+    linear-gradient(180deg, var(--leather-2), var(--leather));
+  background-size: 220px 220px, auto, auto;
+}
+aside.left { border-right: 0; box-shadow: inset -1px 0 0 var(--leather-edge), inset -7px 0 0 -6px var(--stitch), 6px 0 14px -8px rgba(0,0,0,.8); }
+aside.right { border-left: 0; box-shadow: inset 1px 0 0 var(--leather-edge), inset 7px 0 0 -6px var(--stitch), -6px 0 14px -8px rgba(0,0,0,.8); }
+.mat { border-top: 0; box-shadow: inset 0 1px 0 var(--leather-edge), inset 0 7px 0 -6px var(--stitch), 0 -6px 14px -8px rgba(0,0,0,.8); }
+.section-title { color: transparent; background: var(--brass); -webkit-background-clip: text; background-clip: text; letter-spacing: .18em; }
+.section-title::after { content: ''; display: block; height: 1px; margin-top: 5px; background: linear-gradient(90deg, rgba(201,154,66,.7), rgba(201,154,66,0)); }
+
+/* --- fiches des joueurs : étiquettes de cuir à coin de laiton --- */
+.opp { position: relative; background: linear-gradient(180deg, #4a3221, #36241a); border: 1px solid #1d130c; border-left: 5px solid var(--pc);
+  box-shadow: inset 0 1px 0 rgba(255,220,170,.12), inset 0 0 0 1px rgba(0,0,0,.25), 0 6px 12px -8px #000; }
+.opp::after { content: ''; position: absolute; right: 6px; top: 6px; width: 7px; height: 7px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff1c0, var(--brass-2) 50%, var(--brass-3)); }
+.opp.active { background: linear-gradient(180deg, #5a3d27, #3f2a1c); border-color: #1d130c; border-left-color: var(--pc);
+  box-shadow: 0 0 0 1px var(--brass-2), 0 0 18px -4px rgba(241,212,136,.55), inset 0 1px 0 rgba(255,220,170,.18); }
+.opp .ld { color: #b8a07a; }
+.box { background: linear-gradient(180deg, rgba(255,230,190,.05), rgba(0,0,0,.12)); border: 1px solid #1d130c; box-shadow: inset 0 0 0 1px rgba(232,196,128,.10); }
+
+/* --- la carte : un parchemin épinglé, cadre de bois et coins de laiton --- */
+#board { background: transparent; }
+#boardWrap { box-shadow: 0 0 0 3px #1a0f08, 0 0 0 6px var(--brass-3), 0 0 0 7px #120a05, 0 26px 50px -18px rgba(0,0,0,.95); border-radius: 2px; }
+#boardWrap::before, #boardWrap::after { content: ''; position: absolute; width: 16px; height: 16px; border-radius: 50%; z-index: 7; pointer-events: none;
+  background: radial-gradient(circle at 35% 30%, #fff6d0, var(--brass-2) 45%, var(--brass-3) 80%); box-shadow: 0 2px 3px rgba(0,0,0,.8); }
+#boardWrap::before { left: -8px; top: -8px; } #boardWrap::after { right: -8px; bottom: -8px; }
+.legend, .board-tools .btn { background: rgba(38,25,16,.92); border-color: #6b4c2a; }
+
+/* --- le marché : un tapis de feutre vert --- */
+.market { background:
+    linear-gradient(to top, rgba(0,0,0,.25), rgba(0,0,0,0) 40%),
+    var(--noise), linear-gradient(180deg, var(--felt-1), var(--felt-2));
+  background-size: auto, 220px 220px, auto;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 26px); mask-image: linear-gradient(to bottom, transparent 0, #000 26px); }
+.market h3 { color: #f1dca8; text-shadow: 0 1px 0 #000; }
+
+/* --- boutons : bois et laiton ; les actions décisives portent un sceau de cire --- */
+.btn { background: linear-gradient(180deg, #4a3221, #33221700); background-color: #33231a; border: 1px solid #6b4c2a; color: #f1e1bd;
+  box-shadow: inset 0 1px 0 rgba(255,225,170,.14), 0 2px 0 #140c07; }
+.btn:hover:not(:disabled) { background-color: #432e20; border-color: var(--brass-2); }
+.btn.ghost { background: transparent; box-shadow: none; }
+.btn.primary, #setup .btn.primary { background: radial-gradient(ellipse at 40% 30%, var(--wax-1), var(--wax-2) 75%); color: #ffe9b8; border: 1px solid #3d0c09;
+  box-shadow: inset 0 1px 0 rgba(255,200,170,.25), inset 0 -3px 6px rgba(0,0,0,.35), 0 0 0 2px rgba(201,154,66,.55), 0 4px 10px -4px #000; text-shadow: 0 1px 0 #3d0c09; }
+.btn.primary:hover:not(:disabled), #setup .btn.primary:hover:not(:disabled) { background: radial-gradient(ellipse at 40% 30%, #c93b31, #7d1b15 75%); color: #fff4d6; box-shadow: inset 0 1px 0 rgba(255,200,170,.3), 0 0 0 2px var(--brass-1), 0 0 16px -2px rgba(201,59,49,.6); }
+.btn.gold { background: var(--brass); color: #2a1a08; border-color: #fff0bd; box-shadow: inset 0 1px 0 rgba(255,255,255,.5), 0 2px 0 #3d2a0c; }
+.btn.danger { border-color: #8a3a2c; color: #ffcdbf; }
+
+/* --- fenêtres : un dossier de cuir à coins de laiton --- */
+.modal { background: var(--noise), linear-gradient(180deg, #4a3222, #2f2016); background-size: 220px 220px, auto;
+  border: 1px solid #140c07; box-shadow: 0 0 0 2px var(--brass-3), inset 0 0 0 6px rgba(0,0,0,.18), inset 0 0 0 7px var(--stitch), 0 40px 80px -24px #000; position: relative; }
+.modal h2 { color: transparent; background: var(--brass); -webkit-background-clip: text; background-clip: text; }
+.modal h2 svg, .modal h2 img { color: var(--brass-1); }
+
+/* --- accueil : un grimoire relié posé sur la table --- */
+.cover { background-image: var(--noise), linear-gradient(160deg, #5a3a24, #2e1d12 70%), linear-gradient(160deg, #6d5a2c, #d9b45f 45%, #5b4a24); background-size: 220px 220px, auto, auto;
+  box-shadow: 0 30px 60px -24px #000, inset 0 0 0 10px rgba(0,0,0,.18), inset 0 0 0 11px var(--stitch); }
+.mode-card { background: var(--noise), linear-gradient(180deg, #4a3222, #33231a); background-size: 220px 220px, auto; border: 1px solid #1a110a;
+  box-shadow: inset 0 0 0 5px rgba(0,0,0,.14), inset 0 0 0 6px var(--stitch), 0 16px 30px -18px #000; }
+.mode-card:hover { box-shadow: inset 0 0 0 5px rgba(0,0,0,.14), inset 0 0 0 6px rgba(241,212,136,.5), 0 0 0 1px var(--brass-2), 0 20px 34px -18px #000; }
+.setup-form h2 { color: #f6e8c6; text-shadow: 0 2px 0 rgba(0,0,0,.6); }
+.setup-form .eyebrow { color: var(--brass-2); }
+.prow { background: linear-gradient(180deg, #43301f, #30211a); border-color: #1d130c; box-shadow: inset 0 0 0 1px rgba(232,196,128,.08); }
+
+/* --- catalogue de l'accueil --- */
+.catalog { position: relative; max-width: 1120px; width: 100%; margin: 44px auto 0; padding: 26px 26px 30px;
+  background: var(--noise), linear-gradient(180deg, var(--felt-1), var(--felt-2)); background-size: 220px 220px, auto;
+  border-radius: 6px; box-shadow: 0 0 0 3px #1a0f08, 0 0 0 5px var(--brass-3), 0 30px 60px -28px #000, inset 0 0 60px rgba(0,0,0,.45); }
+.cat-head { display: flex; flex-wrap: wrap; align-items: end; gap: 10px 22px; margin-bottom: 18px; }
+.cat-head h2 { margin: 0; font-family: var(--f-display); font-size: 28px; color: transparent; background: var(--brass); -webkit-background-clip: text; background-clip: text; }
+.cat-head p { margin: 0; color: #cfe0cf; flex: 1 1 280px; font-size: 16px; }
+.cat-tabs { display: flex; gap: 6px; }
+.cat-tab { border: 1px solid #6b4c2a; background: #2a1c12; color: #f1e1bd; padding: 7px 14px; border-radius: 6px 6px 2px 2px; font-family: var(--f-display); font-size: 15px; }
+.cat-tab b { font-family: var(--f-num); font-size: 13px; opacity: .75; margin-left: 4px; }
+.cat-tab.on { background: var(--brass); color: #2a1a08; border-color: #fff0bd; }
+.cat-filters { display: flex; gap: 6px; margin: 0 0 14px; }
+.cat-filters .chip { border: 1px solid rgba(232,196,128,.35); background: rgba(0,0,0,.25); color: #e9dcc0; padding: 4px 12px; border-radius: 999px; font-size: 14px; }
+.cat-filters .chip.on { background: rgba(201,154,66,.25); border-color: var(--brass-1); color: #fff2cf; }
+.cat-grid.heroes { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 14px; }
+.cat-grid.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px; }
+.cat-grid .ucard, .cat-grid .hero { transition: transform .18s ease, box-shadow .18s ease; }
+.cat-grid .ucard:hover, .cat-grid .hero:hover { transform: translateY(-4px) rotate(-.4deg); box-shadow: 0 18px 30px -14px #000; }
+@media (max-width: 620px) { .catalog { padding: 18px 14px 22px; margin-top: 28px; } .cat-grid.cards { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; } }
+@media (prefers-reduced-motion: reduce) { .cat-grid .ucard, .cat-grid .hero { transition: none; } }
+@media (max-width: 620px) { header.bar::before, header.bar::after { display: none; } }

@@ -8,8 +8,12 @@
   /* ---------- création ---------- */
   FOF.newGame = function (cfg) {
     var st = { v: 1, seed: cfg.seed || (Date.now() & 0x7fffffff), n: cfg.players.length, t0: Date.now(), tLast: Date.now(),
-      wideSea: cfg.wideSea !== false };
-    st.map = FOF.generateMap(st, st.n);
+      wideSea: true };   // v1.9.11 : un seul type de mer (l'ancienne « mer élargie ») ; champ gardé pour les sauvegardes
+    // v1.9.10 - carte préparée à l'avance (FOF.prepareMap) pendant l'écran « Génération de la carte
+    // en cours ». On la copie : si l'écriture en ligne est rejouée, la carte d'origine reste intacte.
+    var pg = cfg.pregen;
+    if (pg && pg.n === st.n) { st.seed = pg.seed; st.map = JSON.parse(JSON.stringify(pg.map)); }
+    else st.map = FOF.generateMap(st, st.n);
     st.players = cfg.players.map(function (p, i) {
       return { id: i, name: p.name, color: p.color, leader: p.leader, bot: !!p.bot, mod: FOF.LEADERS[p.leader].mod, gold: 3, dip: 3, tyran: false, tyranStamp: null,
         alive: true, capital: null, lpos: null, lArr: 0, lMoved: false, lConq: false, lFought: false, pact: null,
@@ -35,6 +39,13 @@
     log(st, 'Ainsi s’ouvre la chronique : ' + st.players.length + ' seigneurs se disputent ' + st.map.terr.length + ' terres.', undefined, 'start');
     startTurn(st);
     return st;
+  };
+  // v1.9.10 - génère la carte sans bloquer la page. fin({ n, seed, map }) : à passer tel
+  // quel à FOF.newGame({ pregen: ... }). La graine rendue est celle d'après la génération, pour que
+  // la suite de la partie (placement, deck) se tire exactement comme avec FOF.generateMap.
+  FOF.prepareMap = function (n, fin, echec) {
+    var s = { seed: Date.now() & 0x7fffffff };
+    FOF.generateMapAsync(s, n, function (map) { fin({ n: n, seed: s.seed, map: map }); }, echec);
   };
   function range(n) { var a = []; for (var i = 0; i < n; i++) a.push(i); return a; }
   function draw(st) {
@@ -65,7 +76,8 @@
     if (p.leader === 'hugues' && (type === 'C' || type === 'F' || type === 'P')) c = Math.max(1, c - 1);
     // v1.9.6 - Maître d'œuvre : la remise s'applique APRÈS le pouvoir du dirigeant, donc elle se
     // cumule avec Adèle (temple 7 → 6 par Adèle → 5 avec le Maître d'œuvre).
-    if (type === 'T' && st.units.some(function (u) { return u.owner === p.id && u.key === 'maitre'; })) c = Math.max(1, c - 1);
+    // v1.9.11 - cumulable : deux Maîtres d'œuvre retirent 2 or (décision du créateur, 27/09/2026).
+    if (type === 'T') { var nMaitres = st.units.filter(function (u) { return u.owner === p.id && u.key === 'maitre'; }).length; if (nMaitres) c = Math.max(1, c - nMaitres); }
     return c;
   };
   FOF.defBonus = function (st, p, t) {
@@ -90,7 +102,8 @@
       }
     });
     // v1.9.6 - Prélat : +1 or par temple possédé, à la collecte.
-    inc.temples = FOF.army(st, p.id).some(function (u) { return u.key === 'prelat'; }) ? FOF.countBld(st, p.id, 'T') : 0;
+    // v1.9.11 - cumulable : deux Prélats rapportent 2 or par temple (décision du créateur, 27/09/2026).
+    inc.temples = FOF.army(st, p.id).filter(function (u) { return u.key === 'prelat'; }).length * FOF.countBld(st, p.id, 'T');
     inc.total = inc.terr + inc.cities + inc.ports + inc.trade + inc.temples;
     inc.upkeep = FOF.army(st, p.id).reduce(function (a, u) { return a + FOF.unitDef(u.key).upkeep; }, 0);
     return inc;
@@ -139,16 +152,26 @@
     if (p.tyran || n <= 0) return;
     if (p.dip - n < 0) {
       p.dip = 0; p.tyran = true; p.tyranStamp = st.turnNo;
-      if (p.pact !== null) breakPactQuiet(st, p);
+      if (p.pact !== null) {
+        // v1.9.12 - l'ambassadeur de l'autre, posté chez le nouveau Tyran, est chassé : son
+        // propriétaire perd 1 (le Tyran, lui, n'a plus de diplomatie à perdre).
+        var partenaire = st.players[p.pact];
+        var chasse = partenaire && st.units.some(function (u) { return u.key === 'ambassadeur' && u.owner === partenaire.id && u.pos === 't' + p.capital; });
+        breakPactQuiet(st, p);
+        if (chasse) loseDip(st, partenaire, 1, 'ambassadeur chassé par le tyran ' + p.name);
+      }
       log(st, p.name + ' renie toute parole donnée : le voici TYRAN, honni de tous !', p.id, 'tyran');
     } else { p.dip -= n; }
     if (why) log(st, p.name + ' perd ' + n + ' de diplomatie (' + why + ') ; les cours voisines murmurent.', p.id, 'dip-');
   }
-  function gainDip(st, p, n, why) {
+  // sansRelais : gain que l'Ambassade ne relaie pas (le Héraut, depuis la v1.9.11)
+  function gainDip(st, p, n, why, sansRelais) {
     if (p.tyran || !p.alive || n <= 0) return;
     // l'Ambassade relaie : +1 sur un gain obtenu par une action, jamais de revenu passif,
     // et seulement si le joueur n'a ni attaqué ni été attaqué depuis son dernier tour.
-    if (why !== 'Ambassade' && !p.attackedLast && !p.raidedLast && FOF.countBld(st, p.id, 'A')) { n += 1; why += ' + Ambassade'; }
+    // v1.9.11 - « ni attaqué ni été attaqué DEPUIS votre tour précédent » : l'attaque menée plus tôt
+    // dans le tour en cours comptait pas (attaquer puis livrer un Émissaire gardait le +1).
+    if (!sansRelais && !p.attackedLast && !p.raidedLast && !p.attackedNow && !p.raidedNow && FOF.countBld(st, p.id, 'A')) { n += 1; why += ' + Ambassade'; }
     // le plafond suivait la valeur figée 10 : tout seuil au-dessus était inatteignable.
     var g = Math.min(st.victory.dip, p.dip + n) - p.dip; p.dip += g;
     if (g) log(st, p.name + ' gagne ' + g + ' de diplomatie (' + why + ') ; son nom s’élève dans les cours.', p.id, 'dip+');
@@ -169,8 +192,24 @@
   /* v1.9.9 - un pacte ne vaut QUE tant qu'un ambassadeur se tient sur la capitale de l'autre,
      comme l'annonce le texte de la carte (« tant qu'il y reste »). Dès qu'il la quitte, meurt,
      est défaussé, ou que la capitale déménage, le pacte tombe de lui-même. Ce n'est PAS une
-     trahison : personne ne perd ni ne gagne de diplomatie. Avant cette version, le pacte survivait
-     au départ de l'ambassadeur, et une attaque ultérieure était comptée comme rupture. */
+     trahison : pas de -2 / +1. Avant cette version, le pacte survivait au départ de l'ambassadeur,
+     et une attaque ultérieure était comptée comme rupture.
+     v1.9.11 - décision du créateur (QO-118 puis QO-120) : quand le pacte tombe parce que
+     l'ambassadeur n'est plus sur la capitale, QUELLE QU'EN SOIT LA RAISON (rappel, licenciement,
+     solde impayée, destruction, déménagement de la capitale hôte), le propriétaire de
+     l'ambassadeur perd 1 diplomatie. Seuls cas sans ce -1 : la rupture par une attaque (régime
+     -2 / +1 de breakPact) et les pactes effacés par la tyrannie ou l'élimination. */
+  // ambassadeurs qui tiennent un pacte, relevés au début de chaque action
+  function ambassadeursTenant(st) {
+    var out = [];
+    st.players.forEach(function (p) {
+      if (p.pact === null || p.pact === undefined) return;
+      var q = st.players[p.pact];
+      if (q && q.pact === p.id && q.capital !== null && st.units.some(function (u) { return u.key === 'ambassadeur' && u.owner === p.id && u.pos === 't' + q.capital; }))
+        out.push({ owner: p.id, host: q.id });
+    });
+    return out;
+  }
   function ambassadeurEnPlace(st, p, q) {
     return st.units.some(function (u) {
       return u.key === 'ambassadeur' &&
@@ -178,7 +217,7 @@
          (u.owner === q.id && p.capital !== null && u.pos === 't' + p.capital));
     });
   }
-  function verifierPactes(st) {
+  function verifierPactes(st, tenus) {
     st.players.forEach(function (p) {
       if (p.pact === null || p.pact === undefined) return;
       var q = st.players[p.pact];
@@ -186,6 +225,12 @@
       if (ambassadeurEnPlace(st, p, q)) return;
       p.pact = null; q.pact = null;
       log(st, 'Plus d’ambassadeur sur la capitale : le pacte entre ' + p.name + ' et ' + q.name + ' ne tient plus.', p.id, 'pact');
+      (tenus || []).forEach(function (x) {
+        if ((x.owner === p.id && x.host === q.id) || (x.owner === q.id && x.host === p.id)) {
+          var o = st.players[x.owner];
+          if (o.alive) loseDip(st, o, 1, 'ambassadeur retiré de la cour de ' + st.players[x.host].name);
+        }
+      });
     });
   }
   FOF.pactActif = function (st, p, q) { return p.pact === q.id && q.pact === p.id && ambassadeurEnPlace(st, p, q); };
@@ -212,7 +257,11 @@
   function doCollect(st, p) {
     var inc = FOF.income(st, p);
     // Héraut
-    if (!p.tyran && !p.attackedLast && FOF.army(st, p.id).some(function (u) { return u.key === 'heraut'; })) gainDip(st, p, 1, 'Héraut');
+    // v1.9.11 (retours de playtest validés par le créateur) : bloqué aussi si le joueur a ÉTÉ attaqué
+    // depuis son tour précédent, et l'Ambassade ne relaie plus ce gain.
+    // v1.9.12 - cumulable : deux Hérauts donnent +2 (décision du créateur, 27/09/2026).
+    var nHer = FOF.army(st, p.id).filter(function (u) { return u.key === 'heraut'; }).length;
+    if (!p.tyran && !p.attackedLast && !p.raidedLast && nHer) gainDip(st, p, nHer, 'Héraut', true);
     var net = inc.total - inc.upkeep;
     st.collect = { inc: inc, net: net, deficit: net < 0 ? -net : 0 };
     if (net >= 0) { p.gold += net; p.tally.gold += net; log(st, p.name + ' lève l’impôt : ' + inc.total + ' écus récoltés, ' + inc.upkeep + ' pour la solde des troupes, +' + net + ' en coffre.', p.id, 'gold'); }
@@ -243,7 +292,7 @@
       if (st.players[i].alive) break;
     }
     if (wrapped) st.round++;
-    st.cur = i; st.turnNo++; st.lastCombat = null; st.spy = null;
+    st.cur = i; st.turnNo++; st.lastCombat = null;
     startTurn(st);
   }
   // décisions qui se règlent seules (cession forcée de la capitale)
@@ -358,14 +407,15 @@
     if (p.pact === d.id) breakPact(st, p, d);
     if (!d.tyran) loseDip(st, p, 1, 'attaque');
     // dés
-    var aPr = FOF.unitsAt(st, loc, p.id).some(function (u) { return u.key === 'pretresse'; });
-    var dPr = pv.du.some(function (u) { return u.key === 'pretresse'; });
+    // v1.9.12 - cumulable : une relance par Prêtresse présente (décision du créateur, 27/09/2026)
+    var aPr = FOF.unitsAt(st, loc, p.id).filter(function (u) { return u.key === 'pretresse'; }).length;
+    var dPr = pv.du.filter(function (u) { return u.key === 'pretresse'; }).length;
     var rolls = [], ra, rd;
     for (;;) {
       ra = d6(st); rd = d6(st);
       var r = { a: ra, d: rd, notes: [] };
-      if (pv.A + ra < pv.D + rd && aPr) { aPr = false; ra = d6(st); r.notes.push('Prêtresse : l’attaquant relance (' + ra + ')'); r.a = ra; }
-      if (pv.D + rd < pv.A + ra && dPr) { dPr = false; rd = d6(st); r.notes.push('Prêtresse : le défenseur relance (' + rd + ')'); r.d = rd; }
+      if (pv.A + ra < pv.D + rd && aPr > 0) { aPr--; ra = d6(st); r.notes.push('Prêtresse : l’attaquant relance (' + ra + ')'); r.a = ra; }
+      if (pv.D + rd < pv.A + ra && dPr > 0) { dPr--; rd = d6(st); r.notes.push('Prêtresse : le défenseur relance (' + rd + ')'); r.d = rd; }
       rolls.push(r);
       if (pv.A + ra !== pv.D + rd) break;
     }
@@ -397,10 +447,11 @@
   // v1.9.6 - une ambassade prise dans une conversion est RASÉE, jamais transférée. Sans cela, le
   // Partisan sur une capitale adverse donnait au joueur une seconde ambassade, hors de sa propre
   // capitale : deux règles violées d'un coup (« une seule » et « dans votre capitale »).
-  function convertir(st, t, pid) {
+  function convertir(st, t, pid, sansTemples) {
     var n = 0, rasees = 0;
     t.blds = t.blds.filter(function (b) {
       if (b.o === pid) return true;
+      if (sansTemples && b.t === 'T') return true;
       if (b.t === 'A') { rasees++; return false; }
       b.o = pid; n++; return true;
     });
@@ -421,7 +472,8 @@
       case 'pelerin': return t.blds.some(function (b) { return b.t === 'T' && b.o !== p.id; }) && !p.tyran ? 'Faire pèlerinage' : null;
       case 'colonie': return t.ctrl === null && t.revoltFrom !== p.id ? 'Fonder une colonie' : null;
       case 'exploratrice': return st.phase === 'collect' && t.ctrl === null && t.revoltFrom !== p.id && t.cont !== T(st, p.capital).cont ? 'Revendiquer ce territoire' : null;
-      case 'partisan': return t.ctrl !== null && t.ctrl !== p.id && t.blds.some(function (b) { return b.o !== p.id; }) ? 'Soulever tous les aménagements' : null;
+      // v1.9.11 - le Partisan convertit tout SAUF les temples (décision du créateur, 27/09/2026)
+      case 'partisan': return t.ctrl !== null && t.ctrl !== p.id && t.blds.some(function (b) { return b.o !== p.id && b.t !== 'T'; }) ? 'Soulever les aménagements (sauf temples)' : null;
       case 'predicateur': return t.ctrl !== null && t.ctrl !== p.id && t.blds.some(function (b) { return b.t === 'T' && b.o !== p.id; }) ? 'Convertir le temple' : null;
       // v1.9.6 - le Gouverneur agit sur TOUS vos territoires, où qu'il se trouve, temples exclus.
       case 'gouverneur': return FOF.terrOf(st, p.id).some(function (x) { return x.blds.some(function (b) { return b.o !== p.id && b.t !== 'T'; }); }) ? 'Convertir les aménagements adverses' : null;
@@ -441,16 +493,16 @@
         p.pact = host.id; host.pact = p.id; log(st, p.name + ' et ' + host.name + ' scellent un pacte de non-agression.', p.id, 'pact'); break;
       case 'pelerin':
         var tb = t.blds.filter(function (b) { return b.t === 'T' && b.o !== p.id; })[0];
-        gainDip(st, p, 1, name); gainDip(st, st.players[tb.o], 1, 'pèlerinage reçu'); discardUnit(st, u); break;
+        gainDip(st, p, 1, name); gainDip(st, st.players[tb.o], 1, 'pèlerinage reçu', true);   // v1.9.12 : l'Ambassade ne relaie pas un gain reçu discardUnit(st, u); break;
       case 'colonie':
         if (t.revoltFrom === p.id) throw new Error('Ce territoire s\u2019est soulevé contre vous : vous ne pouvez plus vous y établir.');
-        t.ctrl = p.id; t.conqStamp = st.turnNo; t.revoltFrom = null; t.takenFrom = null; if (t.blds.length < FOF.slotsOf(st, p, t.id)) t.blds.push({ t: 'C', o: p.id });
+        t.ctrl = p.id; t.conqStamp = st.turnNo; t.revoltFrom = null; t.takenFrom = null; if (t.blds.length < FOF.slotsOf(st, p, t.id)) t.blds.push({ t: 'C', o: p.id, b: p.id });
         log(st, 'Des colons de ' + p.name + ' fondent un établissement à ' + t.name + '.', p.id, 'land'); discardUnit(st, u); break;
       case 'exploratrice':
         t.ctrl = p.id; t.conqStamp = st.turnNo; t.revoltFrom = null; t.takenFrom = null; p.gold += 1; log(st, 'L’exploratrice de ' + p.name + ' plante sa bannière à ' + t.name + ' (+1 écu).', p.id, 'land'); discardUnit(st, u); break;
       case 'partisan': {
-        var rp = convertir(st, t, p.id);
-        log(st, 'Le Partisan de ' + p.name + ' soulève toutes les bâtisses de ' + t.name + ' en sa faveur.', p.id, 'convert');
+        var rp = convertir(st, t, p.id, true);
+        log(st, 'Le Partisan de ' + p.name + ' soulève les bâtisses de ' + t.name + ' en sa faveur (les temples restent fidèles).', p.id, 'convert');
         if (rp.rasees) log(st, 'L’ambassade de ' + t.name + ' est mise à sac : une cour ne change pas de camp.', p.id, 'bad');
         discardUnit(st, u); break;
       }
@@ -472,10 +524,17 @@
       case 'trebuchets': {
         var candT = t.blds.map(function (b, i) { return i; }).filter(function (i) { return t.blds[i].o !== p.id; });
         var iT = arg !== undefined && candT.indexOf(arg) >= 0 ? arg : candT[0];
-        var bT = t.blds[iT];
+        var bT = t.blds[iT], vict = st.players[bT.o];
+        /* v1.9.11 - le tir compte comme une ATTAQUE contre le propriétaire de l'aménagement
+           (décision du créateur, 27/09/2026) : 1 diplomatie sauf contre un Tyran, rupture d'un pacte
+           éventuel, et drapeaux « a attaqué » / « a été attaqué » (Ambassade, Héraut, Edouard).
+           Avant, il ne coûtait rien et laissait le pacte intact. */
+        p.attackedNow = true; vict.raidedNow = true;
+        if (p.pact === vict.id) breakPact(st, p, vict);
+        if (!vict.tyran) loseDip(st, p, 1, 'attaque (Trébuchets)');
         t.blds.splice(iT, 1);
-        // règle générale : raser un temple coûte 1 diplomatie, sauf contre un Tyran
-        if (bT.t === 'T' && t.ctrl !== null && !st.players[t.ctrl].tyran) loseDip(st, p, 1, 'temple détruit');
+        // règle générale : raser un temple coûte 1 diplomatie de plus, sauf contre un Tyran
+        if (bT.t === 'T' && !vict.tyran) loseDip(st, p, 1, 'temple détruit');
         u.fought = true; u.movesLeft = 0;
         log(st, 'Les Trébuchets de ' + p.name + ' réduisent ' + B[bT.t].name.toLowerCase() + ' de ' + t.name + ' en gravats.', p.id, 'devastate');
         break;
@@ -512,6 +571,9 @@
   };
   // Nombre d'emplacements d'aménagement d'un territoire : 3 dans la capitale de son propriétaire,
   // 2 partout ailleurs. Utilisé par la construction, la Colonie et le déménagement de capitale.
+  // bâtisseur d'un aménagement ; les parties d'avant la v1.9.12 ne le notaient pas : on retient alors le propriétaire
+  FOF.batisseur = function (b) { return b.b === undefined ? b.o : b.b; };
+  FOF.cedable = function (b, pid) { return b.o === pid && FOF.batisseur(b) === pid; };
   FOF.slotsOf = function (st, p, tid) { return p && p.capital === tid ? 3 : 2; };
   FOF.canBuild = function (st, tid, type) {
     var p = FOF.cur(st), t = T(st, tid);
@@ -521,7 +583,7 @@
     // désormais, temple et ambassade inclus (les deux exemptions de la v1.9.2 sont annulées).
     var slots = FOF.slotsOf(st, p, tid);
     if (t.blds.length >= slots) return 'Déjà ' + slots + ' aménagements.';
-    if (type !== 'C' && t.blds.some(function (b) { return b.t === type; })) return 'Déjà un ' + B[type].name.toLowerCase() + ' ici.';
+    if (type !== 'C' && t.blds.some(function (b) { return b.t === type; })) return 'Déjà ' + (type === 'Ci' || type === 'A' ? 'une ' : 'un ') + B[type].name.toLowerCase() + ' ici.';
     if (type === 'P' && !t.seas.length) return 'Un port doit être sur la côte.';
     if (type === 'A' && tid !== p.capital) return 'Une ambassade ne se bâtit que dans votre capitale.';
     if (type === 'A' && p.tyran) return 'Un tyran n’a plus de cour étrangère.';
@@ -533,12 +595,15 @@
   FOF.act = function (st, a) {
     if (st.winner) throw new Error('La partie est terminée.');
     st.tLast = Date.now();
+    var tenus = ambassadeursTenant(st);
     var p = FOF.cur(st);
     var pend = st.pending[0];
-    if (pend && a.type !== 'resolve' && a.type !== 'deficitTake' && a.type !== 'surrender') throw new Error('Une décision est en attente.');
+    // v1.9.11 - l'Espion se joue à tout moment, y compris au tour d'un autre et pendant une décision en attente
+    var horsTour = a.type === 'spy' || a.type === 'spyDecide';
+    if (pend && a.type !== 'resolve' && a.type !== 'deficitTake' && a.type !== 'surrender' && !horsTour) throw new Error('Une décision est en attente.');
     // v1.9.2 - anti-mauvais-clic : tant qu'aucune action n'a été jouée dans la phase en cours, on
     // peut revenir à la précédente. Toute action qui change l'état salit la phase.
-    if (a.type !== 'nextPhase' && a.type !== 'prevPhase' && a.type !== 'surrender') st.phaseClean = false;
+    if (a.type !== 'nextPhase' && a.type !== 'prevPhase' && a.type !== 'surrender' && !horsTour) st.phaseClean = false;
     switch (a.type) {
       case 'prevPhase': {
         var ordp = ['collect', 'recruit', 'military', 'build'], ip = ordp.indexOf(st.phase);
@@ -559,7 +624,7 @@
       case 'nextPhase': {
         var order = ['collect', 'recruit', 'military', 'build'];
         var i = order.indexOf(st.phase);
-        if (i < 3) { st.phase = order[i + 1]; st.phaseClean = true; if (st.phase === 'recruit') st.spy = null; }
+        if (i < 3) { st.phase = order[i + 1]; st.phaseClean = true; }
         else endTurn(st);
         break;
       }
@@ -573,10 +638,34 @@
         if (!st.zone[a.slot]) throw new Error('Cet emplacement du marché est vide.');
         st.discard.push(st.zone[a.slot]); st.zone[a.slot] = draw(st); p.flags.discarded = true;
         log(st, p.name + ' congédie un mercenaire du marché.', p.id, 'card'); break;
-      case 'spy':
-        if (st.phase !== 'recruit' || p.flags.spied || p.gold < 1 || !FOF.army(st, p.id).some(function (x) { return x.key === 'espion'; })) throw new Error('Espion indisponible.');
+      /* v1.9.11 - Espion (décision du créateur, 27/09/2026) : gratuit à l'achat, sans entretien.
+         Usage UNIQUE, à tout moment, y compris pendant le tour d'un autre joueur : 1 or, on regarde
+         en secret la carte du dessus du deck, puis on choisit de la défausser ou non ('spyDecide').
+         L'Espion est défaussé dès qu'il a servi. a.pid = le joueur qui l'utilise. */
+      case 'spy': {
+        var sp = a.pid === undefined ? p : st.players[a.pid];
+        if (!sp || !sp.alive) throw new Error('Espion indisponible.');
+        var eu = st.units.filter(function (x) { return x.owner === sp.id && x.key === 'espion'; })[0];
+        if (!eu) throw new Error('Vous n’avez pas d’Espion.');
+        st.spies = st.spies || {};
+        if (st.spies[sp.id]) throw new Error('Décidez d’abord du sort de la carte déjà regardée.');
+        if (sp.gold < 1) throw new Error('Il faut 1 or pour envoyer l’Espion.');
         if (!st.deck.length) { st.deck = st.discard; st.discard = []; FOF.shuffle(st, st.deck); }
-        p.gold -= 1; p.flags.spied = true; st.spy = { pid: p.id, key: st.deck[st.deck.length - 1] }; break;
+        if (!st.deck.length) throw new Error('Le deck est vide.');
+        sp.gold -= 1; discardUnit(st, eu);
+        st.spies[sp.id] = { key: st.deck[st.deck.length - 1], n: st.deck.length };
+        log(st, 'L’Espion de ' + sp.name + ' se glisse jusqu’au deck et soulève la première carte.', sp.id, 'card');
+        break;
+      }
+      case 'spyDecide': {
+        var sd = a.pid === undefined ? p : st.players[a.pid], vu = st.spies && sd ? st.spies[sd.id] : null;
+        if (!vu) throw new Error('Aucune carte regardée.');
+        delete st.spies[sd.id];
+        // la carte a pu être piochée entre-temps : la décision ne vaut que si elle est toujours dessus
+        var encore = st.deck.length === vu.n && st.deck[st.deck.length - 1] === vu.key;
+        if (a.discard && encore) { st.discard.push(st.deck.pop()); log(st, sd.name + ' fait disparaître la carte du dessus du deck.', sd.id, 'card'); }
+        break;
+      }
       case 'buy': {
         var key = st.zone[a.slot], err = FOF.canBuy(st, key);
         if (err) throw new Error(err);
@@ -648,7 +737,7 @@
       }
       case 'build': {
         var e2 = FOF.canBuild(st, a.tid, a.btype); if (e2) throw new Error(e2);
-        var c = FOF.bldCost(st, p, a.btype); p.gold -= c; T(st, a.tid).blds.push({ t: a.btype, o: p.id }); p.tally.build++;
+        var c = FOF.bldCost(st, p, a.btype); p.gold -= c; T(st, a.tid).blds.push({ t: a.btype, o: p.id, b: p.id }); p.tally.build++;
         log(st, p.name + ' fait élever ' + B[a.btype].name.toLowerCase() + ' à ' + T(st, a.tid).name + ' (' + c + ' écus).', p.id, 'build'); checkWin(st); break;
       }
       case 'replace': {
@@ -661,7 +750,7 @@
         if (a.btype === 'A' && a.tid !== p.capital) throw new Error('Une ambassade ne se bâtit que dans votre capitale.');
         if (a.btype === 'A' && p.tyran) throw new Error('Un tyran n’a plus de cour étrangère.');
         var rc = FOF.bldCost(st, p, a.btype); if (p.gold < rc) throw new Error('Pas assez d’or.');
-        p.gold -= rc; rt.blds[a.idx] = { t: a.btype, o: p.id };
+        p.gold -= rc; rt.blds[a.idx] = { t: a.btype, o: p.id, b: p.id };
         log(st, p.name + ' fait raser ' + B[old.t].name.toLowerCase() + ' de ' + rt.name + ' pour y élever ' + B[a.btype].name.toLowerCase() + '.', p.id, 'build'); checkWin(st); break;
       }
       case 'moveCapital': {
@@ -684,8 +773,11 @@
       }
       case 'cede': {
         var cdt = T(st, a.tid);
-        if (st.phase !== 'build' || cdt.ctrl === null || cdt.ctrl === p.id || !cdt.blds.some(function (b) { return b.o === p.id; }) || p.tyran) throw new Error('Cession impossible.');
-        cdt.blds.forEach(function (b) { if (b.o === p.id) b.o = cdt.ctrl; });
+        if (st.phase !== 'build' || cdt.ctrl === null || cdt.ctrl === p.id || p.tyran) throw new Error('Cession impossible.');
+        // v1.9.12 - seuls les aménagements que le joueur a BÂTIS lui-même se cèdent (décision du créateur,
+        // 27/09/2026) : un aménagement pris par conversion ne peut pas être rendu contre de la diplomatie.
+        if (!cdt.blds.some(function (b) { return FOF.cedable(b, p.id); })) throw new Error('Rien à céder ici : seuls les aménagements que vous avez bâtis se cèdent.');
+        cdt.blds.forEach(function (b) { if (FOF.cedable(b, p.id)) b.o = cdt.ctrl; });
         log(st, p.name + ' remet ses bâtisses de ' + cdt.name + ' à ' + st.players[cdt.ctrl].name + ', en gage de paix.', p.id, 'cede');
         gainDip(st, p, 1, 'cession'); checkWin(st); break;
       }
@@ -699,7 +791,7 @@
       }
       default: throw new Error('Action inconnue : ' + a.type);
     }
-    verifierPactes(st);
+    verifierPactes(st, tenus);
     advancePending(st);
     return st;
   };

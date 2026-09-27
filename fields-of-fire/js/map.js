@@ -75,24 +75,19 @@
   //   3 j : 2      4 j : 2-3      5 j : 2-4      6 j : 2-4
   var KMAX = { 3: 2, 4: 3, 5: 4, 6: 4 };
 
-  FOF.generateMap = function (s, n) {
-    // Le tirage se fait UNE fois, avant les essais. Il était auparavant refait à chaque essai :
+  /* Une passe : tous les essais d'un tirage de continents. Renvoie une carte CONFORME à la règle
+     des 4 débarquements, ou null si aucun essai n'y est arrivé. */
+  function unePasse(s, n) {
+    // Le tirage se fait UNE fois par passe, avant les essais. Il était auparavant refait à chaque essai :
     // deux continents réussissent presque toujours du premier coup alors que quatre demandent
     // plusieurs tentatives, si bien que le hasard retombait sur deux dans 87 % des parties
     // (mesuré : 26 cartes à deux continents sur 30 à cinq joueurs). On tient donc le nombre voulu,
     // et on ne descend d'un cran que s'il est réellement impossible à placer.
     var kmax = KMAX[n] || Math.min(n + 1, 4);
     var kVoulu = FOF.FORCE_K || (2 + ri(s, kmax - 1));
-    /* v1.9.9 - « une mer ne doit pas permettre de débarquer sur plus de 4 territoires ». La
-       découpe y arrive presque toujours, mais certaines configurations de côte n'offrent aucun
-       tracé possible : il reste alors une mer à 5. Plutôt que de refuser de lancer la partie, on
-       retient la meilleure carte rencontrée et on la sert en dernier recours. FOF.dernierePireDeb
-       donne le chiffre effectivement servi. */
-    var meilleure = null;
-    function garder(m) { if (m && (!meilleure || m.pireDeb < meilleure.pireDeb)) meilleure = m; return m; }
     for (var want = kVoulu; want >= 2; want--) {
       for (var attempt = 0; attempt < 300; attempt++) {
-        var m = garder(tryGenerate(s, n, want));
+        var m = tryGenerate(s, n, want);
         if (m && m.pireDeb <= FOF.MAX_DEBARQUEMENTS) { FOF.dernierePireDeb = m.pireDeb; return m; }
       }
     }
@@ -105,18 +100,48 @@
         FOF.SEA_EST = (n <= 3 ? 0.215 : 0.48) + 0.04 * (relache + 1);
         for (var w2 = kVoulu; w2 >= 2; w2--) {
           for (var a2 = 0; a2 < 200; a2++) {
-            var m2 = garder(tryGenerate(s, n, w2));
+            var m2 = tryGenerate(s, n, w2);
             if (m2 && m2.pireDeb <= FOF.MAX_DEBARQUEMENTS) { FOF.dernierePireDeb = m2.pireDeb; return m2; }
           }
         }
       }
     } finally { FOF.SEA_EST = seuilInitial; }
-    if (meilleure) { FOF.dernierePireDeb = meilleure.pireDeb; return meilleure; }
+    return null;
+  }
+
+  /* v1.9.10 - règle STRICTE (décision du 27/09/2026) : aucune carte servie ne doit avoir une mer
+     ouvrant sur plus de 4 territoires. Jusqu'en 1.9.9, la meilleure carte rencontrée était servie
+     en dernier recours (une mer à 5, à 4 joueurs surtout). Désormais on refait des passes
+     complètes, chacune avec un nouveau tirage de continents, jusqu'à obtenir une carte conforme.
+     Le plafond de passes n'est qu'un garde-fou théorique.
+     v1.9.11 - la « mer classique » est supprimée (décision du créateur, 27/09/2026) : elle ne
+     produisait aucune carte conforme à 4 joueurs. Il ne reste qu'un type de mer, l'ancienne « mer
+     élargie » (eau jusqu'à 3 cases des terres, 3 × joueurs + 6 zones visées). */
+  FOF.MAX_PASSES_CARTE = 200;
+  FOF.generateMap = function (s, n) {
+    for (var passe = 0; passe < FOF.MAX_PASSES_CARTE; passe++) {
+      var m = unePasse(s, n);
+      if (m) return m;
+    }
     throw new Error('Carte impossible à générer');
+  };
+  // Même chose sans bloquer la page : une passe par tâche, pour que l'écran « Génération de la
+  // carte en cours » reste affiché et animé. fin(carte) ou echec(erreur).
+  FOF.generateMapAsync = function (s, n, fin, echec) {
+    var passe = 0;
+    function suite() {
+      var m = null;
+      try { m = unePasse(s, n); } catch (e) { if (echec) echec(e); return; }
+      if (m) { fin(m); return; }
+      if (++passe >= FOF.MAX_PASSES_CARTE) { if (echec) echec(new Error('Carte impossible à générer')); return; }
+      setTimeout(suite, 0);
+    }
+    // premier passage différé : laisse au navigateur le temps d'afficher l'écran d'attente
+    setTimeout(suite, 30);
   };
 
   function tryGenerate(s, n, k) {
-    var wide = !(s && s.wideSea === false);   // « mer élargie » : choix fait à la création de la partie
+    var wide = true;   // v1.9.11 : un seul type de mer (l'ancienne « mer élargie »)
     var cs = continentSizes(s, n, k);
     var targets = cs.sizes.slice(); if (cs.extra) targets.push(cs.extra);
     // v1.9.2 : grille choisie pour que la carte rendue tienne dans un rapport ~2:1, qui remplit
@@ -253,8 +278,8 @@
     terr.forEach(function (t) { t.seas = decoupe.seasOfT[t.id] || []; });
     if (terr.every(function (t) { return !t.seas.length; })) return null;
     // v1.9.9 - une mer sans rivage est désormais permise (pleine mer). En revanche, aucune ne doit
-    // ouvrir sur plus de MAX_DEBARQUEMENTS territoires. On ne jette pas la carte ici : on note le
-    // pire chiffre, et generateMap garde la meilleure carte vue si aucune ne tient la règle.
+    // ouvrir sur plus de MAX_DEBARQUEMENTS territoires. On note le pire chiffre ici ; unePasse()
+    // écarte la carte s'il dépasse la règle (v1.9.10 : règle stricte).
     var pireDeb = 0;
     seas.forEach(function (z) { if (z.adjT.length > pireDeb) pireDeb = z.adjT.length; });
     var seen = { 0: true }, st = [0];

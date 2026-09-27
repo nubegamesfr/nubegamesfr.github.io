@@ -7,11 +7,14 @@
 
   function snap(st) {
     return {
-      seed: st.seed, phase: st.phase, turnNo: st.turnNo, cur: st.cur, winner: !!st.winner,
+      // v1.9.11 - identifiant stable de la partie. C'était st.seed, qui change à chaque tirage au
+      // sort (dés, pioche) : après un combat, la comparaison était sautée et les annonces perdues.
+      seed: st.t0 + ':' + st.map.terr.length, phase: st.phase, turnNo: st.turnNo, cur: st.cur, winner: !!st.winner,
       ctrl: st.map.terr.map(function (t) { return t.ctrl; }),
       blds: st.map.terr.map(function (t) { return t.blds.map(function (b) { return b.t + b.o; }).join(','); }),
       gold: st.players.map(function (p) { return p.gold; }),
       dip: st.players.map(function (p) { return p.dip; }),
+      tyran: st.players.map(function (p) { return !!p.tyran; }),
       logN: st.logN || st.log.length,
       combat: st.lastCombat ? JSON.stringify([st.lastCombat.loc, st.lastCombat.att, st.lastCombat.rolls]) : '',
       units: st.units.length
@@ -71,11 +74,19 @@
     el.appendChild(p); setTimeout(function () { p.remove(); }, 2300);
   }
   FOF.FX_pop = pop;
-  function tyranPop(p) {
+  /* v1.9.11 - retour de playtest : le passage en Tyran doit s'afficher chez TOUT LE MONDE. Il
+     était lu dans les 4 dernières lignes de chronique : en ligne, un tour adverse en produit
+     souvent plus, et l'annonce se perdait. Il est désormais détecté sur l'état des joueurs, et
+     s'affiche aussi quand les animations sont réduites (version fixe). Un clic le ferme. */
+  function tyranPop(p, fixe) {
     if (!p) return;
-    var el = document.createElement('div'); el.className = 'fx-tyran';
-    el.innerHTML = '<div class="ty-crown">' + FOF.ic('crown', 84) + '</div><div class="ty-t">TYRAN</div><div class="ty-n">' + FOF.esc(p.name) + ' a renié toute parole donnée.</div><div class="ty-s">Tous peuvent désormais l’attaquer sans perdre de diplomatie, et ses terres se révolteront à chaque tour.</div>';
-    document.body.appendChild(el); setTimeout(function () { el.classList.add('out'); setTimeout(function () { el.remove(); }, 600); }, 4200);
+    var el = document.createElement('div'); el.className = 'fx-tyran' + (fixe ? ' still' : '');
+    el.setAttribute('role', 'alert');
+    el.innerHTML = '<div class="ty-crown">' + FOF.ic('crown', 84) + '</div><div class="ty-t">TYRAN</div><div class="ty-n">' + FOF.esc(p.name) + ' a renié toute parole donnée.</div><div class="ty-s">Tous peuvent désormais l’attaquer sans perdre de diplomatie, et ses terres se révolteront à chaque tour.</div><div class="ty-x">Cliquez pour fermer</div>';
+    var fini = false;
+    function fermer() { if (fini) return; fini = true; el.classList.add('out'); setTimeout(function () { el.remove(); }, 600); }
+    el.addEventListener('click', fermer);
+    document.body.appendChild(el); setTimeout(fermer, 5200);
   }
   var pendingGold = 0;
   FOF.FX_flushGold = function () { if (pendingGold) { var n = pendingGold; pendingGold = 0; setTimeout(function () { goldPop(n); }, 120); } };
@@ -103,6 +114,9 @@
     before: function () { return { pos: tokPos() }; },
     after: function (st, before, o) {
       var cur = snap(st);
+      if (prev && prev.seed === cur.seed && prev.tyran) cur.tyran.forEach(function (t, i) {
+        if (t && !prev.tyran[i]) { tyranPop(st.players[i], reduce || FOF.animOn === false); FOF.sfx && FOF.sfx('tyran'); }
+      });
       if (reduce || !prev || prev.seed !== cur.seed) { prev = cur; return; }
       var anim = FOF.animOn !== false;
       // 1) les pions glissent vers leur nouvelle case
@@ -158,7 +172,7 @@
       if (n > 0) st.log.slice(-n).forEach(function (l) {
         var r = classify(l); if (!r || !r[1]) return;
         var col = l.p !== null && l.p !== undefined ? o.color(l.p) : null;
-        if (r[1] === 'tyran') { if (anim) tyranPop(st.players[l.p]); snd.push('tyran'); popped = true; return; }
+        if (r[1] === 'tyran') { popped = true; return; }   // annoncé plus haut, d'après l'état des joueurs
         // v1.9.1 : la grande carte centrale (sombre, 2,3 s, jusqu'à 80 % de largeur) n'apparaît plus
         // pendant le tour d'un autre joueur - l'événement est quand même annoncé, en bulle.
         if (r[1] === 'pop' && !popped && aMoi && anim) { pop(l.m, r[2], r[3], col); popped = true; snd.push(r[3] === 'bad' ? 'bad' : l.k === 'pact' ? 'dip' : 'conquer'); }

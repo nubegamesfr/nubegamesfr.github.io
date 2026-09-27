@@ -38,21 +38,21 @@
   FOF.SPECIALS = {
     corbeau:     { name: 'Corbeau messager', move: 4, upkeep: 1, req: ['Ci', 1], text: 'Prend la mer sans port. Sur une capitale adverse, défausser pour +1 de diplomatie.' },
     emissaire:   { name: 'Émissaire', move: 2, upkeep: 2, req: ['Ci', 2], text: 'Sur une capitale adverse, défausser pour +2 de diplomatie.' },
-    pelerin:     { name: 'Pèlerin', move: 2, upkeep: 1, req: ['T', 2], text: 'Sur un temple adverse, défausser pour +1 de diplomatie pour vous et son propriétaire.' },
-    heraut:      { name: 'Héraut', move: 1, upkeep: 2, req: ['Ci', 3], text: 'À la collecte, +1 de diplomatie, sauf si vous avez attaqué au tour précédent.' },
-    ambassadeur: { name: 'Ambassadeur', move: 1, upkeep: 2, req: ['A', 1], text: 'Sur une capitale adverse (hors Tyran) : pacte de non-agression tant qu’il y reste.' },
+    pelerin:     { name: 'Pèlerin', move: 2, upkeep: 1, req: ['T', 2], text: 'Sur un temple adverse, défausser : +1 de diplomatie pour vous et pour son propriétaire. L’Ambassade ne s’ajoute qu’à votre gain.' },
+    heraut:      { name: 'Héraut', move: 1, upkeep: 2, req: ['Ci', 3], text: 'À la collecte, +1 de diplomatie si vous n’avez ni attaqué ni été attaqué depuis votre tour précédent. L’Ambassade n’ajoute rien à ce gain. Cumulable.' },
+    ambassadeur: { name: 'Ambassadeur', move: 1, upkeep: 2, req: ['A', 1], text: 'Sur une capitale adverse (hors Tyran) : pacte de non-agression tant qu’il y reste. S’il n’y est plus, quelle qu’en soit la raison, vous perdez 1 de diplomatie.' },
     colonie:     { name: 'Colonie', move: 1, upkeep: 3, req: ['Ci', 1], text: 'Sur un territoire neutre, défausser pour le conquérir et y bâtir un campement.' },
     exploratrice:{ name: 'Exploratrice', move: 2, upkeep: 2, req: ['P', 2], text: 'À la collecte, sur un territoire neutre d’un autre continent que votre capitale, défausser pour conquérir et gagner 1 or.' },
     caboteur:    { name: 'Caboteur', move: 1, upkeep: 1, req: ['P', 1], text: 'À la collecte, sur une case avec le port d’un adversaire : +2 or.' },
     caravanier:  { name: 'Caravanier', move: 1, upkeep: 1, req: ['Ci', 1], text: 'À la collecte, sur une case avec la cité d’un adversaire : +2 or.' },
-    espion:      { name: 'Espion', move: 1, upkeep: 0, req: ['Ci', 1], text: 'Aucun entretien. Au recrutement, payez 1 or pour regarder en secret la carte du dessus du deck.' },
-    partisan:    { name: 'Partisan', move: 1, upkeep: 2, req: ['Ci', 3], text: 'Sur un territoire adverse, défausser pour convertir tous les aménagements.' },
+    espion:      { name: 'Espion', move: 1, upkeep: 0, req: ['Ci', 1], text: 'Gratuit, sans entretien. Une seule fois, à tout moment (même au tour d’un autre) : payez 1 or, regardez en secret la carte du dessus du deck et défaussez-la si vous voulez. Puis défaussez l’Espion.' },
+    partisan:    { name: 'Partisan', move: 1, upkeep: 2, req: ['Ci', 3], text: 'Sur un territoire adverse, défausser pour convertir tous les aménagements adverses, sauf les temples.' },
     predicateur: { name: 'Prédicateur', move: 1, upkeep: 2, req: ['T', 3], text: 'Sur un territoire adverse : convertit son temple. Puis défausse.' },
     gouverneur:  { name: 'Gouverneur', move: 1, upkeep: 5, req: ['F', 4], text: 'Défausser pour convertir tous les aménagements adverses sur vos territoires, sauf les temples.' },
-    pretresse:   { name: 'Prêtresse', move: 1, upkeep: 3, req: ['T', 1], text: 'Lors d’un combat sur sa case, si vous perdez, vous pouvez relancer le dé.' },
-    trebuchets:  { name: 'Trébuchets', move: 1, upkeep: 4, req: ['F', 5], text: 'Sur un territoire adverse, peut détruire un aménagement adverse.' },
-    maitre:      { name: 'Maître d’œuvre', move: 1, upkeep: 1, req: ['T', 1], text: 'Vos temples coûtent 1 or de moins.' },
-    prelat:      { name: 'Prélat', move: 1, upkeep: 3, req: ['T', 4], text: 'À la collecte, gagner +1 or pour chaque temple que vous possédez.' }
+    pretresse:   { name: 'Prêtresse', move: 1, upkeep: 3, req: ['T', 1], text: 'Lors d’un combat sur sa case, si vous perdez, vous relancez votre dé. Une relance par Prêtresse.' },
+    trebuchets:  { name: 'Trébuchets', move: 1, upkeep: 4, req: ['F', 5], text: 'Sur un territoire adverse, peut détruire un aménagement adverse, une fois par tour. C’est une attaque : 1 de diplomatie (sauf contre un Tyran), et elle rompt un pacte.' },
+    maitre:      { name: 'Maître d’œuvre', move: 1, upkeep: 1, req: ['T', 1], text: 'Vos temples coûtent 1 or de moins (cumulable).' },
+    prelat:      { name: 'Prélat', move: 1, upkeep: 3, req: ['T', 4], text: 'À la collecte, gagner +1 or pour chaque temple que vous possédez (cumulable).' }
   };
 
 

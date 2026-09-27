@@ -101,7 +101,12 @@
     for (var i = 0; i < N; i++) {
       if (kind[i] !== 1 && kind[i] !== 2) continue;
       var key = (kind[i] === 1 ? 't' : 's') + id[i], x2 = i % gw, y2 = (i / gw) | 0;
-      var sc = Math.min(dist[i], CAP) * 10 + hash(i, 3, seed);
+      // v1.9.11 - une mer coupée par le bord du cadre avait son « point le plus intérieur » collé à
+      // ce bord : les pions posés en mer sortaient de la carte (signalé en playtest). Le bord du
+      // cadre compte désormais comme une frontière pour les mers.
+      var dd = Math.min(dist[i], CAP);
+      if (kind[i] === 2) dd = Math.min(dd, x2, gw - 1 - x2, y2, gh - 1 - y2);
+      var sc = dd * 10 + hash(i, 3, seed);
       if (!best[key] || sc > best[key].sc) best[key] = { sc: sc, i: i };
       var b = box[key] || (box[key] = { x0: x2, y0: y2, x1: x2, y1: y2 });
       if (x2 < b.x0) b.x0 = x2; if (x2 > b.x1) b.x1 = x2; if (y2 < b.y0) b.y0 = y2; if (y2 > b.y1) b.y1 = y2;
