@@ -11,6 +11,9 @@ Cela vaut pour les 33 illustrations d'unités (`assets/units/`), les 8 portraits
 l'icône de diplomatie `dip` et l'icône de territoires `terr` (`assets/icons/`), chacune dans ses
 deux teintes quand elle apparaît sur fond clair et sur fond sombre.
 
+La texture de planches de bois du fond (`assets/images/table-bois.jpg`, v1.9.13) a été générée
+par calcul pour le jeu : aucune photo ni image extérieure n'a servi à la produire.
+
 Les illustrations du domaine public utilisées jusqu'à la version 1.9.8 (peintures et enluminures
 reprises sur Wikimedia Commons) ont toutes été remplacées et ne sont plus présentes dans le jeu.
 

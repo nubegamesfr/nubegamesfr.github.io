@@ -1,6 +1,15 @@
-# Fields of Fire - version web (beta 1.9.12, prototype)
+# Fields of Fire - version web (beta 1.9.13, prototype)
 
 Jeu 100 % statique (HTML/CSS/JS, sans build). Servi par GitHub Pages sur https://nubegames.fr/fields-of-fire/ (dossier `fields-of-fire/` du repo `nubegamesfr.github.io`).
+
+## v1.9.13 - texture de bois, fonds gris corrigés (27/09/2026)
+
+- **Nouvelle texture de bois** pour la table : longues planches de noyer, veinage fin, joints
+  décalés (`assets/images/table-bois.jpg`, 2048 × 1024, 230 Ko, raccord parfait sur les quatre
+  bords, générée pour le jeu). Elle remplace le bruit dessiné en CSS.
+- **Rectangle gris dans les fenêtres** : la barre des boutons en bas de chaque fenêtre gardait la
+  couleur de l'ancien thème. Corrigé, ainsi que les autres restes gris : panneau des joueurs,
+  menu contextuel de la carte, tchat, bulles, menu circulaire du dirigeant, champs de saisie.
 
 ## v1.9.12 - bots réécrits, direction artistique « table de guerre », catalogue (27/09/2026)
 
