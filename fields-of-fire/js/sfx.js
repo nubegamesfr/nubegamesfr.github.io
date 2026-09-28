@@ -24,6 +24,24 @@
     g.gain.setValueAtTime(vol || 0.4, t0); g.gain.exponentialRampToValueAtTime(0.0001, t0 + d);
     s.connect(f); f.connect(g); g.connect(master); s.start(t0); s.stop(t0 + d + 0.05);
   }
+  /* v1.9.14 - vrais bruits de dés : un choc = une impulsion très brève filtrée deux fois, un
+     « clac » aigu (os / résine, 2,5 à 6 kHz, très résonant) et un « toc » grave (le bois de la
+     table, 500 à 900 Hz). Les dés rebondissent : intervalles et force décroissent à chaque rebond. */
+  var ibuf = null;
+  function clac(t, amp, bois) {
+    if (!ibuf) { ibuf = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 0.012), ctx.sampleRate); var b = ibuf.getChannelData(0); for (var i = 0; i < b.length; i++) b[i] = (Math.random() * 2 - 1) * Math.exp(-i / (ctx.sampleRate * 0.0012)); }
+    var t0 = ctx.currentTime + t;
+    [[2500 + Math.random() * 3500, 9 + Math.random() * 6, amp], [500 + Math.random() * 400, 5, amp * (bois || 0.6)]].forEach(function (c) {
+      var s = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain();
+      s.buffer = ibuf; f.type = 'bandpass'; f.frequency.value = c[0]; f.Q.value = c[1]; g.gain.value = c[2] * 6;
+      s.connect(f); f.connect(g); g.connect(master); s.start(t0);
+    });
+  }
+  function rebonds(t, force, n) {
+    var dt = 0.13 + Math.random() * 0.04, a = force;
+    for (var k = 0; k < n; k++) { clac(t, a, 0.9); t += dt; dt *= 0.64 + Math.random() * 0.08; a *= 0.62; }
+    return t;
+  }
   function notes(list, type, vol, step, dur) { list.forEach(function (f, i) { tone(f, i * step, dur, type, vol); }); }
   var S = {
     coin: function () { tone(1318, 0, 0.12, 'triangle', 0.22); tone(1976, 0.07, 0.22, 'triangle', 0.18); },
@@ -34,7 +52,7 @@
     conquer: function () { notes([523, 659, 784, 1046], 'sawtooth', 0.07, 0.09, 0.3); notes([262, 330, 392, 523], 'triangle', 0.12, 0.09, 0.32); },
     phase: function () { tone(880, 0, 0.6, 'sine', 0.12); tone(1320, 0.02, 0.5, 'sine', 0.06); },
     turn: function () { tone(660, 0, 0.7, 'sine', 0.16); tone(990, 0.18, 0.9, 'sine', 0.13); tone(1320, 0.18, 0.6, 'sine', 0.05); },
-    dice: function () { for (var i = 0; i < 7; i++) noise(i * 0.045 + Math.random() * 0.02, 0.04, 2400 + Math.random() * 1500, 3, 0.28); },
+    dice: function () { var t = rebonds(0, 0.5, 5); rebonds(0.05, 0.4, 5); noise(t - 0.1, 0.18, 700, 0.8, 0.05, 'lowpass'); },
     clash: function () { noise(0, 0.35, 3500, 0.8, 0.3, 'highpass'); tone(1760, 0, 0.3, 'square', 0.03, 1500); },
     win: function () { S.clash(); notes([523, 659, 784], 'triangle', 0.2, 0.11, 0.35); tone(1046, 0.33, 0.7, 'triangle', 0.22); },
     loss: function () { S.clash(); notes([392, 311, 262], 'sawtooth', 0.07, 0.18, 0.4); tone(131, 0.54, 0.8, 'triangle', 0.2); },
@@ -74,7 +92,15 @@
       t = t || 0; [2130, 3190, 4420, 5870].forEach(function (f, i) { tone(f * (0.97 + Math.random() * 0.06), t, 0.35 - i * 0.05, 'sine', 0.07 - i * 0.012); });
       noise(t, 0.08, 4000, 1, 0.3);
     },
-    dice3d: function () { for (var i = 0; i < 12; i++) { var t = i * 0.09 + Math.random() * 0.04; noise(t, 0.035, 1800 + Math.random() * 2500, 4, 0.22 * (1 - i / 14)); tone(300 + Math.random() * 200, t, 0.03, 'triangle', 0.05); } noise(1.15, 0.05, 1200, 3, 0.25); },
+    // secoués dans la main, lancés, trois à six rebonds chacun, un léger roulement, puis ils s'arrêtent
+    dice3d: function () {
+      var t = 0;
+      for (var i = 0; i < 9; i++) { clac(t, 0.12 + Math.random() * 0.1, 0.2); t += 0.028 + Math.random() * 0.03; }
+      noise(0, 0.36, 1600, 0.6, 0.035, 'lowpass');
+      var fin = Math.max(rebonds(0.5, 0.75, 6), rebonds(0.53 + Math.random() * 0.04, 0.6, 5));
+      noise(fin - 0.28, 0.3, 650, 0.7, 0.05, 'lowpass');
+      clac(fin + 0.02, 0.06, 0.8);
+    },
     tyran: function () { tone(73, 0, 2.2, 'sawtooth', 0.08); tone(110, 0.1, 2, 'sawtooth', 0.05); tone(98, 0.1, 2, 'triangle', 0.16); noise(0, 1.5, 200, 0.7, 0.2, 'lowpass'); [0, 0.5, 1].forEach(function (t) { tone(55, t, 0.5, 'sine', 0.35, 40); }); },
     error: function () { tone(140, 0, 0.16, 'square', 0.06); tone(110, 0.08, 0.18, 'square', 0.05); }
   };

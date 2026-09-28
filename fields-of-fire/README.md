@@ -1,6 +1,32 @@
-# Fields of Fire - version web (beta 1.9.13, prototype)
+# Fields of Fire - version web (beta 1.9.14, prototype)
 
 Jeu 100 % statique (HTML/CSS/JS, sans build). Servi par GitHub Pages sur https://nubegames.fr/fields-of-fire/ (dossier `fields-of-fire/` du repo `nubegamesfr.github.io`).
+
+## v1.9.14 - retours de playtest, nouvelles cartes, bulles de pions (28/09/2026)
+
+- **Règles (décisions du créateur)** : la cession volontaire d'un aménagement est supprimée (la
+  cession forcée d'un territoire après la défaite d'un dirigeant reste) ; dévaster donne le
+  territoire au vainqueur, tous ses aménagements rasés, coût inchangé ; pacifier convertit un seul
+  aménagement par tour, le moins cher d'abord ; Ambassade à 8 or ; Edouard : 1 or pour +1
+  diplomatie ; Aliénor devient **Alinor**, ses ports coûtent 2 or et donnent +2 défense.
+- **Cartes** : Corbeau messager (entretien 2, déplacement 3), Émissaire (3), Ambassadeur (3),
+  Héraut (4). Espion : texte corrigé. Nouvelles spéciales **Calomniateur** (Cité ×1, entretien 3,
+  déplacement 2 : défaussé sur un territoire adverse, son propriétaire perd 2 diplomatie, sans
+  descendre sous 0) et **Boutefeu** (Cité ×2, entretien 1, déplacement 1 : tant qu'il reste sur
+  un territoire adverse, la cité de la case ne rapporte rien à la collecte). Quinze cartes passent
+  à 3 exemplaires : deck de 85 cartes, 35 modèles. Calomniateur et Boutefeu n'ont pas encore
+  d'illustration (couronne provisoire).
+- **Carte** : une bulle par joueur et par case (dirigeant, sinon l'unité la plus puissante),
+  puissance totale en haut à gauche, nombre de pions en bas à droite. Au survol, à tout moment,
+  une fenêtre montre les cartes du groupe. Bulles légèrement plus petites.
+- **Interface** : diplomatie affichée « actuelle / seuil » pour chaque joueur ; bouton Pacifier
+  indique l'aménagement visé ; catalogue avec le nombre d'exemplaires ; glossaire nettoyé.
+- **Son** : Old Tower Inn, Field of Dreams, Once Upon a Time et Defeat Theme retirés ; volumes
+  égalisés (-16 LUFS) ; fondu enchaîné entre les pistes ; « Exploration » et les pistes de la
+  même humeur reviennent plus souvent ; musique de combat plus douce à l'entrée et à la sortie ;
+  nouveau bruit de dés (secousse, rebonds, arrêt).
+- Vérifié : 63 assertions de scénarios, 120 parties de bots à 3-6 joueurs sans erreur moteur ni
+  violation d'invariant.
 
 ## v1.9.13 - texture de bois, fonds gris corrigés (27/09/2026)
 

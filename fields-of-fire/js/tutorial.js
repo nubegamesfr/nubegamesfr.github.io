@@ -17,7 +17,7 @@
     { id: 'build', sel: '#boardWrap', title: '4 · La construction', text: 'Cliquez un de vos territoires (ou son petit marteau) pour bâtir : campement 1, fort 3, port 3, cité 5, temple 7. Les cités rapportent de l’or, les forts défendent, les temples mènent à la victoire religieuse.', when: { round: 1, phase: 'build' } },
     { id: 'conquer', sel: '#boardWrap', title: 'Prendre un territoire neutre', text: 'Si votre dirigeant est resté sur un neutre depuis votre tour précédent, le menu propose « Conquérir ». Il ne se déplace pas ce tour-là : la terre est à vous sans combat.', when: { round: 2, phase: 'military' } },
     { id: 'attack', sel: '#mat', title: 'Attaquer', text: 'Pour attaquer, amenez vos unités d’élite sur la case visée : elles combattent ensemble. Chaque assaut coûte 1 diplomatie. Si votre dirigeant est sur la case, il mène l’assaut, et une défaite lui coûte un territoire.', when: { round: 2, phase: 'military' } },
-    { id: 'gloss', sel: '#glossBtn', title: 'Un mot inconnu ?', text: 'Pacifier, céder, dévaster, tyran… le Glossaire explique tout le vocabulaire du jeu. Le Deck, juste à côté, montre les cartes encore disponibles.', when: { round: 2, phase: 'build' } },
+    { id: 'gloss', sel: '#glossBtn', title: 'Un mot inconnu ?', text: 'Pacifier, dévaster, tyran… le Glossaire explique tout le vocabulaire du jeu. Le Deck, juste à côté, montre les cartes encore disponibles.', when: { round: 2, phase: 'build' } },
     { id: 'victory', sel: '#mat .tracks', title: 'Gagner la partie', text: 'Trois chemins : conquérir assez de territoires, élever assez de temples, ou atteindre 10 de diplomatie. La victoire est immédiate. À vous de jouer : le didacticiel s’arrête ici.', when: { round: 3, phase: 'collect' } }
   ];
 

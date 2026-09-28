@@ -10,20 +10,20 @@
     P:  { name: 'Port',      cost: 3, def: 1 },
     Ci: { name: 'Cité',      cost: 5, def: 0 },
     T:  { name: 'Temple',    cost: 7, def: 0 },
-    A:  { name: 'Ambassade',  cost: 4, def: 0 }
+    A:  { name: 'Ambassade',  cost: 8, def: 0 }   // v1.9.14 : 4 → 8 or
   };
   FOF.BUILDING_ORDER = ['C', 'F', 'P', 'Ci', 'T', 'A'];
 
   // Unités d'élite : dépl, puissance [P,F,M,Ma], entretien, condition
   FOF.ELITES = {
-    milice:     { name: 'Milice paysanne', move: 1, pow: [1,1,1,1], upkeep: 2, req: ['C', 1] },
-    pillards:   { name: 'Pillards', move: 1, pow: [0,1,1,1], upkeep: 1, req: ['C', 2] },
+    milice:     { name: 'Milice paysanne', move: 1, pow: [1,1,1,1], upkeep: 2, req: ['C', 1], copies: 3 },
+    pillards:   { name: 'Pillards', move: 1, pow: [0,1,1,1], upkeep: 1, req: ['C', 2], copies: 3 },
     ecumeurs:   { name: 'Écumeurs', move: 2, pow: [1,1,1,2], upkeep: 1, req: ['C', 3] },
     brigands:   { name: 'Brigands', move: 2, pow: [1,1,2,1], upkeep: 1, req: ['C', 3] },
     bandits:    { name: 'Bandits', move: 2, pow: [0,2,2,1], upkeep: 1, req: ['C', 4] },
     nomades:    { name: 'Cavaliers nomades', move: 3, pow: [4,1,1,3], upkeep: 3, req: ['C', 5] },
     fantassins: { name: 'Fantassins', move: 1, pow: [2,2,2,2], upkeep: 2, req: ['F', 2] },
-    archers:    { name: 'Archers', move: 1, pow: [1,3,3,2], upkeep: 2, req: ['F', 2] },
+    archers:    { name: 'Archers', move: 1, pow: [1,3,3,2], upkeep: 2, req: ['F', 2], copies: 3 },
     piquiers:   { name: 'Piquiers', move: 1, pow: [4,1,1,4], upkeep: 2, req: ['F', 3] },
     inflourde:  { name: 'Infanterie lourde', move: 1, pow: [3,3,3,2], upkeep: 3, req: ['F', 3] },
     arbaletriers:{ name: 'Arbalétriers', move: 1, pow: [3,2,4,3], upkeep: 3, req: ['F', 3] },
@@ -36,22 +36,25 @@
 
   // Unités spéciales : dépl, entretien, condition ('D' = diplomatie), texte
   FOF.SPECIALS = {
-    corbeau:     { name: 'Corbeau messager', move: 4, upkeep: 1, req: ['Ci', 1], text: 'Prend la mer sans port. Sur une capitale adverse, défausser pour +1 de diplomatie.' },
-    emissaire:   { name: 'Émissaire', move: 2, upkeep: 2, req: ['Ci', 2], text: 'Sur une capitale adverse, défausser pour +2 de diplomatie.' },
-    pelerin:     { name: 'Pèlerin', move: 2, upkeep: 1, req: ['T', 2], text: 'Sur un temple adverse, défausser : +1 de diplomatie pour vous et pour son propriétaire. L’Ambassade ne s’ajoute qu’à votre gain.' },
-    heraut:      { name: 'Héraut', move: 1, upkeep: 2, req: ['Ci', 3], text: 'À la collecte, +1 de diplomatie si vous n’avez ni attaqué ni été attaqué depuis votre tour précédent. L’Ambassade n’ajoute rien à ce gain. Cumulable.' },
-    ambassadeur: { name: 'Ambassadeur', move: 1, upkeep: 2, req: ['A', 1], text: 'Sur une capitale adverse (hors Tyran) : pacte de non-agression tant qu’il y reste. S’il n’y est plus, quelle qu’en soit la raison, vous perdez 1 de diplomatie.' },
-    colonie:     { name: 'Colonie', move: 1, upkeep: 3, req: ['Ci', 1], text: 'Sur un territoire neutre, défausser pour le conquérir et y bâtir un campement.' },
-    exploratrice:{ name: 'Exploratrice', move: 2, upkeep: 2, req: ['P', 2], text: 'À la collecte, sur un territoire neutre d’un autre continent que votre capitale, défausser pour conquérir et gagner 1 or.' },
-    caboteur:    { name: 'Caboteur', move: 1, upkeep: 1, req: ['P', 1], text: 'À la collecte, sur une case avec le port d’un adversaire : +2 or.' },
-    caravanier:  { name: 'Caravanier', move: 1, upkeep: 1, req: ['Ci', 1], text: 'À la collecte, sur une case avec la cité d’un adversaire : +2 or.' },
-    espion:      { name: 'Espion', move: 1, upkeep: 0, req: ['Ci', 1], text: 'Gratuit, sans entretien. Une seule fois, à tout moment (même au tour d’un autre) : payez 1 or, regardez en secret la carte du dessus du deck et défaussez-la si vous voulez. Puis défaussez l’Espion.' },
+    corbeau:     { name: 'Corbeau messager', move: 3, upkeep: 2, req: ['Ci', 1], copies: 3, text: 'Prend la mer sans port. Sur une capitale adverse, défausser pour +1 de diplomatie.' },
+    emissaire:   { name: 'Émissaire', move: 2, upkeep: 3, req: ['Ci', 2], copies: 3, text: 'Sur une capitale adverse, défausser pour +2 de diplomatie.' },
+    pelerin:     { name: 'Pèlerin', move: 2, upkeep: 1, req: ['T', 2], copies: 3, text: 'Sur un temple adverse, défausser : +1 de diplomatie pour vous et pour son propriétaire. L’Ambassade ne s’ajoute qu’à votre gain.' },
+    heraut:      { name: 'Héraut', move: 1, upkeep: 4, req: ['Ci', 3], text: 'À la collecte, +1 de diplomatie si vous n’avez ni attaqué ni été attaqué depuis votre tour précédent. L’Ambassade n’ajoute rien à ce gain. Cumulable.' },
+    ambassadeur: { name: 'Ambassadeur', move: 1, upkeep: 3, req: ['A', 1], copies: 3, text: 'Sur une capitale adverse (hors Tyran) : pacte de non-agression tant qu’il y reste. S’il n’y est plus, quelle qu’en soit la raison, vous perdez 1 de diplomatie.' },
+    colonie:     { name: 'Colonie', move: 1, upkeep: 3, req: ['Ci', 1], copies: 3, text: 'Sur un territoire neutre, défausser pour le conquérir et y bâtir un campement.' },
+    exploratrice:{ name: 'Exploratrice', move: 2, upkeep: 2, req: ['P', 2], copies: 3, text: 'À la collecte, sur un territoire neutre d’un autre continent que votre capitale, défausser pour conquérir et gagner 1 or.' },
+    caboteur:    { name: 'Caboteur', move: 1, upkeep: 1, req: ['P', 1], copies: 3, text: 'À la collecte, sur une case avec le port d’un adversaire : +2 or.' },
+    caravanier:  { name: 'Caravanier', move: 1, upkeep: 1, req: ['Ci', 1], copies: 3, text: 'À la collecte, sur une case avec la cité d’un adversaire : +2 or.' },
+    espion:      { name: 'Espion', move: 1, upkeep: 0, req: ['Ci', 1], copies: 3, text: 'Une seule fois, à tout moment (même au tour d’un autre) : payez 1 or, regardez en secret la carte du dessus du deck et défaussez-la si vous voulez. Puis défaussez l’Espion.' },
     partisan:    { name: 'Partisan', move: 1, upkeep: 2, req: ['Ci', 3], text: 'Sur un territoire adverse, défausser pour convertir tous les aménagements adverses, sauf les temples.' },
     predicateur: { name: 'Prédicateur', move: 1, upkeep: 2, req: ['T', 3], text: 'Sur un territoire adverse : convertit son temple. Puis défausse.' },
     gouverneur:  { name: 'Gouverneur', move: 1, upkeep: 5, req: ['F', 4], text: 'Défausser pour convertir tous les aménagements adverses sur vos territoires, sauf les temples.' },
-    pretresse:   { name: 'Prêtresse', move: 1, upkeep: 3, req: ['T', 1], text: 'Lors d’un combat sur sa case, si vous perdez, vous relancez votre dé. Une relance par Prêtresse.' },
+    pretresse:   { name: 'Prêtresse', move: 1, upkeep: 3, req: ['T', 1], copies: 3, text: 'Lors d’un combat sur sa case, si vous perdez, vous relancez votre dé. Une relance par Prêtresse.' },
     trebuchets:  { name: 'Trébuchets', move: 1, upkeep: 4, req: ['F', 5], text: 'Sur un territoire adverse, peut détruire un aménagement adverse, une fois par tour. C’est une attaque : 1 de diplomatie (sauf contre un Tyran), et elle rompt un pacte.' },
-    maitre:      { name: 'Maître d’œuvre', move: 1, upkeep: 1, req: ['T', 1], text: 'Vos temples coûtent 1 or de moins (cumulable).' },
+    maitre:      { name: 'Maître d’œuvre', move: 1, upkeep: 1, req: ['T', 1], copies: 3, text: 'Vos temples coûtent 1 or de moins (cumulable).' },
+    // v1.9.14 - deux nouvelles unités spéciales (créateur, 28/09/2026)
+    calomniateur:{ name: 'Calomniateur', move: 2, upkeep: 3, req: ['Ci', 1], copies: 3, text: 'Sur un territoire adverse, défausser : son propriétaire perd 2 de diplomatie (sans descendre sous 0).' },
+    boutefeu:    { name: 'Boutefeu', move: 1, upkeep: 1, req: ['Ci', 2], text: 'Sur un territoire adverse : tant qu’il y reste, la cité de cette case ne rapporte rien à son propriétaire à la collecte.' },
     prelat:      { name: 'Prélat', move: 1, upkeep: 3, req: ['T', 4], text: 'À la collecte, gagner +1 or pour chaque temple que vous possédez (cumulable).' }
   };
 
@@ -59,12 +62,12 @@
   FOF.LEADERS = {
     odon:    { name: 'Odon le Brave', mod: 2, text: 'Chacune de ses unités d’élite engagée dans un assaut lui donne +1, qu’il mène l’assaut ou non.' },
     gustave: { name: 'Gustave l’Irascible', mod: 3, text: 'Ses campements, forts et ports : +1 défense. Ses cités coûtent 6 or.' },
-    edouard: { name: 'Edouard le Sage', mod: 2, text: 'À la collecte, s’il a 3 de diplomatie ou moins : 4 or pour +1 diplomatie. Une seule fois par partie, et seulement s’il n’a ni attaqué ni été attaqué.' },
+    edouard: { name: 'Edouard le Sage', mod: 2, text: 'À la collecte, s’il a 3 de diplomatie ou moins : 1 or pour +1 diplomatie. Une seule fois par partie, et seulement s’il n’a ni attaqué ni été attaqué.' },
     mathilde:{ name: 'Mathilde la Bien-Aimée', mod: 2, text: 'Sa première cité coûte 4 or ; les suivantes sont au prix normal.' },
     adele:   { name: 'Adèle la Pieuse', mod: 3, text: 'Ses temples coûtent 6 or et donnent +1 défense.' },
     henri:   { name: 'Henri le Stratège', mod: 2, text: 'Toutes ses unités d’élite se déplacent d’1 case de plus.' },
     hugues:  { name: 'Hugues le Bâtisseur', mod: 3, text: 'Ses campements, forts et ports coûtent 1 or de moins (minimum 1).' },
-    alienor: { name: 'Aliénor l’Amirale', mod: 2, text: 'Ses ports coûtent 2 or.' }
+    alienor: { name: 'Alinor l’Amirale', mod: 2, text: 'Ses ports coûtent 2 or et donnent +2 défense.' }
   };
 
   FOF.PLAYER_COLORS = [
@@ -87,6 +90,9 @@
     return pool.length ? pool[Math.floor(Math.random() * pool.length)] : FOF.randomFreeLeader(used || []);
   };
 
+  // v1.9.14 - nombre d'exemplaires de chaque carte dans le deck (2 par défaut, 3 pour certaines)
+  FOF.copies = function (key) { var d = FOF.ELITES[key] || FOF.SPECIALS[key]; return d && d.copies ? d.copies : 2; };
+  FOF.EDOUARD_COUT = 1;   // v1.9.14 : 4 → 1 or
   FOF.isElite = function (key) { return !!FOF.ELITES[key]; };
   FOF.unitDef = function (key) { return FOF.ELITES[key] || FOF.SPECIALS[key]; };
 })(window.FOF = window.FOF || {});

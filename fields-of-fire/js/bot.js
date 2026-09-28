@@ -120,9 +120,6 @@
       var t = T(st, pd.tid), d = st.players[pd.def], thr = threat(st, p);
       var tDef = t.blds.filter(function (b) { return b.t === 'T' && b.o !== p.id; }).length;
       var enCourse = thr && thr.id === d.id && progress(st, d).rel >= 0.6;
-      // contre un coureur diplomatique, raser plutôt que prendre : il ne pourra pas céder ses bâtisses
-      var ced = t.blds.some(function (b) { return FOF.cedable(b, d.id); });
-      if (ced && !d.tyran && st.victory.dip - d.dip <= 2 && t.id !== d.capital && (p.tyran || p.dip >= 2)) return { type: 'resolve', choice: 'devastate' };
       if (tDef && enCourse && t.id !== d.capital && (p.tyran || d.tyran || p.dip >= 2 + tDef)) return { type: 'resolve', choice: 'devastate' };
       return { type: 'resolve', choice: 'conquer' };
     }
@@ -135,7 +132,7 @@
       var u = FOF.army(st, pd.pid).filter(function (x) { return x.gold > 0; }).sort(function (a, b) { return valeurUnite(st, p, a) - valeurUnite(st, p, b); })[0];
       return u ? { type: 'deficitTake', uid: u.uid } : null;
     }
-    // céder / révolte : le territoire qui vaut le moins, loin de la capitale
+    // cession forcée / révolte : le territoire qui vaut le moins, loin de la capitale
     var mine = FOF.terrOf(st, p.id).filter(function (x) { return x.id !== p.capital; });
     mine.sort(function (a, b) { return valeurTerr(st, p, a) - valeurTerr(st, p, b); });
     return mine.length ? { type: 'resolve', tid: mine[0].id } : null;
@@ -161,6 +158,8 @@
     predicateur: function (st, p, t) { return t.ctrl !== null && t.ctrl !== p.id && t.blds.some(function (b) { return b.t === 'T' && b.o !== p.id; }); },
     caboteur: function (st, p, t) { return t.blds.some(function (b) { return b.t === 'P' && b.o !== p.id; }); },
     caravanier: function (st, p, t) { return t.blds.some(function (b) { return b.t === 'Ci' && b.o !== p.id; }); },
+    calomniateur: function (st, p, t) { var q = t.ctrl !== null && t.ctrl !== p.id ? st.players[t.ctrl] : null; return !!q && q.alive && !q.tyran && q.dip > 0; },
+    boutefeu: function (st, p, t) { return t.ctrl !== null && t.ctrl !== p.id && t.blds.some(function (b) { return b.t === 'Ci' && b.o !== p.id; }); },
     trebuchets: function (st, p, t) { return t.ctrl !== null && t.ctrl !== p.id && p.pact !== t.ctrl && t.blds.some(function (b) { return b.o !== p.id; }); }
   };
   function cardValue(st, p, key) {
@@ -196,6 +195,8 @@
       case 'prelat': return path === 'rel' ? 3.6 + cnt(st, p, 'T') * 0.5 : cnt(st, p, 'T') * 0.4;
       case 'trebuchets': return has('trebuchets') && (thr || path === 'mil') && !p.tyran && p.dip >= 3 ? 2.6 : 0.6;
       case 'espion': return 0.2;
+      case 'calomniateur': return has('calomniateur') ? (thr && !thr.tyran && thr.dip >= 2 ? 3.4 : 1.4) : 0;
+      case 'boutefeu': return has('boutefeu') ? (thr ? 2.6 : 1.8) : 0;
       default: return 0.5;
     }
   }
@@ -267,10 +268,6 @@
         if (thr && thr.id === q.id) val += 3 + t.blds.filter(function (b) { return b.t === 'T' && b.o === q.id; }).length * 2;
         if (q.tyran) val += 1.5;
         if (p.pact === q.id) val -= 4;
-        // prendre une case où la victime a bâti lui permet de céder ensuite ses aménagements (+1, voire +2) :
-        // contre un coureur diplomatique, c'est lui offrir des points
-        var cedables = t.blds.some(function (b) { return FOF.cedable(b, q.id); });
-        if (cedables && !q.tyran && (st.victory.dip - q.dip) <= 3) val -= 6;
         val -= cout * (path === 'dip' ? 2.5 : 0.9);
         if (gagne) val += 30;
         var perte = grp.reduce(function (s, u) { return s + FOF.unitDef(u.key).upkeep; }, 0) * 0.8 + (avecChef ? 4 : 0);
@@ -405,7 +402,7 @@
     // 2. pacification
     for (var i = 0; i < army.length; i++) {
       var u = army[i], ut = u.pos[0] === 't' ? T(st, tid(u.pos)) : null;
-      if (ut && FOF.isElite(u.key) && ut.ctrl === p.id && ut.conqStamp < st.turnNo && u.arr < st.turnNo && !u.moved && !u.fought && ut.blds.some(function (b) { return b.o !== p.id; })) {
+      if (ut && !p.flags.pacified && FOF.isElite(u.key) && ut.ctrl === p.id && ut.conqStamp < st.turnNo && u.arr < st.turnNo && !u.moved && !u.fought && ut.blds.some(function (b) { return b.o !== p.id; })) {
         var pa = { type: 'pacify', uid: u.uid, tid: ut.id }; if (ok(st, pa)) return pa;
       }
     }
@@ -426,6 +423,7 @@
         if (ix < 0 || br < 2) continue;
         ea.arg = ix;
       }
+      if (su.key === 'calomniateur') { var vic = st.players[T(st, tid(su.pos)).ctrl]; if (vic.dip < 2 && !(thr && thr.id === vic.id)) continue; }
       if (su.key === 'ambassadeur') { var hote = others(st, p).filter(function (q) { return q.capital === tid(su.pos); })[0]; if (hote && threat(st, p) && threat(st, p).id === hote.id && path === 'mil') continue; }
       if (ok(st, ea)) return ea;
     }
@@ -504,17 +502,6 @@
   /* ---------- construction ---------- */
   function buildAct(st, p) {
     var path = plan(st, p), thr = threat(st, p);
-    // céder ses aménagements bâtis en terre étrangère : +1 diplomatie (sauf les temples si l'on court la foi)
-    if (!p.tyran) {
-      var cd = st.map.terr.filter(function (t) {
-        if (t.ctrl === null || t.ctrl === p.id) return false;
-        var mine = t.blds.filter(function (b) { return FOF.cedable(b, p.id); });
-        if (!mine.length) return false;
-        if (path === 'rel' && mine.some(function (b) { return b.t === 'T'; })) return false;
-        return path === 'dip' || !mine.some(function (b) { return b.t === 'T' || b.t === 'Ci'; });
-      })[0];
-      if (cd) { var ca = { type: 'cede', tid: cd.id }; if (ok(st, ca)) return ca; }
-    }
     var mine = FOF.terrOf(st, p.id); if (!mine.length) return null;
     var temples = cnt(st, p, 'T'), cities = cnt(st, p, 'Ci'), forts = cnt(st, p, 'F'), camps = cnt(st, p, 'C'), ports = cnt(st, p, 'P');
     var reserve = path === 'rel' ? 0 : 1;
@@ -561,7 +548,7 @@
 
   /* ---------- collecte ---------- */
   function collectAct(st, p) {
-    if (p.leader === 'edouard' && !p.edouardUsed && p.dip <= 3 && p.gold >= 4 && !p.tyran && !p.attackedLast && !p.raidedLast && (p.dip <= 1 || plan(st, p) === 'dip')) return { type: 'edouard' };
+    if (p.leader === 'edouard' && !p.edouardUsed && p.dip < st.victory.dip && p.gold >= FOF.EDOUARD_COUT + 1 && !p.tyran && !p.attackedLast && !p.raidedLast && (p.dip <= 2 || plan(st, p) === 'dip' || p.gold >= 6)) return { type: 'edouard' };
     var a = null;
     FOF.army(st, p.id).forEach(function (u) { if (!a && u.key === 'exploratrice' && FOF.effectAvailable(st, u)) a = { type: 'effect', uid: u.uid }; });
     return a;

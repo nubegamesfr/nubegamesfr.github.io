@@ -31,7 +31,7 @@
     if (!best) throw new Error('Placement des dirigeants impossible');
     st.players.forEach(function (p, i) { var t = TT[best[i]]; t.ctrl = p.id; p.capital = t.id; p.lpos = 't' + t.id; });
     st.units = []; st.uid = 1;
-    st.deck = []; Object.keys(FOF.ELITES).concat(Object.keys(FOF.SPECIALS)).forEach(function (k) { st.deck.push(k, k); });
+    st.deck = []; Object.keys(FOF.ELITES).concat(Object.keys(FOF.SPECIALS)).forEach(function (k) { for (var c = 0; c < FOF.copies(k); c++) st.deck.push(k); });
     FOF.shuffle(st, st.deck); st.discard = [];
     st.zone = [draw(st), draw(st), draw(st), draw(st), draw(st)];
     st.turnNo = 1; st.round = 1; st.cur = 0; st.phase = 'collect'; st.log = []; st.pending = []; st.winner = null;
@@ -86,14 +86,21 @@
       if (b.o !== p.id) return;
       d += B[b.t].def;
       if (p.leader === 'gustave' && (b.t === 'C' || b.t === 'F' || b.t === 'P')) d += 1;
-      
+      if (p.leader === 'alienor' && b.t === 'P') d += 1;   // v1.9.14 : ports d'Alinor à +2 défense
       if (p.leader === 'adele' && b.t === 'T') d += 1;
     });
     if (t.id === p.capital && t.ctrl === p.id) d += 2;
     return d;
   };
   FOF.income = function (st, p) {
-    var inc = { terr: FOF.terrOf(st, p.id).length, cities: FOF.countBld(st, p.id, 'Ci'), ports: 0, trade: 0, temples: 0 };
+    var inc = { terr: FOF.terrOf(st, p.id).length, cities: FOF.countBld(st, p.id, 'Ci'), ports: 0, trade: 0, temples: 0, boutefeu: 0 };
+    // v1.9.14 - Boutefeu : posté sur le territoire d'un autre joueur, il annule le revenu de la cité
+    // de cette case pour le propriétaire de la cité (un seul retrait par cité, même avec deux Boutefeux).
+    st.map.terr.forEach(function (t) {
+      if (t.ctrl === null || !t.blds.some(function (b) { return b.t === 'Ci' && b.o === p.id; })) return;
+      if (st.units.some(function (u) { return u.key === 'boutefeu' && u.pos === 't' + t.id && u.owner !== t.ctrl && u.owner !== p.id; })) inc.boutefeu++;
+    });
+    inc.cities -= inc.boutefeu;
     
     FOF.army(st, p.id).forEach(function (u) {
       if ((u.key === 'caboteur' || u.key === 'caravanier') && u.pos[0] === 't') {
@@ -385,7 +392,7 @@
     var att = FOF.unitsAt(st, loc, p.id).filter(function (u) { return FOF.isElite(u.key) && !u.fought && !u.pacif; });
     var leadOk = p.lpos === loc && !p.lFought && !p.lConq;
     if (!att.length && !leadOk) return out;
-    if (loc[0] === 's') return out;   // v1.6 : plus aucun combat en mer, même pour Aliénor
+    if (loc[0] === 's') return out;   // v1.6 : plus aucun combat en mer, même pour Alinor
     var t = T(st, +loc.slice(1));
     if (t.ctrl !== null && t.ctrl !== p.id && st.players[t.ctrl].alive) out.push({ target: t.ctrl, kind: 'terr' });
     st.players.forEach(function (q) {
@@ -479,6 +486,8 @@
       case 'gouverneur': return FOF.terrOf(st, p.id).some(function (x) { return x.blds.some(function (b) { return b.o !== p.id && b.t !== 'T'; }); }) ? 'Convertir les aménagements adverses' : null;
       // v1.9.6 - le Trébuchet n'est plus lié à un assaut : posé sur un territoire adverse, il rase
       // un aménagement adverse et reste en jeu. Une fois par tour.
+      // v1.9.14 - Calomniateur : sur un territoire adverse, fait perdre 2 diplomatie à son propriétaire (plancher 0)
+      case 'calomniateur': var vc = t.ctrl !== null && t.ctrl !== p.id ? st.players[t.ctrl] : null; return vc && vc.alive && !vc.tyran && vc.dip > 0 ? 'Calomnier ' + vc.name : null;
       case 'trebuchets': return !u.fought && t.ctrl !== null && t.ctrl !== p.id && t.blds.some(function (b) { return b.o !== p.id; }) ? 'Détruire un aménagement' : null;
     }
     return null;
@@ -491,6 +500,12 @@
       case 'ambassadeur':
         var host = st.players.filter(function (q) { return q.capital === t.id; })[0];
         p.pact = host.id; host.pact = p.id; log(st, p.name + ' et ' + host.name + ' scellent un pacte de non-agression.', p.id, 'pact'); break;
+      case 'calomniateur': {
+        var vic = st.players[t.ctrl], perte = Math.min(2, vic.dip);
+        vic.dip -= perte;   // jusqu'à 0 : la calomnie ne fait jamais basculer en Tyran
+        log(st, 'Le Calomniateur de ' + p.name + ' répand le fiel à ' + t.name + ' : ' + vic.name + ' perd ' + perte + ' de diplomatie.', p.id, 'dip-');
+        discardUnit(st, u); break;
+      }
       case 'pelerin':
         var tb = t.blds.filter(function (b) { return b.t === 'T' && b.o !== p.id; })[0];
         gainDip(st, p, 1, name); gainDip(st, st.players[tb.o], 1, 'pèlerinage reçu', true);   // v1.9.12 : l'Ambassade ne relaie pas un gain reçu discardUnit(st, u); break;
@@ -574,6 +589,12 @@
   // bâtisseur d'un aménagement ; les parties d'avant la v1.9.12 ne le notaient pas : on retient alors le propriétaire
   FOF.batisseur = function (b) { return b.b === undefined ? b.o : b.b; };
   FOF.cedable = function (b, pid) { return b.o === pid && FOF.batisseur(b) === pid; };
+  // aménagement étranger le moins cher d'une case (ordre de construction en cas d'égalité)
+  FOF.ciblePacification = function (t, pid) {
+    var etr = t.blds.filter(function (b) { return b.o !== pid; });
+    etr.sort(function (a, b) { return B[a.t].cost - B[b.t].cost || FOF.BUILDING_ORDER.indexOf(a.t) - FOF.BUILDING_ORDER.indexOf(b.t); });
+    return etr[0] || null;
+  };
   FOF.slotsOf = function (st, p, tid) { return p && p.capital === tid ? 3 : 2; };
   FOF.canBuild = function (st, tid, type) {
     var p = FOF.cur(st), t = T(st, tid);
@@ -629,9 +650,9 @@
         break;
       }
       case 'edouard':
-        if (p.leader !== 'edouard' || st.phase !== 'collect' || p.edouardUsed || p.dip > 3 || p.gold < 4 || p.tyran) throw new Error('Pouvoir indisponible.');
+        if (p.leader !== 'edouard' || st.phase !== 'collect' || p.edouardUsed || p.dip > 3 || p.gold < FOF.EDOUARD_COUT || p.tyran) throw new Error('Pouvoir indisponible.');
         if (p.attackedLast || p.raidedLast) throw new Error('Les cours étrangères se ferment après les armes : ni attaque ni agression depuis votre dernier tour.');
-        p.gold -= 4; p.flags.edouard = true; p.edouardUsed = true; gainDip(st, p, 1, 'Edouard le Sage'); checkWin(st); break;
+        p.gold -= FOF.EDOUARD_COUT; p.flags.edouard = true; p.edouardUsed = true; gainDip(st, p, 1, 'Edouard le Sage'); checkWin(st); break;
       case 'discardZone':
         // v1.6 : l'achat et la défausse sont indépendants (1 de chaque par tour) - avant, acheter bloquait la défausse.
         if (st.phase !== 'recruit' || p.flags.discarded) throw new Error('Vous avez déjà défaussé une carte ce tour-ci.');
@@ -713,12 +734,11 @@
         var pt = T(st, a.tid), el2 = st.units.filter(function (x) { return x.uid === a.uid && x.owner === p.id; })[0];
         if (st.phase !== 'military' || pt.ctrl !== p.id || !(pt.conqStamp < st.turnNo) || !el2 || !FOF.isElite(el2.key) || el2.pos !== 't' + pt.id || el2.arr >= st.turnNo || el2.moved || el2.fought || !pt.blds.some(function (b) { return b.o !== p.id; }))
           throw new Error('Pacification impossible : une élite doit être en garnison ici depuis votre tour précédent.');
-        // v1.9.2 : un seul aménagement par pacification. Le joueur désigne lequel (a.idx) ; sans
-        // précision, le premier aménagement étranger de la case.
-        var etr = pt.blds.map(function (b, i) { return [b, i]; }).filter(function (x) { return x[0].o !== p.id; });
-        var cible = a.idx !== undefined ? pt.blds[a.idx] : etr[0][0];
-        if (!cible || cible.o === p.id) throw new Error('Choisissez un aménagement étranger de cette case.');
-        el2.pacif = true; el2.movesLeft = 0;
+        // v1.9.14 - une seule pacification par tour, et elle convertit l'aménagement étranger le MOINS
+        // CHER de la case (décision du créateur, 28/09/2026). Plus de choix du joueur.
+        if (p.flags.pacified) throw new Error('Vous avez déjà pacifié un aménagement ce tour-ci.');
+        var cible = FOF.ciblePacification(pt, p.id);
+        el2.pacif = true; el2.movesLeft = 0; p.flags.pacified = true;
         if (cible.t === 'A') {
           // une ambassade ne se rallie pas : elle est rasée (voir convertir()).
           pt.blds.splice(pt.blds.indexOf(cible), 1);
@@ -771,16 +791,7 @@
         if (oldCap.blds.length > FOF.slotsOf(st, p, oldCap.id)) st.pending.push({ type: 'razeSlot', pid: p.id, tid: oldCap.id });
         break;
       }
-      case 'cede': {
-        var cdt = T(st, a.tid);
-        if (st.phase !== 'build' || cdt.ctrl === null || cdt.ctrl === p.id || p.tyran) throw new Error('Cession impossible.');
-        // v1.9.12 - seuls les aménagements que le joueur a BÂTIS lui-même se cèdent (décision du créateur,
-        // 27/09/2026) : un aménagement pris par conversion ne peut pas être rendu contre de la diplomatie.
-        if (!cdt.blds.some(function (b) { return FOF.cedable(b, p.id); })) throw new Error('Rien à céder ici : seuls les aménagements que vous avez bâtis se cèdent.');
-        cdt.blds.forEach(function (b) { if (FOF.cedable(b, p.id)) b.o = cdt.ctrl; });
-        log(st, p.name + ' remet ses bâtisses de ' + cdt.name + ' à ' + st.players[cdt.ctrl].name + ', en gage de paix.', p.id, 'cede');
-        gainDip(st, p, 1, 'cession'); checkWin(st); break;
-      }
+      case 'cede': throw new Error('La cession volontaire n’existe plus.');
       case 'surrender': {
         var sp = a.pid === undefined ? p : st.players[a.pid];
         if (!sp || !sp.alive || st.winner) throw new Error('Abandon impossible.');
@@ -804,8 +815,10 @@
       if (a.choice === 'devastate') {
         var temples = t.blds.filter(function (b) { return b.t === 'T' && b.o !== att.id; }).length;
         if (!def.tyran) { loseDip(st, att, 1, 'dévastation'); if (temples) loseDip(st, att, temples, 'temple détruit'); }
-        t.ctrl = null; t.blds = []; t.takenFrom = null;
-        log(st, att.name + ' met ' + t.name + ' à sac : il n’en reste que cendres.', att.id, 'devastate');
+        // v1.9.14 - le territoire dévasté ne redevient plus neutre : il revient au vainqueur,
+        // tous ses aménagements rasés (le coût en diplomatie ne change pas).
+        t.ctrl = att.id; t.conqStamp = st.turnNo; t.revoltFrom = null; t.blds = []; t.takenFrom = null;
+        log(st, att.name + ' met ' + t.name + ' à sac et s’en empare : il n’en reste que cendres.', att.id, 'devastate');
       } else {
         t.ctrl = att.id; t.conqStamp = st.turnNo; t.revoltFrom = null;
         log(st, att.name + ' s’empare de ' + t.name + '.', att.id, 'conquer');

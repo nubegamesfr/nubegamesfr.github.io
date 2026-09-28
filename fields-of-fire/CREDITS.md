@@ -53,9 +53,7 @@ Voir `js/music.js` pour les adresses exactes.
 ### Ambiance
 
 - *A Legend Will Rise* - CodeManu
-- *The Field of Dreams* - pauliuw
 - *Treasure Hunter* - TAD
-- *Once Upon a Time* - TAD
 - *Minstrel Dance* - RandomMind
 - *King's Feast* - RandomMind
 - *The Bard's Tale* - RandomMind
@@ -63,10 +61,7 @@ Voir `js/music.js` pour les adresses exactes.
 - *Exploration* - RandomMind
 - *Market Day* - RandomMind
 - *Rejoicing* - RandomMind
-- *The Old Tower Inn* - RandomMind
-- *The Old Tower Inn (chiptune)* - RandomMind
 - *Victory Theme* - RandomMind
-- *Defeat Theme* - RandomMind
 - *Lament for a Warrior's Soul* - RandomMind
 - *GrassLands Theme* - DST
 - *The Ancient Legend* - vitalezzz

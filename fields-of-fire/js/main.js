@@ -9,7 +9,7 @@
   var LEAD_KEYS = Object.keys(FOF.LEADERS);
   var TRIAL = ['hugues', 'alienor'];
   /* ---------- dirigeants à débloquer ----------
-     Hugues et Aliénor ne sont pas jouables tant que le joueur n'a pas laissé son adresse e-mail et
+     Hugues et Alinor ne sont pas jouables tant que le joueur n'a pas laissé son adresse e-mail et
      accepté d'être recontacté. Le déblocage est mémorisé dans le navigateur. Les bots peuvent les
      jouer : c'est ce qui donne envie de les débloquer. */
   var LOCKED = FOF.LOCKED_LEADERS;
@@ -88,7 +88,7 @@
   var catTab = 'heroes', catFiltre = 'tout';
   function renderCatalog() {
     var el = $('catalog'); if (!el) return;
-    var h = ['<div class="cat-head"><h2 id="catTitle">L’arsenal</h2><p>Les dirigeants que l’on peut incarner et les ' + (Object.keys(FOF.ELITES).length + Object.keys(FOF.SPECIALS).length) + ' cartes du deck, chacune en deux exemplaires.</p>' +
+    var h = ['<div class="cat-head"><h2 id="catTitle">L’arsenal</h2><p>Les dirigeants que l’on peut incarner et les ' + (Object.keys(FOF.ELITES).length + Object.keys(FOF.SPECIALS).length) + ' cartes du deck (' + Object.keys(FOF.ELITES).concat(Object.keys(FOF.SPECIALS)).reduce(function (s, k) { return s + FOF.copies(k); }, 0) + ' exemplaires en tout).</p>' +
       '<div class="cat-tabs" role="tablist">' +
       '<button type="button" role="tab" aria-selected="' + (catTab === 'heroes') + '" class="cat-tab' + (catTab === 'heroes' ? ' on' : '') + '" data-cattab="heroes">Dirigeants <b>' + LEAD_KEYS.length + '</b></button>' +
       '<button type="button" role="tab" aria-selected="' + (catTab === 'cards') + '" class="cat-tab' + (catTab === 'cards' ? ' on' : '') + '" data-cattab="cards">Cartes du deck <b>' + (Object.keys(FOF.ELITES).length + Object.keys(FOF.SPECIALS).length) + '</b></button></div></div>'];
@@ -103,7 +103,7 @@
       var keys = [];
       if (catFiltre !== 'sp') keys = keys.concat(Object.keys(FOF.ELITES));
       if (catFiltre !== 'el') keys = keys.concat(Object.keys(FOF.SPECIALS));
-      h.push('<div class="cat-grid cards">' + keys.map(function (k) { return FOF.cardHTML(k); }).join('') + '</div>');
+      h.push('<div class="cat-grid cards">' + keys.map(function (k) { return '<div class="cat-card">' + FOF.cardHTML(k) + '<span class="cat-x" title="Exemplaires dans le deck">×' + FOF.copies(k) + '</span></div>'; }).join('') + '</div>');
     }
     el.innerHTML = h.join('');
   }
