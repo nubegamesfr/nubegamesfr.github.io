@@ -24,11 +24,15 @@ const SITE = {
 
   /* ---------- barre de navigation collante ---------- */
   const nav = $('#nav');
-  if (nav) {
-    const onScroll = () => nav.classList.toggle('stuck', window.scrollY > 8);
-    onScroll();
-    addEventListener('scroll', onScroll, { passive: true });
-  }
+  // Un repère invisible à 8 px du haut : dès qu'il sort de l'écran, la barre prend son fond.
+  // IntersectionObserver plutôt qu'un écouteur de défilement, qui tournerait à chaque image.
+  if (nav && 'IntersectionObserver' in window) {
+    const repere = document.createElement('div');
+    repere.setAttribute('aria-hidden', 'true');
+    repere.style.cssText = 'position:absolute;top:8px;left:0;width:1px;height:1px;pointer-events:none';
+    document.body.prepend(repere);
+    new IntersectionObserver(([e]) => nav.classList.toggle('stuck', !e.isIntersecting)).observe(repere);
+  } else if (nav) nav.classList.add('stuck');
 
   /* ---------- apparition au défilement ---------- */
   const reveals = $$('.reveal');

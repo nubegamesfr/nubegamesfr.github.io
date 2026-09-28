@@ -30,11 +30,11 @@
 <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
 <link rel="manifest" href="site.webmanifest">
 
-<link rel="preload" href="assets/fonts/unbounded.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="assets/fonts/manrope.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="assets/fonts/cinzel-700.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="preload" as="image" href="/assets/images/fof-cover.webp" fetchpriority="high">
-<link rel="stylesheet" href="css/style.css?v=3.0">
+<link rel="preload" as="image" href="/assets/images/fof-couronne.webp" fetchpriority="high">
+<link rel="preload" as="image" href="/assets/images/fof-cover.webp" imagesrcset="/assets/images/fof-cover-960.webp 960w, /assets/images/fof-cover.webp 1920w" imagesizes="100vw" fetchpriority="high">
+<link rel="stylesheet" href="css/style.css?v=3.2">
 
 <script type="application/ld+json">
 {
@@ -79,12 +79,12 @@
 <!-- ======== En-tête plein écran : Fields of Fire, et rien d'autre ======== -->
 <section class="jaquette" id="top" aria-labelledby="jeu-titre">
   <div class="jaquette-fond" aria-hidden="true">
-    <img id="cover" src="assets/images/fof-cover.webp" width="1920" height="1080" alt="" fetchpriority="high">
+    <img id="cover" src="assets/images/fof-cover.webp" srcset="assets/images/fof-cover-960.webp 960w, assets/images/fof-cover.webp 1920w" sizes="100vw" width="1920" height="1080" alt="" fetchpriority="high">
   </div>
   <span class="jaquette-teinte" aria-hidden="true"></span>
 
   <div class="jaquette-inner">
-    <img class="couronne" src="assets/images/fof-couronne.png" width="440" height="352" alt=""
+    <img class="couronne" src="assets/images/fof-couronne.webp" width="392" height="314" alt=""
          fetchpriority="high" aria-hidden="true">
     <h1 class="jeu-titre" id="jeu-titre"><span>Fields</span><span>of Fire</span></h1>
     <div class="jeu-filet" aria-hidden="true"></div>
@@ -93,18 +93,14 @@
       <a class="btn" href="/fields-of-fire/">Jouer gratuitement</a>
       <a class="btn btn-ghost" href="#le-jeu">Découvrir le jeu</a>
     </div>
-    <p class="jeu-meta"><b>3 à 6 joueurs</b> · Prototype jouable · Sans inscription</p>
   </div>
-
-  <a class="defile" href="#le-jeu" aria-label="Aller à la présentation du jeu"><span>Découvrir</span><i aria-hidden="true"></i></a>
 </section>
 
 <section class="section" id="le-jeu" aria-labelledby="t-jeu">
   <div class="wrap">
     <div class="sec-head">
-      <p class="num">01 - Le jeu</p>
       <h2 id="t-jeu">Trois façons de l’emporter, une seule partie pour choisir</h2>
-      <p class="lead">Chaque joueur incarne un dirigeant et part d’une capitale posée sur un archipel généré à neuf à chaque partie. On lève l’impôt, on recrute, on manœuvre, on bâtit. Attaquer coûte de la diplomatie ; bâtir coûte de l’or ; tout le monde regarde qui s’approche le plus vite de sa condition de victoire.</p>
+      <p class="lead">Chaque joueur incarne un dirigeant et part d’une capitale posée sur un archipel généré à neuf à chaque partie. On lève l’impôt, on recrute, on manœuvre, on bâtit. Attaquer coûte de la diplomatie ; bâtir coûte de l’or ; tout le monde regarde qui s’approche le plus vite de sa condition de victoire.</p>
     </div>
     <div class="faits">
       <div class="fait"><b>3 à 6</b><span>joueurs</span></div>
@@ -115,7 +111,7 @@
     </div>
 
     <figure class="fig reveal" style="margin-top:clamp(34px,4.4vw,60px)">
-      <img src="assets/images/fof-partie.webp" width="1600" height="950" loading="lazy" decoding="async"
+      <img src="assets/images/fof-partie.webp" srcset="assets/images/fof-partie-800.webp 800w, assets/images/fof-partie.webp 1600w" sizes="(max-width: 1260px) 92vw, 1200px" width="1600" height="950" loading="lazy" decoding="async"
            alt="Une partie de Fields of Fire à quatre joueurs : la carte d’archipel au centre, les dirigeants à gauche, la zone de recrutement et ses cinq cartes d’unités au centre.">
     </figure>
     <p class="fig-cap">Une partie à quatre dirigeants, en cours dans le navigateur.</p>
@@ -125,47 +121,34 @@
 <section class="section" id="victoires" aria-labelledby="t-vic">
   <div class="wrap">
     <div class="sec-head">
-      <p class="num">02 - Les voies de victoire</p>
       <h2 id="t-vic">L’épée, la foi, la diplomatie</h2>
-      <p class="lead">Les trois voies sont ouvertes à tous dès le premier tour, et leurs seuils montent avec le nombre de joueurs. Rien n’oblige à en choisir une tôt : beaucoup de parties se décident quand quelqu’un bascule.</p>
+      <p class="lead">Les trois voies sont ouvertes à tous dès le premier tour, et leurs seuils montent avec le nombre de joueurs. Rien n’oblige à en choisir une tôt : beaucoup de parties se décident quand quelqu’un bascule.</p>
     </div>
-    <div class="panneaux">
-      <article class="panneau accent">
-        <span class="kicker">Militaire</span>
-        <h3>Prendre les terres</h3>
-        <p>Contrôler assez de territoires, capitale comprise. Chaque assaut coûte de la diplomatie, sauf contre un Tyran - conquérir vous isole autant que cela vous agrandit.</p>
+    <div class="voies">
+      <div class="voies-tete" aria-hidden="true"><span>Seuil selon le nombre de joueurs</span><ol class="seuils"><li>3</li><li>4</li><li>5</li><li>6</li></ol></div>
+      <article class="voie voie-epee">
+        <div class="voie-nom"><h3>Prendre les terres</h3><p>Militaire, en territoires</p></div>
+        <p class="voie-texte">Contrôler assez de territoires, capitale comprise. Chaque assaut coûte de la diplomatie, sauf contre un Tyran : conquérir vous isole autant que cela vous agrandit.</p>
+        <ol class="seuils" aria-label="Seuil de victoire selon le nombre de joueurs"><li><span class="sr">à 3 joueurs </span><b>11</b></li><li><span class="sr">à 4 joueurs </span><b>12</b></li><li><span class="sr">à 5 joueurs </span><b>13</b></li><li><span class="sr">à 6 joueurs </span><b>14</b></li></ol>
       </article>
-      <article class="panneau">
-        <span class="kicker">Religieuse</span>
-        <h3>Élever les temples</h3>
-        <p>Bâtir assez de temples, y compris en terre étrangère, ou les obtenir par conversion. Un temple coûte 7 or, occupe un emplacement, et ne se détruit pas sans perdre la face.</p>
+      <article class="voie voie-foi">
+        <div class="voie-nom"><h3>Élever les temples</h3><p>Religieuse, en temples</p></div>
+        <p class="voie-texte">Bâtir assez de temples, y compris en terre étrangère, ou les obtenir par conversion. Un temple coûte 7 or, occupe un emplacement, et ne se détruit pas sans perdre la face.</p>
+        <ol class="seuils" aria-label="Seuil de victoire selon le nombre de joueurs"><li><span class="sr">à 3 joueurs </span><b>9</b></li><li><span class="sr">à 4 joueurs </span><b>10</b></li><li><span class="sr">à 5 joueurs </span><b>11</b></li><li><span class="sr">à 6 joueurs </span><b>12</b></li></ol>
       </article>
-      <article class="panneau">
-        <span class="kicker">Diplomatique</span>
-        <h3>Se faire un nom</h3>
-        <p>Atteindre le seuil de diplomatie, en jouant des émissaires et en tenant la paix. Une Ambassade dans votre capitale amplifie chaque gain, tant que personne ne vous attaque.</p>
+      <article class="voie voie-dip">
+        <div class="voie-nom"><h3>Se faire un nom</h3><p>Diplomatique, en points</p></div>
+        <p class="voie-texte">Atteindre le seuil de diplomatie, en jouant des émissaires et en tenant la paix. Une Ambassade dans votre capitale amplifie chaque gain, tant que personne ne vous attaque.</p>
+        <ol class="seuils" aria-label="Seuil de victoire selon le nombre de joueurs"><li><span class="sr">à 3 joueurs </span><b>7</b></li><li><span class="sr">à 4 joueurs </span><b>8</b></li><li><span class="sr">à 5 joueurs </span><b>9</b></li><li><span class="sr">à 6 joueurs </span><b>10</b></li></ol>
       </article>
     </div>
-
-    <table class="tbl">
-      <caption>Seuils de victoire selon le nombre de joueurs</caption>
-      <thead>
-        <tr><th scope="col">Voie</th><th scope="col">3 joueurs</th><th scope="col">4</th><th scope="col">5</th><th scope="col">6</th></tr>
-      </thead>
-      <tbody>
-        <tr><td>Militaire · territoires</td><td>11</td><td>12</td><td>13</td><td>14</td></tr>
-        <tr><td>Religieuse · temples</td><td>9</td><td>10</td><td>11</td><td>12</td></tr>
-        <tr><td>Diplomatique · points</td><td>7</td><td>8</td><td>9</td><td>10</td></tr>
-      </tbody>
-    </table>
-    <p class="tiny" style="margin-top:14px">Ces seuils évoluent encore : ils sont ajustés playtest après playtest.</p>
+    <p class="tiny voies-note">Ces seuils évoluent encore : ils sont ajustés playtest après playtest.</p>
   </div>
 </section>
 
 <section class="section" id="tour" aria-labelledby="t-tour">
   <div class="wrap">
     <div class="sec-head">
-      <p class="num">03 - Le tour</p>
       <h2 id="t-tour">Quatre phases, toujours dans le même ordre</h2>
     </div>
     <div class="etapes">
@@ -180,9 +163,8 @@
 <section class="section" id="carte" aria-labelledby="t-carte">
   <div class="wrap">
     <div class="sec-head">
-      <p class="num">04 - La carte</p>
       <h2 id="t-carte">Un archipel différent à chaque partie</h2>
-      <p class="lead">La carte est tirée au sort à chaque nouvelle partie : sept territoires par joueur, quatre terrains - plaines, forêt, montagnes, marécage - et des zones de mer qui séparent les continents. Le terrain compte : chaque unité d’élite a une puissance différente selon l’endroit où elle combat.</p>
+      <p class="lead">La carte est tirée au sort à chaque nouvelle partie : sept territoires par joueur, quatre terrains - plaines, forêt, montagnes, marécage - et des zones de mer qui séparent les continents. Le terrain compte : chaque unité d’élite a une puissance différente selon l’endroit où elle combat.</p>
     </div>
     <div class="duo">
       <figure class="fig reveal">
@@ -191,8 +173,8 @@
       </figure>
       <div>
         <h3 style="font-size:24px;margin-bottom:14px">Franchir la mer</h3>
-        <p class="lead" style="margin-bottom:10px">La mer est découpée en zones, et aucune ne donne accès à plus de quatre territoires : on ne débarque pas n’importe où depuis n’importe quelle côte.</p>
-        <p class="lead">Les zones de mer ne se traversent pas à pied. Il faut un port, ou l’une des unités qui prennent le large sans en avoir besoin. Un archipel bien lu vaut une armée : on choisit ses voisins, et on choisit ceux qu’on ne verra jamais arriver.</p>
+        <p class="lead" style="margin-bottom:10px">La mer est découpée en zones, et aucune ne donne accès à plus de quatre territoires : on ne débarque pas n’importe où depuis n’importe quelle côte.</p>
+        <p class="lead">Les zones de mer ne se traversent pas à pied. Il faut un port, ou l’une des unités qui prennent le large sans en avoir besoin. Un archipel bien lu vaut une armée : on choisit ses voisins, et on choisit ceux qu’on ne verra jamais arriver.</p>
       </div>
     </div>
 
@@ -214,9 +196,8 @@
 <section class="section" id="unites" aria-labelledby="t-unites">
   <div class="wrap">
     <div class="sec-head">
-      <p class="num">05 - Les unités</p>
       <h2 id="t-unites">On ne recrute pas ce qu’on veut, on recrute ce qui passe</h2>
-      <p class="lead">Cinq cartes face visible, un achat et une défausse par tour. Les unités d’élite se battent - leur puissance change selon le terrain. Les unités spéciales ne combattent pas : elles convertissent un temple, portent un message à une cour étrangère, éclairent la carte ou rasent un aménagement. Chaque carte exige un aménagement pour être recrutée, et coûte une solde à chaque collecte.</p>
+      <p class="lead">Cinq cartes face visible, un achat et une défausse par tour. Les unités d’élite se battent - leur puissance change selon le terrain. Les unités spéciales ne combattent pas : elles convertissent un temple, portent un message à une cour étrangère, éclairent la carte ou rasent un aménagement. Chaque carte exige un aménagement pour être recrutée, et coûte une solde à chaque collecte.</p>
     </div>
     <figure class="fig reveal">
       <img src="assets/images/fof-cartes.webp" width="1200" height="400" loading="lazy" decoding="async"
@@ -229,61 +210,41 @@
 <section class="section" id="dirigeants" aria-labelledby="t-dir">
   <div class="wrap">
     <div class="sec-head">
-      <p class="num">06 - Les dirigeants</p>
       <h2 id="t-dir">Huit dirigeants, huit façons de jouer</h2>
-      <p class="lead">Votre dirigeant est un pion comme un autre : il se déplace, il conquiert, il peut mener un assaut et y perdre un territoire. Son pouvoir, lui, oriente toute la partie.</p>
+      <p class="lead">Votre dirigeant est un pion comme un autre : il se déplace, il conquiert, il peut mener un assaut et y perdre un territoire. Son pouvoir, lui, oriente toute la partie.</p>
     </div>
-    <div class="seigneurs">
-      <div class="seigneur"><b>Odon le Brave</b><p>Chacune de ses unités d’élite engagée dans un assaut lui donne +1, qu’il mène l’assaut ou non.</p></div>
-      <div class="seigneur"><b>Gustave l’Irascible</b><p>Ses campements, forts et ports gagnent +1 en défense. Ses cités coûtent 6 or.</p></div>
-      <div class="seigneur"><b>Édouard le Sage</b><p>Une fois par partie, en temps de paix : 1 or contre 1 point de diplomatie.</p></div>
-      <div class="seigneur"><b>Mathilde la Bien-Aimée</b><p>Sa première cité coûte 4 or ; les suivantes sont au prix normal.</p></div>
-      <div class="seigneur"><b>Adèle la Pieuse</b><p>Ses temples coûtent 6 or et donnent +1 en défense.</p></div>
-      <div class="seigneur"><b>Henri le Stratège</b><p>Toutes ses unités d’élite se déplacent d’une case de plus.</p></div>
-      <div class="seigneur"><b>Hugues le Bâtisseur</b><p>Ses campements, forts et ports coûtent 1 or de moins.</p></div>
-      <div class="seigneur"><b>Alinor l’Amirale</b><p>Ses ports coûtent 2 or et gagnent +2 en défense.</p></div>
-    </div>
-    <figure class="fig reveal" style="margin-top:clamp(26px,3.4vw,44px)">
-      <img src="assets/images/fof-dirigeants.webp" width="1300" height="599" loading="lazy" decoding="async"
-           alt="Les huit dirigeants du jeu, chacun avec son portrait peint, son bonus de combat et son pouvoir.">
-    </figure>
-    <p class="fig-cap">Les huit dirigeants, tels qu’on les découvre avant de lancer une partie.</p>
+    <ul class="seigneurs">
+      <li class="seigneur"><img src="assets/images/dirigeants/odon.webp" width="96" height="102" loading="lazy" decoding="async" alt=""><div><b>Odon le Brave</b><p>Chacune de ses unités d’élite engagée dans un assaut lui donne +1, qu’il mène l’assaut ou non.</p></div></li>
+      <li class="seigneur"><img src="assets/images/dirigeants/gustave.webp" width="96" height="102" loading="lazy" decoding="async" alt=""><div><b>Gustave l’Irascible</b><p>Ses campements, forts et ports gagnent +1 en défense. Ses cités coûtent 6 or.</p></div></li>
+      <li class="seigneur"><img src="assets/images/dirigeants/edouard.webp" width="96" height="102" loading="lazy" decoding="async" alt=""><div><b>Édouard le Sage</b><p>Une fois par partie, en temps de paix : 1 or contre 1 point de diplomatie.</p></div></li>
+      <li class="seigneur"><img src="assets/images/dirigeants/mathilde.webp" width="96" height="102" loading="lazy" decoding="async" alt=""><div><b>Mathilde la Bien-Aimée</b><p>Sa première cité coûte 4 or ; les suivantes sont au prix normal.</p></div></li>
+      <li class="seigneur"><img src="assets/images/dirigeants/adele.webp" width="96" height="102" loading="lazy" decoding="async" alt=""><div><b>Adèle la Pieuse</b><p>Ses temples coûtent 6 or et donnent +1 en défense.</p></div></li>
+      <li class="seigneur"><img src="assets/images/dirigeants/henri.webp" width="96" height="102" loading="lazy" decoding="async" alt=""><div><b>Henri le Stratège</b><p>Toutes ses unités d’élite se déplacent d’une case de plus.</p></div></li>
+      <li class="seigneur"><img src="assets/images/dirigeants/hugues.webp" width="96" height="102" loading="lazy" decoding="async" alt=""><div><b>Hugues le Bâtisseur</b><p>Ses campements, forts et ports coûtent 1 or de moins.</p></div></li>
+      <li class="seigneur"><img src="assets/images/dirigeants/alienor.webp" width="96" height="102" loading="lazy" decoding="async" alt=""><div><b>Alinor l’Amirale</b><p>Ses ports coûtent 2 or et gagnent +2 en défense.</p></div></li>
+    </ul>
   </div>
 </section>
 
 <section class="section" id="tyrannie" aria-labelledby="t-tyr">
-  <div class="wrap">
+  <div class="wrap split">
     <div class="sec-head">
-      <p class="num">07 - Diplomatie et tyrannie</p>
       <h2 id="t-tyr">Une réputation qu’on dépense</h2>
       <p class="lead">La diplomatie n’est pas qu’une voie de victoire, c’est la monnaie de la guerre. Chaque attaque en coûte un point, y compris pour reprendre une terre qu’on vous avait prise. Un émissaire envoyé dans une capitale étrangère en rapporte, un calomniateur peut en faire perdre à un rival.</p>
     </div>
-    <div class="panneaux">
-      <article class="panneau">
-        <span class="kicker">Le seuil</span>
-        <h3>Tomber à zéro</h3>
-        <p>À court de diplomatie, un joueur qui veut encore attaquer doit devenir <b>Tyran</b>. Il gagne le droit de frapper sans compter.</p>
-      </article>
-      <article class="panneau accent">
-        <span class="kicker">Le prix</span>
-        <h3>Ce que coûte la couronne</h3>
-        <p>Un Tyran ne gagne plus jamais de diplomatie : la voie diplomatique lui est fermée pour la partie. Il ne lui reste que l’épée ou la foi.</p>
-      </article>
-      <article class="panneau accent">
-        <span class="kicker">La meute</span>
-        <h3>Tous contre un</h3>
-        <p>Attaquer un Tyran ne coûte rien à personne. Détruire ses temples non plus. Chaque tour, une de ses terres se soulève - et celle-là ne le reconnaîtra plus jamais : il ne peut plus la reprendre.</p>
-      </article>
-    </div>
+    <ol class="chute">
+      <li><h3>Tomber à zéro</h3><p>À court de diplomatie, un joueur qui veut encore attaquer doit devenir <b>Tyran</b>. Il gagne le droit de frapper sans compter.</p></li>
+      <li><h3>Ce que coûte la couronne</h3><p>Un Tyran ne gagne plus jamais de diplomatie : la voie diplomatique lui est fermée pour la partie. Il ne lui reste que l’épée ou la foi.</p></li>
+      <li><h3>Tous contre un</h3><p>Attaquer un Tyran ne coûte rien à personne. Détruire ses temples non plus. Chaque tour, une de ses terres se soulève, et celle-là ne le reconnaîtra plus jamais : il ne peut plus la reprendre.</p></li>
+    </ol>
   </div>
 </section>
 
 <section class="section" id="jouer" aria-labelledby="t-jouer">
   <div class="wrap">
     <div class="sec-head">
-      <p class="num">08 - Jouer</p>
       <h2 id="t-jouer">Gratuit, dans le navigateur, sans inscription</h2>
-      <p class="lead">Le prototype tourne entièrement dans la page : rien à installer, rien à créer. Les parties sont enregistrées de façon anonyme - durée, tours, dirigeants, type de victoire - uniquement pour équilibrer le jeu.</p>
+      <p class="lead">Le prototype tourne entièrement dans la page : rien à installer, rien à créer. Les parties sont enregistrées de façon anonyme - durée, tours, dirigeants, type de victoire - uniquement pour équilibrer le jeu.</p>
     </div>
     <div class="jouer">
       <article class="jouer-carte">
@@ -298,8 +259,8 @@
       <article class="jouer-carte">
         <h3>Chacun chez soi</h3>
         <ol>
-          <li>Créez un salon : vous recevez un code de cinq caractères.</li>
-          <li>Partagez le code ou le lien ; vos amis rejoignent depuis leur ordinateur.</li>
+          <li>Créez un salon : vous recevez un code de cinq caractères.</li>
+          <li>Partagez le code ou le lien ; vos amis rejoignent depuis leur ordinateur.</li>
           <li>Tout le monde se déclare prêt, l’hôte lance la partie.</li>
         </ol>
         <a class="btn" href="/fields-of-fire/">Créer un salon</a>
@@ -312,9 +273,8 @@
 <section class="section" id="playtests" aria-labelledby="t-pt">
   <div class="wrap">
     <div class="sec-head">
-      <p class="num">09 - Playtests</p>
       <h2 id="t-pt">Le jeu n’est pas fini, et c’est le moment d’en profiter</h2>
-      <p class="lead">Fields of Fire est en prototype : les règles bougent d’une semaine à l’autre, les cartes sont à l’essai, les seuils sont mesurés partie après partie. Ce qui nous aide le plus : une carte qui vous paraît trop forte ou inutile, un dirigeant injouable, et le nombre de joueurs autour de la table.</p>
+      <p class="lead">Fields of Fire est en prototype : les règles bougent d’une semaine à l’autre, les cartes sont à l’essai, les seuils sont mesurés partie après partie. Ce qui nous aide le plus : une carte qui vous paraît trop forte ou inutile, un dirigeant injouable, et le nombre de joueurs autour de la table.</p>
     </div>
 
     <form class="form" id="contact" novalidate>
@@ -365,10 +325,10 @@
       </nav>
     </div>
     <p>© 2026 Nube Games · Jeux de société indépendants</p>
-    <small>Les illustrations, portraits et icônes de Fields of Fire appartiennent à Nube Games. Musiques du jeu : pistes du domaine public (CC0) publiées sur OpenGameArt, détail dans le fichier CREDITS. Polices Unbounded, Manrope et Cinzel sous licence SIL Open Font License 1.1.</small>
+    <small>Les illustrations, portraits et icônes de Fields of Fire appartiennent à Nube Games. Musiques du jeu : pistes du domaine public (CC0) publiées sur OpenGameArt, détail dans le fichier CREDITS. Polices Unbounded, Manrope et Cinzel sous licence SIL Open Font License 1.1.</small>
   </div>
 </footer>
 
-<script src="js/main.js?v=3.0" defer></script>
+<script src="js/main.js?v=3.2" defer></script>
 </body>
 </html>

@@ -22,33 +22,13 @@
 <link rel="manifest" href="/site.webmanifest">
 <link rel="preload" href="/assets/fonts/unbounded.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/assets/fonts/manrope.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="/css/style.css?v=2.1">
+<link rel="stylesheet" href="/css/style.css?v=3.2">
 
-<style>
-/* Pages annexes : même identité que l'accueil, colonne de lecture étroite. */
-.legal { padding: 120px 0 80px; }
-.legal .wrap { max-width: 760px; }
-.legal h1 { font-size: clamp(30px, 4.6vw, 46px); line-height: 1.08; margin: 0 0 6px; }
-.legal .maj { color: var(--dim, #8d8399); font-size: 14px; letter-spacing: .08em; text-transform: uppercase; margin: 0 0 40px; }
-.legal h2 { font-size: 21px; margin: 40px 0 10px; padding-top: 18px; border-top: 1px solid rgba(196,158,74,.28); }
-.legal h3 { font-size: 16px; margin: 22px 0 6px; }
-.legal p, .legal li { line-height: 1.68; color: var(--soft, #cfc7dc); }
-.legal ul { padding-left: 20px; }
-.legal li { margin: 5px 0; }
-.legal a { color: #e0c274; }
-.legal dl { display: grid; grid-template-columns: minmax(150px, 33%) 1fr; gap: 8px 22px; margin: 14px 0; }
-.legal dt { color: #a99cbd; font-size: 14px; }
-.legal dd { margin: 0; }
-.legal .todo { color: #e8a13a; background: rgba(232,161,58,.1); border: 1px dashed rgba(232,161,58,.5);
-  padding: 1px 7px; border-radius: 4px; font-size: .94em; }
-.legal .back { display: inline-block; margin-top: 46px; }
-@media (max-width: 560px) { .legal dl { grid-template-columns: 1fr; gap: 2px 0; } .legal dd { margin-bottom: 10px; } }
-</style>
 </head>
 <body id="top">
 <header class="nav" id="nav">
   <a class="nav-brand" href="/" aria-label="Nube Games, accueil">
-    <img src="assets/images/nube-games-lockup.svg" alt="Nube Games" width="132" height="32">
+    <img src="/assets/images/nube-games-lockup.svg" alt="Nube Games" width="132" height="32">
   </a>
   <nav class="nav-links" aria-label="Sections">
     <a href="/#le-jeu">Le jeu</a>
@@ -67,32 +47,33 @@
   <div class="wrap">
     <h1>Cette page n’existe pas</h1>
     <p class="maj">Erreur 404</p>
-    <p>Le lien que vous avez suivi ne mène nulle part : la page a peut-être été renommée, ou l’adresse
+    <p>Le lien que vous avez suivi ne mène nulle part : la page a peut-être été renommée, ou l’adresse
     comporte une coquille. Rien n’est perdu, le jeu est toujours là.</p>
     <p style="margin-top:26px;display:flex;gap:12px;flex-wrap:wrap">
       <a class="btn" href="/fields-of-fire/">Jouer à Fields of Fire</a>
-      <a class="btn btn-sm" href="/">Retour à l’accueil</a>
+      <a class="btn btn-ghost" href="/">Retour à l’accueil</a>
     </p>
 
   </div>
 </main>
-<footer class="foot">
+<footer class="pied">
   <div class="wrap">
-    <div class="foot-top">
-      <img class="footer-logo" src="assets/images/nube-games-logo-light.svg" alt="Nube Games" width="120" height="122" loading="lazy">
-      <nav class="foot-links" aria-label="Pied de page">
+    <div class="pied-haut">
+      <img class="pied-logo" src="/assets/images/nube-games-logo-light.svg" alt="Nube Games" width="92" height="94" loading="lazy">
+      <nav class="pied-liens" aria-label="Pied de page">
         <a href="/fields-of-fire/">Jouer</a>
         <a href="/#playtests">Playtests</a>
         <a href="/#contact">Contact</a>
-        <a href="/en/" hreflang="en" lang="en">English</a>
-              <a href="/mentions-legales.html">Mentions légales</a>
+        <a href="/mentions-legales.html">Mentions légales</a>
         <a href="/confidentialite.html">Confidentialité</a>
         <a href="/conditions.html">CGU</a>
+        <a href="/en/" hreflang="en" lang="en">English</a>
       </nav>
     </div>
     <p>© 2026 Nube Games · Jeux de société indépendants</p>
-    <small>Toutes les illustrations du prototype de Fields of Fire sont des œuvres du domaine public, libres de droits ; le détail figure dans le fichier CREDITS. Musiques du jeu : RandomMind, domaine public (CC0).</small>
+    <small>Les illustrations, portraits et icônes de Fields of Fire appartiennent à Nube Games. Musiques du jeu : pistes du domaine public (CC0) publiées sur OpenGameArt, détail dans le fichier CREDITS. Polices Unbounded, Manrope et Cinzel sous licence SIL Open Font License 1.1.</small>
   </div>
 </footer>
+<script src="/js/main.js?v=3.2" defer></script>
 </body>
 </html>

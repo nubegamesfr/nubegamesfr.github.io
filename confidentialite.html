@@ -22,33 +22,13 @@
 <link rel="manifest" href="/site.webmanifest">
 <link rel="preload" href="/assets/fonts/unbounded.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/assets/fonts/manrope.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="/css/style.css?v=2.1">
+<link rel="stylesheet" href="/css/style.css?v=3.2">
 
-<style>
-/* Pages annexes : même identité que l'accueil, colonne de lecture étroite. */
-.legal { padding: 120px 0 80px; }
-.legal .wrap { max-width: 760px; }
-.legal h1 { font-size: clamp(30px, 4.6vw, 46px); line-height: 1.08; margin: 0 0 6px; }
-.legal .maj { color: var(--dim, #8d8399); font-size: 14px; letter-spacing: .08em; text-transform: uppercase; margin: 0 0 40px; }
-.legal h2 { font-size: 21px; margin: 40px 0 10px; padding-top: 18px; border-top: 1px solid rgba(196,158,74,.28); }
-.legal h3 { font-size: 16px; margin: 22px 0 6px; }
-.legal p, .legal li { line-height: 1.68; color: var(--soft, #cfc7dc); }
-.legal ul { padding-left: 20px; }
-.legal li { margin: 5px 0; }
-.legal a { color: #e0c274; }
-.legal dl { display: grid; grid-template-columns: minmax(150px, 33%) 1fr; gap: 8px 22px; margin: 14px 0; }
-.legal dt { color: #a99cbd; font-size: 14px; }
-.legal dd { margin: 0; }
-.legal .todo { color: #e8a13a; background: rgba(232,161,58,.1); border: 1px dashed rgba(232,161,58,.5);
-  padding: 1px 7px; border-radius: 4px; font-size: .94em; }
-.legal .back { display: inline-block; margin-top: 46px; }
-@media (max-width: 560px) { .legal dl { grid-template-columns: 1fr; gap: 2px 0; } .legal dd { margin-bottom: 10px; } }
-</style>
 </head>
 <body id="top">
 <header class="nav" id="nav">
   <a class="nav-brand" href="/" aria-label="Nube Games, accueil">
-    <img src="assets/images/nube-games-lockup.svg" alt="Nube Games" width="132" height="32">
+    <img src="/assets/images/nube-games-lockup.svg" alt="Nube Games" width="132" height="32">
   </a>
   <nav class="nav-links" aria-label="Sections">
     <a href="/#le-jeu">Le jeu</a>
@@ -66,11 +46,11 @@
 <main class="legal">
   <div class="wrap">
     <h1>Politique de confidentialité</h1>
-    <p class="maj">Mise à jour : 24 septembre 2026</p>
+    <p class="maj">Mise à jour : 28 septembre 2026</p>
 
     <p>Nube Games recueille le minimum de données nécessaires pour faire tester son jeu. Cette page
     dit exactement ce qui est collecté, pourquoi, pendant combien de temps, et comment le faire
-    effacer. Responsable du traitement : Nube Games (collectif), Pont-L’Évêque, France.</p>
+    effacer. Responsable du traitement : Nube Games (collectif), Pont-L’Évêque, France.</p>
 
     <h2>Ce que nous collectons, et pourquoi</h2>
 
@@ -85,7 +65,7 @@
     <h3>2. Déblocage des dirigeants dans le jeu</h3>
     <dl>
       <dt>Données</dt><dd>adresse e-mail et votre accord explicite d’être recontacté.</dd>
-      <dt>Finalité</dt><dd>vous envoyer les nouvelles du projet : nouvelles versions, conseils de jeu,
+      <dt>Finalité</dt><dd>vous envoyer les nouvelles du projet : nouvelles versions, conseils de jeu,
       statistiques des dirigeants et des cartes.</dd>
       <dt>Base légale</dt><dd>votre consentement, donné en cochant la case prévue à cet effet.</dd>
       <dt>Conservation</dt><dd>jusqu’à votre désinscription, et au plus 3 ans sans réaction de votre part.</dd>
@@ -113,35 +93,38 @@
       jouable. Les lignes correspondantes restent en base jusqu’à leur suppression, que vous pouvez
       demander à tout moment par le formulaire de contact.</dd>
     </dl>
-    <p>N’écrivez pas d’information personnelle dans le tchat ni dans votre pseudonyme : les autres
+    <p>N’écrivez pas d’information personnelle dans le tchat ni dans votre pseudonyme : les autres
     joueurs du salon les voient.</p>
 
     <h2>Cookies et stockage local</h2>
     <p><strong>Ce site ne dépose aucun cookie</strong> et n’utilise aucun outil de mesure d’audience,
     aucun pixel publicitaire, aucun bouton de réseau social. C’est pourquoi vous ne voyez pas de
-    bandeau de consentement : il n’y a rien à consentir.</p>
-    <p>Une seule exception, à connaître : <strong>la musique du jeu</strong> est diffusée depuis
+    bandeau de consentement : il n’y a rien à consentir.</p>
+    <p>Une seule exception, à connaître : <strong>la musique du jeu</strong> est diffusée depuis
     <a href="https://opengameart.org" rel="noopener">opengameart.org</a>, qui héberge ces morceaux
     libres de droits. Lorsque vous laissez la musique active, votre navigateur contacte donc ce site,
     qui voit votre adresse IP comme tout serveur que vous consultez. Couper la musique dans le jeu
     suffit à l’éviter. Aucune donnée ne lui est transmise par ailleurs.</p>
     <p>Le jeu conserve en revanche quelques réglages dans la mémoire locale de votre navigateur
-    (<em>localStorage</em>) : votre pseudonyme, le volume, le style de carte, l’affichage du
+    (<em>localStorage</em>) : votre pseudonyme, le volume, le style de carte, l’affichage du
     didacticiel et le déblocage des dirigeants. Ces informations ne quittent jamais
     votre appareil et ne nous sont pas transmises. Vider les données du site dans votre navigateur
     les efface.</p>
+    <p>Sur ce site, le formulaire de contact enregistre au même endroit l’heure de votre dernier envoi
+    (clé <em>nube-sent</em>), pour éviter qu’un double clic n’envoie deux fois le même message. Elle ne
+    contient rien d’autre et ne quitte pas votre appareil.</p>
 
     <h2>Statistiques de partie</h2>
     <dl>
-      <dt>Données</dt><dd>une ligne par partie : date, durée, nombre de joueurs, dirigeants choisis, nombre de
+      <dt>Données</dt><dd>une ligne par partie : date, durée, nombre de joueurs, dirigeants choisis, nombre de
       tours, or moyen, territoires, temples et cités par siège, type de victoire, version du jeu et, en ligne,
       le code du salon. <b>Aucun pseudonyme, aucune adresse, aucun identifiant de joueur.</b></dd>
-      <dt>Finalité</dt><dd>équilibrer le jeu : savoir quels dirigeants gagnent, par quelle voie, en combien de
+      <dt>Finalité</dt><dd>équilibrer le jeu : savoir quels dirigeants gagnent, par quelle voie, en combien de
       tours. Le prototype ne peut pas être réglé sans ces chiffres.</dd>
       <dt>Base légale</dt><dd>notre intérêt légitime à faire fonctionner et corriger un prototype (article 6.1.f),
       avec des données qui ne permettent pas de vous identifier.</dd>
       <dt>Ce qui n'est pas enregistré</dt><dd>les parties où au moins une intelligence artificielle occupe un
-      siège sont écartées : rien n'en est envoyé.</dd>
+      siège sont écartées : rien n'en est envoyé.</dd>
       <dt>Conservation</dt><dd>conservées tant que le prototype évolue, puis effacées. Vous pouvez en demander
       la suppression par le formulaire de contact.</dd>
       <dt>Où les voir</dt><dd>les chiffres agrégés sont publics sur la page
@@ -170,26 +153,27 @@
     <h2>Modifications</h2>
     <p>Cette page peut évoluer avec le projet. La date de mise à jour figure en haut.</p>
 
-    <a class="btn btn-sm back" href="/">Retour à l’accueil</a>
+    <a class="btn btn-sm btn-ghost back" href="/">Retour à l’accueil</a>
   </div>
 </main>
-<footer class="foot">
+<footer class="pied">
   <div class="wrap">
-    <div class="foot-top">
-      <img class="footer-logo" src="assets/images/nube-games-logo-light.svg" alt="Nube Games" width="120" height="122" loading="lazy">
-      <nav class="foot-links" aria-label="Pied de page">
+    <div class="pied-haut">
+      <img class="pied-logo" src="/assets/images/nube-games-logo-light.svg" alt="Nube Games" width="92" height="94" loading="lazy">
+      <nav class="pied-liens" aria-label="Pied de page">
         <a href="/fields-of-fire/">Jouer</a>
         <a href="/#playtests">Playtests</a>
         <a href="/#contact">Contact</a>
-        <a href="/en/" hreflang="en" lang="en">English</a>
-              <a href="/mentions-legales.html">Mentions légales</a>
+        <a href="/mentions-legales.html">Mentions légales</a>
         <a href="/confidentialite.html">Confidentialité</a>
         <a href="/conditions.html">CGU</a>
+        <a href="/en/" hreflang="en" lang="en">English</a>
       </nav>
     </div>
     <p>© 2026 Nube Games · Jeux de société indépendants</p>
-    <small>Toutes les illustrations du prototype de Fields of Fire sont des œuvres du domaine public, libres de droits ; le détail figure dans le fichier CREDITS. Musiques du jeu : RandomMind, domaine public (CC0).</small>
+    <small>Les illustrations, portraits et icônes de Fields of Fire appartiennent à Nube Games. Musiques du jeu : pistes du domaine public (CC0) publiées sur OpenGameArt, détail dans le fichier CREDITS. Polices Unbounded, Manrope et Cinzel sous licence SIL Open Font License 1.1.</small>
   </div>
 </footer>
+<script src="/js/main.js?v=3.2" defer></script>
 </body>
 </html>

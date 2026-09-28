@@ -30,10 +30,10 @@
 <link rel="apple-touch-icon" href="../assets/icons/apple-touch-icon.png">
 <link rel="manifest" href="../site.webmanifest">
 
-<link rel="preload" href="../assets/fonts/unbounded.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="../assets/fonts/manrope.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="preload" as="image" href="/assets/images/fof-cover.webp" fetchpriority="high">
-<link rel="stylesheet" href="../css/style.css?v=3.0">
+<link rel="preload" as="image" href="/assets/images/fof-couronne.webp" fetchpriority="high">
+<link rel="preload" as="image" href="/assets/images/fof-cover.webp" imagesrcset="/assets/images/fof-cover-960.webp 960w, /assets/images/fof-cover.webp 1920w" imagesizes="100vw" fetchpriority="high">
+<link rel="stylesheet" href="../css/style.css?v=3.2">
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
@@ -61,12 +61,12 @@
 <!-- ======== Full-screen header: Fields of Fire, and nothing else ======== -->
 <section class="jaquette" id="top" aria-labelledby="game-title">
   <div class="jaquette-fond" aria-hidden="true">
-    <img id="cover" src="../assets/images/fof-cover.webp" width="1920" height="1080" alt="" fetchpriority="high">
+    <img id="cover" src="../assets/images/fof-cover.webp" srcset="../assets/images/fof-cover-960.webp 960w, ../assets/images/fof-cover.webp 1920w" sizes="100vw" width="1920" height="1080" alt="" fetchpriority="high">
   </div>
   <span class="jaquette-teinte" aria-hidden="true"></span>
 
   <div class="jaquette-inner">
-    <img class="couronne" src="../assets/images/fof-couronne.png" width="440" height="352" alt=""
+    <img class="couronne" src="../assets/images/fof-couronne.webp" width="392" height="314" alt=""
          fetchpriority="high" aria-hidden="true">
     <h1 class="jeu-titre" id="game-title"><span>Fields</span><span>of Fire</span></h1>
     <div class="jeu-filet" aria-hidden="true"></div>
@@ -75,16 +75,12 @@
       <a class="btn" href="/fields-of-fire/">Play for free</a>
       <a class="btn btn-ghost" href="#the-game">See the game</a>
     </div>
-    <p class="jeu-meta"><b>3 to 6 players</b> · Playable prototype · No sign-up</p>
   </div>
-
-  <a class="defile" href="#the-game" aria-label="Go to the game overview"><span>Scroll</span><i aria-hidden="true"></i></a>
 </section>
 
 <section class="section" id="the-game" aria-labelledby="t-game">
   <div class="wrap">
     <div class="sec-head">
-      <p class="num">01 - The game</p>
       <h2 id="t-game">Three ways to win, one game to choose</h2>
       <p class="lead">Each player takes a lord and starts from a capital on an archipelago drawn afresh every game. You raise taxes, recruit, manoeuvre and build. Attacking costs diplomacy; building costs gold; and everyone watches whoever is closing in on their own victory condition.</p>
     </div>
@@ -97,7 +93,7 @@
     </div>
 
     <figure class="fig reveal" style="margin-top:clamp(34px,4.4vw,60px)">
-      <img src="../assets/images/fof-partie.webp" width="1600" height="950" loading="lazy" decoding="async"
+      <img src="../assets/images/fof-partie.webp" srcset="../assets/images/fof-partie-800.webp 800w, ../assets/images/fof-partie.webp 1600w" sizes="(max-width: 1260px) 92vw, 1200px" width="1600" height="950" loading="lazy" decoding="async"
            alt="A four-player game of Fields of Fire: the archipelago map in the centre, the lords on the left, the five-card recruitment row below.">
     </figure>
     <p class="fig-cap">A four-lord game, running in the browser.</p>
@@ -107,47 +103,34 @@
 <section class="section" id="victory" aria-labelledby="t-vic">
   <div class="wrap">
     <div class="sec-head">
-      <p class="num">02 - Roads to victory</p>
       <h2 id="t-vic">The sword, the faith, diplomacy</h2>
       <p class="lead">All three are open to everyone from turn one, and their thresholds rise with the player count. Nothing forces an early choice: many games turn on the moment someone switches.</p>
     </div>
-    <div class="panneaux">
-      <article class="panneau accent">
-        <span class="kicker">Military</span>
-        <h3>Take the land</h3>
-        <p>Hold enough territories, capital included. Every assault costs diplomacy, except against a Tyrant - conquest isolates you as much as it enlarges you.</p>
+    <div class="voies">
+      <div class="voies-tete" aria-hidden="true"><span>Threshold by player count</span><ol class="seuils"><li>3</li><li>4</li><li>5</li><li>6</li></ol></div>
+      <article class="voie voie-epee">
+        <div class="voie-nom"><h3>Take the land</h3><p>Military, in territories</p></div>
+        <p class="voie-texte">Hold enough territories, capital included. Every assault costs diplomacy, except against a Tyrant: conquest isolates you as much as it enlarges you.</p>
+        <ol class="seuils" aria-label="Victory threshold by player count"><li><span class="sr">with 3 players </span><b>11</b></li><li><span class="sr">with 4 players </span><b>12</b></li><li><span class="sr">with 5 players </span><b>13</b></li><li><span class="sr">with 6 players </span><b>14</b></li></ol>
       </article>
-      <article class="panneau">
-        <span class="kicker">Religious</span>
-        <h3>Raise the temples</h3>
-        <p>Build enough temples, foreign soil included, or gain them by conversion. A temple costs 7 gold, and razing one is never free.</p>
+      <article class="voie voie-foi">
+        <div class="voie-nom"><h3>Raise the temples</h3><p>Religious, in temples</p></div>
+        <p class="voie-texte">Build enough temples, foreign soil included, or gain them by conversion. A temple costs 7 gold, and razing one is never free.</p>
+        <ol class="seuils" aria-label="Victory threshold by player count"><li><span class="sr">with 3 players </span><b>9</b></li><li><span class="sr">with 4 players </span><b>10</b></li><li><span class="sr">with 5 players </span><b>11</b></li><li><span class="sr">with 6 players </span><b>12</b></li></ol>
       </article>
-      <article class="panneau">
-        <span class="kicker">Diplomatic</span>
-        <h3>Make a name</h3>
-        <p>Reach the diplomacy threshold by playing envoys and keeping the peace. An Embassy in your capital amplifies every gain, as long as no one attacks you.</p>
+      <article class="voie voie-dip">
+        <div class="voie-nom"><h3>Make a name</h3><p>Diplomatic, in points</p></div>
+        <p class="voie-texte">Reach the diplomacy threshold by playing envoys and keeping the peace. An Embassy in your capital amplifies every gain, as long as no one attacks you.</p>
+        <ol class="seuils" aria-label="Victory threshold by player count"><li><span class="sr">with 3 players </span><b>7</b></li><li><span class="sr">with 4 players </span><b>8</b></li><li><span class="sr">with 5 players </span><b>9</b></li><li><span class="sr">with 6 players </span><b>10</b></li></ol>
       </article>
     </div>
-
-    <table class="tbl">
-      <caption class="tiny" style="text-align:left;padding-bottom:10px">Victory thresholds by player count</caption>
-      <thead>
-        <tr><th scope="col">Road</th><th scope="col">3 players</th><th scope="col">4</th><th scope="col">5</th><th scope="col">6</th></tr>
-      </thead>
-      <tbody>
-        <tr><td>Military · territories</td><td>11</td><td>12</td><td>13</td><td>14</td></tr>
-        <tr><td>Religious · temples</td><td>9</td><td>10</td><td>11</td><td>12</td></tr>
-        <tr><td>Diplomatic · points</td><td>7</td><td>8</td><td>9</td><td>10</td></tr>
-      </tbody>
-    </table>
-    <p class="tiny" style="margin-top:14px">These numbers are still moving: they are tuned playtest after playtest.</p>
+    <p class="tiny voies-note">These numbers are still moving: they are tuned playtest after playtest.</p>
   </div>
 </section>
 
 <section class="section" id="turn" aria-labelledby="t-turn">
   <div class="wrap">
     <div class="sec-head">
-      <p class="num">03 - The turn</p>
       <h2 id="t-turn">Four phases, always in the same order</h2>
     </div>
     <div class="etapes">
@@ -162,7 +145,6 @@
 <section class="section" id="map" aria-labelledby="t-map">
   <div class="wrap">
     <div class="sec-head">
-      <p class="num">04 - The map</p>
       <h2 id="t-map">A different archipelago every game</h2>
       <p class="lead">The map is drawn anew for each game: seven territories per player, four terrains - plains, forest, mountains, marsh - and sea zones parting the continents. Terrain matters: every elite unit has a different strength depending on where it fights.</p>
     </div>
@@ -196,7 +178,6 @@
 <section class="section" id="units" aria-labelledby="t-units">
   <div class="wrap">
     <div class="sec-head">
-      <p class="num">05 - The units</p>
       <h2 id="t-units">You don’t recruit what you want, you recruit what turns up</h2>
       <p class="lead">Five cards face up, one buy and one discard per turn. Elite units fight - their strength shifts with the terrain. Special units never fight: they convert a temple, carry word to a foreign court, scout the map or shore up a defence. Every card requires a building before it can be recruited, and draws upkeep at each collection.</p>
     </div>
@@ -211,59 +192,39 @@
 <section class="section" id="lords" aria-labelledby="t-lords">
   <div class="wrap">
     <div class="sec-head">
-      <p class="num">06 - The lords</p>
       <h2 id="t-lords">Eight lords, eight ways to play</h2>
       <p class="lead">Your lord is a piece like any other: it moves, it claims, it can lead an assault and lose a territory doing so. Its power, though, shapes the whole game.</p>
     </div>
-    <div class="seigneurs">
-      <div class="seigneur"><b>Odon the Brave</b><p>Each of his elite units in an assault gives him +1, whether or not he leads it.</p></div>
-      <div class="seigneur"><b>Gustave the Irascible</b><p>His camps, forts and ports gain +1 defence. His cities cost 6 gold.</p></div>
-      <div class="seigneur"><b>Edward the Wise</b><p>Once per game, in peacetime: 1 gold for 1 diplomacy point.</p></div>
-      <div class="seigneur"><b>Mathilda the Beloved</b><p>Her first city costs 4 gold; the rest are full price.</p></div>
-      <div class="seigneur"><b>Adele the Pious</b><p>Her temples cost 6 gold and give +1 defence.</p></div>
-      <div class="seigneur"><b>Henry the Strategist</b><p>All his elite units move one tile further.</p></div>
-      <div class="seigneur"><b>Hugh the Builder</b><p>His camps, forts and ports cost 1 gold less.</p></div>
-      <div class="seigneur"><b>Alinor the Admiral</b><p>Her ports cost 2 gold and gain +2 defence.</p></div>
-    </div>
-    <figure class="fig reveal" style="margin-top:clamp(26px,3.4vw,44px)">
-      <img src="../assets/images/fof-dirigeants.webp" width="1300" height="599" loading="lazy" decoding="async"
-           alt="The eight lords of the game, each with a painted portrait, combat bonus and power.">
-    </figure>
-    <p class="fig-cap">The eight lords, as shown before a game starts.</p>
+    <ul class="seigneurs">
+      <li class="seigneur"><img src="../assets/images/dirigeants/odon.webp" width="96" height="102" loading="lazy" decoding="async" alt=""><div><b>Odon the Brave</b><p>Each of his elite units in an assault gives him +1, whether or not he leads it.</p></div></li>
+      <li class="seigneur"><img src="../assets/images/dirigeants/gustave.webp" width="96" height="102" loading="lazy" decoding="async" alt=""><div><b>Gustave the Irascible</b><p>His camps, forts and ports gain +1 defence. His cities cost 6 gold.</p></div></li>
+      <li class="seigneur"><img src="../assets/images/dirigeants/edouard.webp" width="96" height="102" loading="lazy" decoding="async" alt=""><div><b>Edward the Wise</b><p>Once per game, in peacetime: 1 gold for 1 diplomacy point.</p></div></li>
+      <li class="seigneur"><img src="../assets/images/dirigeants/mathilde.webp" width="96" height="102" loading="lazy" decoding="async" alt=""><div><b>Mathilda the Beloved</b><p>Her first city costs 4 gold; the rest are full price.</p></div></li>
+      <li class="seigneur"><img src="../assets/images/dirigeants/adele.webp" width="96" height="102" loading="lazy" decoding="async" alt=""><div><b>Adele the Pious</b><p>Her temples cost 6 gold and give +1 defence.</p></div></li>
+      <li class="seigneur"><img src="../assets/images/dirigeants/henri.webp" width="96" height="102" loading="lazy" decoding="async" alt=""><div><b>Henry the Strategist</b><p>All his elite units move one tile further.</p></div></li>
+      <li class="seigneur"><img src="../assets/images/dirigeants/hugues.webp" width="96" height="102" loading="lazy" decoding="async" alt=""><div><b>Hugh the Builder</b><p>His camps, forts and ports cost 1 gold less.</p></div></li>
+      <li class="seigneur"><img src="../assets/images/dirigeants/alienor.webp" width="96" height="102" loading="lazy" decoding="async" alt=""><div><b>Alinor the Admiral</b><p>Her ports cost 2 gold and gain +2 defence.</p></div></li>
+    </ul>
   </div>
 </section>
 
 <section class="section" id="tyranny" aria-labelledby="t-tyr">
-  <div class="wrap">
+  <div class="wrap split">
     <div class="sec-head">
-      <p class="num">07 - Diplomacy and tyranny</p>
       <h2 id="t-tyr">A reputation you spend</h2>
       <p class="lead">Diplomacy is not only a road to victory, it is the currency of war. Every attack costs a point, including retaking land that was taken from you. An envoy sent to a foreign capital earns one; a slanderer can make a rival lose some.</p>
     </div>
-    <div class="panneaux">
-      <article class="panneau">
-        <span class="kicker">The edge</span>
-        <h3>Down to zero</h3>
-        <p>Out of diplomacy, a player who still wants to attack must become a <b>Tyrant</b>. They gain the right to strike without counting the cost.</p>
-      </article>
-      <article class="panneau accent">
-        <span class="kicker">The price</span>
-        <h3>What the crown costs</h3>
-        <p>A Tyrant never gains diplomacy again: the diplomatic road is shut for the rest of the game. Only the sword and the faith remain.</p>
-      </article>
-      <article class="panneau accent">
-        <span class="kicker">The pack</span>
-        <h3>Everyone against one</h3>
-        <p>Attacking a Tyrant costs nobody anything. Nor does razing their temples. Every turn one of their lands revolts - and that one will never take them back.</p>
-      </article>
-    </div>
+    <ol class="chute">
+      <li><h3>Down to zero</h3><p>Out of diplomacy, a player who still wants to attack must become a <b>Tyrant</b>. They gain the right to strike without counting the cost.</p></li>
+      <li><h3>What the crown costs</h3><p>A Tyrant never gains diplomacy again: the diplomatic road is shut for the rest of the game. Only the sword and the faith remain.</p></li>
+      <li><h3>Everyone against one</h3><p>Attacking a Tyrant costs nobody anything. Nor does razing their temples. Every turn one of their lands revolts, and that one will never take them back.</p></li>
+    </ol>
   </div>
 </section>
 
 <section class="section" id="play" aria-labelledby="t-play">
   <div class="wrap">
     <div class="sec-head">
-      <p class="num">08 - Play</p>
       <h2 id="t-play">Free, in the browser, no sign-up</h2>
       <p class="lead">The prototype runs entirely in the page: nothing to install, no account to create. Games are recorded anonymously - length, rounds, lords, victory type - purely to balance the game.</p>
     </div>
@@ -294,7 +255,6 @@
 <section class="section" id="playtests" aria-labelledby="t-pt">
   <div class="wrap">
     <div class="sec-head">
-      <p class="num">09 - Playtests</p>
       <h2 id="t-pt">The game isn’t finished, and that’s the good part</h2>
       <p class="lead">Fields of Fire is a prototype: rules shift from one week to the next, cards are on trial, thresholds are measured game after game. What helps us most: a card that strikes you as too strong or useless, a lord that feels unplayable, and how many were around the table.</p>
     </div>
@@ -351,6 +311,6 @@
   </div>
 </footer>
 
-<script src="../js/main.js?v=3.0" defer></script>
+<script src="../js/main.js?v=3.2" defer></script>
 </body>
 </html>
