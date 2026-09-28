@@ -1,6 +1,30 @@
-# Fields of Fire - version web (beta 1.9.14, prototype)
+# Fields of Fire - version web (beta 1.9.15, prototype)
 
 Jeu 100 % statique (HTML/CSS/JS, sans build). Servi par GitHub Pages sur https://nubegames.fr/fields-of-fire/ (dossier `fields-of-fire/` du repo `nubegamesfr.github.io`).
+
+## v1.9.15 - habillage, pause, Chausse-trapes, nouvelles icônes (29/09/2026)
+
+- **Règles (décisions du créateur)** : le seuil de victoire diplomatique est aligné sur le seuil
+  religieux (6 + nombre de joueurs) ; une capitale conquise qui garde 3 aménagements redevient un
+  territoire ordinaire et le vainqueur en rase un. Dévaster : nouvelle définition au glossaire
+  (et la fenêtre de conquête ne dit plus que le territoire redevient neutre).
+- **Habillage** : « Encre et braise » par défaut, « Feutre et or » au choix (bouton écu dans l'en-tête
+  et sur l'accueil, mémorisé dans le navigateur). Le bois et cuir est remplacé.
+- **Icônes** : nouvelles icônes des aménagements, des terrains, de la diplomatie et des territoires
+  (dessins du créateur, détourés, deux teintes, trait épaissi pour la carte).
+- **Illustrations** : Calomniateur, Boutefeu, et la garnison dans la fenêtre de combat.
+- **Pause** en partie locale (bouton dans l'en-tête) : les bots s'arrêtent, la musique baisse.
+- **Chausse-trapes** : un démineur médiéval sous la chronique pendant le tour des autres
+  (trois niveaux, records gardés dans le navigateur).
+- **Son** : la musique de combat ne joue que pendant la fenêtre de combat ; plus de bruits de
+  bataille, seulement les dés ; luth en majeur si l'on gagne, en mineur si l'on perd.
+- **Corrections** : la fiche du joueur n° 2 affichait la sienne ; en réduisant la main, le plateau
+  rétrécissait (la pile du deck cachée gardait sa hauteur) ; revenu par tour sur chaque bannière ;
+  fiches des joueurs coupées entre 900 et 1280 px.
+- **Bots** : ils acceptent de devenir Tyran après le tour 25 s'ils ne visent pas la diplomatie
+  (avec le nouveau seuil, des tables entières restaient figées à 0).
+- Vérifié : 71 assertions de scénarios, 120 parties de bots à 3-6 joueurs (120 terminées, 0 erreur
+  moteur, 0 violation d'invariant), partie de 4 bots dans le navigateur sans erreur JS.
 
 ## v1.9.14 - retours de playtest, nouvelles cartes, bulles de pions (28/09/2026)
 

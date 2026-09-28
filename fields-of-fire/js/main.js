@@ -26,7 +26,7 @@
   function winText(n) {
     if (!n) return '';
     return 'À ' + n + ' joueurs : ' + (7 * n) + ' territoires sur la carte. Victoire à ' + (8 + n) + ' territoires, '
-      + (6 + n) + ' temples ou ' + (4 + n) + ' de diplomatie.';
+      + (6 + n) + ' temples ou ' + (6 + n) + ' de diplomatie.';
   }
   function setErr(msg) { $('netErr').textContent = msg || ''; }
   /* v1.9.10 - écran « Génération de la carte en cours ». La carte doit respecter strictement la

@@ -116,7 +116,9 @@
   };
   Deck.prototype.next = function () { this.pos++; if (this.pos >= this.order.length) this.shuffle(); this.load(); if (this.level > 0) this.play(); ui(); };
   Deck.prototype.play = function () { if (!this.audio) this.load(); if (started && !prefs.muted) this.audio.play().catch(function () {}); };
-  function vol(base, level, env, gain) { return Math.max(0, Math.min(1, base * level * env * (gain || 1))); }
+  // v1.9.15 - pendant une pause, la musique baisse de deux tiers
+  var sourdine = 1;
+  function vol(base, level, env, gain) { return Math.max(0, Math.min(1, base * level * env * (gain || 1) * sourdine)); }
   Deck.prototype.apply = function () {
     var base = ampli(prefs.vol), lv = this.level;
     if (this.audio) { this.audio.volume = vol(base, lv, this.env, this.gain); this.audio.muted = prefs.muted; }
@@ -138,11 +140,11 @@
 
   var decks = { calm: new Deck('calm'), battle: new Deck('battle') }, active = 'calm', started = false, fadeT = null;
   decks.calm.level = 1;
-  // passage ambiance / combat : 1,5 s pour entrer dans le combat, 4 s pour en ressortir
+  // passage ambiance / combat : 1,5 s pour entrer dans le combat, 2 s pour en ressortir
   function fadeTo(name) {
     if (active === name && decks[name].level >= 1) return;
     active = name; var target = decks[name], other = decks[name === 'calm' ? 'battle' : 'calm'];
-    var up = name === 'battle' ? 0.067 : 0.025;
+    var up = name === 'battle' ? 0.067 : 0.05;   // v1.9.15 : la musique de combat ne dure que le temps de la fenêtre de combat (sortie en 2 s)
     if (started && !prefs.muted) { if (name === 'battle' && target.audio && target.audio.paused) target.next(); else target.play(); }
     clearInterval(fadeT);
     fadeT = setInterval(function () {
@@ -153,6 +155,7 @@
     ui();
   }
   FOF.musicMode = function (name) { if (LISTS[name]) fadeTo(name); };
+  FOF.musicDuck = function (on) { sourdine = on ? 0.35 : 1; decks.calm.apply(); decks.battle.apply(); };
   // chien de garde : si la musique active ne progresse plus depuis 8 s alors qu'elle devrait jouer, on la relance
   setInterval(function () {
     var d = decks[active]; if (!started || prefs.muted || !d.audio || d.level <= 0 || !d.everPlayed) return;

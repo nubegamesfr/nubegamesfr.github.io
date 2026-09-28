@@ -235,7 +235,9 @@
   function peutPayer(st, p, cout, gagne) {
     if (p.tyran || cout === 0) return true;
     if (p.dip - cout >= 0) return plan(st, p) !== 'dip' || (st.victory.dip - p.dip) > 3 || gagne;
-    return gagne;   // basculer en Tyran seulement pour gagner la partie
+    // basculer en Tyran pour gagner la partie, ou (v1.9.15) pour sortir d'une partie figée : depuis
+    // que le seuil diplomatique a monté, des tables entières de bots restaient à 0 sans plus attaquer
+    return gagne || (st.round >= 25 && plan(st, p) !== 'dip');
   }
   // meilleur assaut réalisable ce tour-ci (en regroupant les élites qui peuvent atteindre la cible)
   function chercherAssaut(st, p) {

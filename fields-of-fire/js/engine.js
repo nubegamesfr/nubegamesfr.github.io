@@ -35,7 +35,7 @@
     FOF.shuffle(st, st.deck); st.discard = [];
     st.zone = [draw(st), draw(st), draw(st), draw(st), draw(st)];
     st.turnNo = 1; st.round = 1; st.cur = 0; st.phase = 'collect'; st.log = []; st.pending = []; st.winner = null;
-    st.victory = { mil: 8 + st.n, rel: 6 + st.n, dip: 4 + st.n };
+    st.victory = { mil: 8 + st.n, rel: 6 + st.n, dip: 6 + st.n };   // v1.9.15 : aligné sur la victoire religieuse (décision du 29/09/2026)
     log(st, 'Ainsi s’ouvre la chronique : ' + st.players.length + ' seigneurs se disputent ' + st.map.terr.length + ' terres.', undefined, 'start');
     startTurn(st);
     return st;
@@ -823,7 +823,12 @@
         t.ctrl = att.id; t.conqStamp = st.turnNo; t.revoltFrom = null;
         log(st, att.name + ' s’empare de ' + t.name + '.', att.id, 'conquer');
       }
-      if (def.alive && t.id === def.capital && a.choice !== 'keep') { log(st, 'La capitale de ' + def.name + ' est tombée !', def.id, 'capfall'); eliminate(st, def); }
+      if (def.alive && t.id === def.capital && a.choice !== 'keep') {
+        log(st, 'La capitale de ' + def.name + ' est tombée !', def.id, 'capfall'); eliminate(st, def);
+        // v1.9.15 (décision du créateur, 29/09/2026) : une capitale conquise redevient un territoire
+        // ordinaire à 2 emplacements ; s'il lui reste 3 aménagements, le vainqueur en rase un.
+        if (!st.winner && att.alive && t.ctrl === att.id && t.blds.length > FOF.slotsOf(st, att, t.id)) st.pending.push({ type: 'razeSlot', pid: att.id, tid: t.id, cause: 'conquete' });
+      }
       checkWin(st);
     } else if (pend.type === 'cedeTerritory') {
       var loser = st.players[pend.pid], t2 = T(st, a.tid);

@@ -21,11 +21,13 @@
 <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
 <link rel="preload" href="assets/fonts/cinzel-700.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="assets/fonts/alegreya-sans-400.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="css/style.css?v=beta-1.9.14">
+<link rel="stylesheet" href="css/style.css?v=beta-1.9.15">
+<script>try{document.documentElement.dataset.theme=localStorage.getItem('fof-theme')==='feutre'?'feutre':'braise'}catch(e){document.documentElement.dataset.theme='braise'}</script>
 </head>
 <body>
 <section id="setup" hidden>
   <div class="setup-music" data-music-slot></div>
+  <button class="btn ghost theme-btn setup-theme" type="button" data-theme-toggle aria-label="Changer d’habillage"></button>
   <button class="btn ghost icon-btn setup-bug" type="button" id="bugBtn2" onclick="document.getElementById('bugBtn').click()" title="Signaler un bug" data-ic="bug"></button>
   <div class="setup-inner">
     <div class="cover" aria-hidden="true">
@@ -59,7 +61,7 @@
         <p class="note" id="onlineNote" hidden>Le jeu en ligne n’est pas encore activé sur ce site.</p>
         <div class="setup-actions" id="resumeBox"></div>
         <footer class="setup-foot">
-          <p><b>Version beta 1.9.14</b> · prototype. Les parties sont enregistrées de façon anonyme (durée, tours, dirigeants, type de victoire) pour équilibrer le jeu. Hugues le Bâtisseur et Alinor l’Amirale se débloquent en laissant votre adresse e-mail.</p>
+          <p><b>Version beta 1.9.15</b> · prototype. Les parties sont enregistrées de façon anonyme (durée, tours, dirigeants, type de victoire) pour équilibrer le jeu. Hugues le Bâtisseur et Alinor l’Amirale se débloquent en laissant votre adresse e-mail.</p>
           <p>Illustrations, portraits et icônes : Nube Games. Musique : domaine public (CC0) d’OpenGameArt, détail dans CREDITS. Polices sous licence SIL OFL 1.1, hébergées sur notre serveur.</p>
           <p class="setup-legal"><a href="/">Nube Games</a> · <a href="/mentions-legales.html">Mentions légales</a> · <a href="/confidentialite.html">Confidentialité</a> · <a href="/conditions.html">CGU</a></p>
         </footer>
@@ -96,7 +98,9 @@
     <button class="btn ghost hdr-toggle" id="logBtn" type="button" aria-pressed="true" title="Afficher / masquer la chronique"><span data-ic="scroll"></span> Chronique</button>
     <button class="btn ghost" id="deckBtn" type="button" title="Voir le deck"><span data-ic="cards"></span> Deck</button>
     <button class="btn ghost" id="glossBtn" type="button" title="Glossaire"><span data-ic="book"></span> Glossaire</button>
+    <button class="btn ghost icon-btn theme-btn" id="themeBtn" type="button" data-theme-toggle aria-label="Changer d’habillage"></button>
     <button class="btn ghost icon-btn" id="setBtn" type="button" title="Réglages" aria-label="Réglages" data-ic="gear"></button>
+    <button class="btn ghost icon-btn" id="pauseBtn" type="button" title="Mettre la partie en pause" aria-label="Mettre la partie en pause" data-ic="pause" hidden></button>
     <button class="btn ghost icon-btn hdr-flag" id="flagBtn" type="button" title="Quitter la partie (pause 48 h ou abandon)" aria-label="Quitter la partie" data-ic="flag"></button>
     <button class="btn ghost" id="helpBtn" type="button" title="Règles"><span data-ic="help"></span> Règles</button>
     <button class="btn ghost icon-btn" id="bugBtn" type="button" title="Signaler un bug" aria-label="Signaler un bug" data-ic="bug"></button>
@@ -110,7 +114,7 @@
     <div class="board-tools"><button class="btn small" id="zoomOut" type="button" aria-label="Dézoomer">−</button><button class="btn small" id="zoomIn" type="button" aria-label="Zoomer">+</button></div>
     <div class="market" id="market" hidden></div>
   </main>
-  <aside class="right" id="right"></aside>
+  <aside class="right" id="right"><div id="rightLog"></div><section class="minijeu" id="minijeu" hidden aria-label="Mini-jeu pendant le tour des autres"></section></aside>
   <section class="mat" id="mat"></section>
 </div>
 <div id="modal" hidden></div>
@@ -120,23 +124,24 @@
 <div id="bugModal" hidden></div>
 <div id="chatPanel" hidden><div class="chat-head"><b><span data-ic="chat"></span> Tchat de la partie</b><button class="btn small ghost" data-chatclose="1" aria-label="Fermer">✕</button></div><div id="chatList"></div><div class="chat-in"><input id="chatInput" maxlength="300" placeholder="Votre message…" autocomplete="off"><button class="btn small primary" data-chatsend="1">Envoyer</button></div></div>
 
-<script src="js/config.js?v=beta-1.9.14"></script>
-<script src="js/icons.js?v=beta-1.9.14"></script>
-<script src="js/data.js?v=beta-1.9.14"></script>
-<script src="js/map.js?v=beta-1.9.14"></script>
-<script src="js/engine.js?v=beta-1.9.14"></script>
-<script src="js/cards.js?v=beta-1.9.14"></script>
-<script src="js/board.js?v=beta-1.9.14"></script>
-<script src="js/net.js?v=beta-1.9.14"></script>
-<script src="js/stats.js?v=beta-1.9.14"></script>
-<script src="js/sfx.js?v=beta-1.9.14"></script>
-<script src="js/fx.js?v=beta-1.9.14"></script>
-<script src="js/music.js?v=beta-1.9.14"></script>
-<script src="js/bot.js?v=beta-1.9.14"></script>
-<script src="js/tutorial.js?v=beta-1.9.14"></script>
-<script src="js/extras.js?v=beta-1.9.14"></script>
-<script src="js/ui.js?v=beta-1.9.14"></script>
-<script src="js/main.js?v=beta-1.9.14"></script>
+<script src="js/config.js?v=beta-1.9.15"></script>
+<script src="js/icons.js?v=beta-1.9.15"></script>
+<script src="js/data.js?v=beta-1.9.15"></script>
+<script src="js/map.js?v=beta-1.9.15"></script>
+<script src="js/engine.js?v=beta-1.9.15"></script>
+<script src="js/cards.js?v=beta-1.9.15"></script>
+<script src="js/board.js?v=beta-1.9.15"></script>
+<script src="js/net.js?v=beta-1.9.15"></script>
+<script src="js/stats.js?v=beta-1.9.15"></script>
+<script src="js/sfx.js?v=beta-1.9.15"></script>
+<script src="js/fx.js?v=beta-1.9.15"></script>
+<script src="js/music.js?v=beta-1.9.15"></script>
+<script src="js/bot.js?v=beta-1.9.15"></script>
+<script src="js/tutorial.js?v=beta-1.9.15"></script>
+<script src="js/extras.js?v=beta-1.9.15"></script>
+<script src="js/minijeu.js?v=beta-1.9.15"></script>
+<script src="js/ui.js?v=beta-1.9.15"></script>
+<script src="js/main.js?v=beta-1.9.15"></script>
 
 </body>
 </html>

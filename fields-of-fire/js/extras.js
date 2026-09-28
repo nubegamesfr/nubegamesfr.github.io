@@ -82,4 +82,28 @@
     document.addEventListener('keydown', function (e) { if (e.target.id === 'chatInput' && e.key === 'Enter') { e.preventDefault(); sendChat(); } if (e.key === 'Escape' && !$('bugModal').hidden) { $('bugModal').hidden = true; } });
     chat.timer = setInterval(chatTick, 2500);
   });
+
+  /* ---------- v1.9.15 - habillage : « Encre et braise » par défaut, « Feutre et or » au choix ---------- */
+  var HABILLAGES = { braise: 'Encre et braise', feutre: 'Feutre et or' };
+  function habillage() { var t = document.documentElement.dataset.theme; return HABILLAGES[t] ? t : 'braise'; }
+  function majBoutonsHabillage() {
+    var cur = habillage(), next = cur === 'braise' ? 'feutre' : 'braise';
+    document.querySelectorAll('[data-theme-toggle]').forEach(function (b) {
+      b.title = 'Habillage : ' + HABILLAGES[cur] + ' (cliquer pour ' + HABILLAGES[next] + ')';
+      b.innerHTML = FOF.ic('theme', 16) + (b.classList.contains('setup-theme') ? ' <span>' + HABILLAGES[cur] + '</span>' : '');
+      b.setAttribute('aria-label', b.title);
+    });
+  }
+  FOF.setTheme = function (t) {
+    if (!HABILLAGES[t]) t = 'braise';
+    document.documentElement.dataset.theme = t;
+    try { localStorage.setItem('fof-theme', t); } catch (e) {}
+    majBoutonsHabillage();
+    if (FOF.rerender) FOF.rerender();
+  };
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('[data-theme-toggle]'); if (!b) return;
+    FOF.setTheme(habillage() === 'braise' ? 'feutre' : 'braise');
+  });
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', majBoutonsHabillage); else majBoutonsHabillage();
 })(window.FOF = window.FOF || {});

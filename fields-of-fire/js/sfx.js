@@ -42,6 +42,31 @@
     for (var k = 0; k < n; k++) { clac(t, a, 0.9); t += dt; dt *= 0.64 + Math.random() * 0.08; a *= 0.62; }
     return t;
   }
+  /* v1.9.15 - fin d'un combat : le luth. Corde pincée par l'algorithme de Karplus-Strong (bruit
+     bref recyclé dans une boucle qui s'amortit), un peu d'écho. Majeur si l'on gagne, mineur si l'on perd. */
+  var echo = null;
+  function salle() {
+    if (echo) return echo;
+    var d = ctx.createDelay(1), fb = ctx.createGain(), wet = ctx.createGain(), lp = ctx.createBiquadFilter();
+    d.delayTime.value = 0.19; fb.gain.value = 0.28; wet.gain.value = 0.32; lp.type = 'lowpass'; lp.frequency.value = 2200;
+    d.connect(lp); lp.connect(fb); fb.connect(d); d.connect(wet); wet.connect(master);
+    echo = d; return echo;
+  }
+  var cordes = {};
+  function pluck(f, t, vol, dur) {
+    dur = dur || 2.2;
+    var key = Math.round(f) + ':' + dur, buf = cordes[key];
+    if (!buf) {
+      var sr = ctx.sampleRate, n = Math.floor(sr * dur), N = Math.max(2, Math.round(sr / f));
+      buf = ctx.createBuffer(1, n, sr); var y = buf.getChannelData(0), ring = new Float32Array(N), prev = 0;
+      for (var i = 0; i < N; i++) { var r = Math.random() * 2 - 1; ring[i] = (r + prev) / 2; prev = r; }   // excitation adoucie (doigt, pas plectre)
+      for (var k = 0; k < n; k++) { var j = k % N, nx = ring[(k + 1) % N]; y[k] = ring[j]; ring[j] = 0.4985 * (ring[j] + nx); }
+      cordes[key] = buf;
+    }
+    var s = ctx.createBufferSource(), g = ctx.createGain(), bp = ctx.createBiquadFilter(), t0 = ctx.currentTime + t;
+    s.buffer = buf; bp.type = 'peaking'; bp.frequency.value = 900; bp.gain.value = 5; bp.Q.value = 0.8;   // la caisse du luth
+    g.gain.value = vol; s.connect(bp); bp.connect(g); g.connect(master); g.connect(salle()); s.start(t0);
+  }
   function notes(list, type, vol, step, dur) { list.forEach(function (f, i) { tone(f, i * step, dur, type, vol); }); }
   var S = {
     coin: function () { tone(1318, 0, 0.12, 'triangle', 0.22); tone(1976, 0.07, 0.22, 'triangle', 0.18); },
@@ -54,8 +79,17 @@
     turn: function () { tone(660, 0, 0.7, 'sine', 0.16); tone(990, 0.18, 0.9, 'sine', 0.13); tone(1320, 0.18, 0.6, 'sine', 0.05); },
     dice: function () { var t = rebonds(0, 0.5, 5); rebonds(0.05, 0.4, 5); noise(t - 0.1, 0.18, 700, 0.8, 0.05, 'lowpass'); },
     clash: function () { noise(0, 0.35, 3500, 0.8, 0.3, 'highpass'); tone(1760, 0, 0.3, 'square', 0.03, 1500); },
-    win: function () { S.clash(); notes([523, 659, 784], 'triangle', 0.2, 0.11, 0.35); tone(1046, 0.33, 0.7, 'triangle', 0.22); },
-    loss: function () { S.clash(); notes([392, 311, 262], 'sawtooth', 0.07, 0.18, 0.4); tone(131, 0.54, 0.8, 'triangle', 0.2); },
+    // v1.9.15 - combat gagné : le luth, en majeur cette fois (arpège montant puis accord gratté et
+    // quelques grelots de tambourin). Même instrument que la défaite, humeur inverse.
+    win: function () {
+      [[293.66, 0], [369.99, 0.11], [440, 0.22], [587.33, 0.33]].forEach(function (n) { pluck(n[0], n[1], 0.2, 1.6); });
+      [146.83, 220, 293.66, 369.99, 440, 587.33].forEach(function (f, i) { pluck(f, 0.62 + i * 0.022, 0.13, 2.6); });
+      [0.62, 0.86, 1.1].forEach(function (t, i) { noise(t, 0.16, 7200, 2.5, 0.07 - i * 0.015, 'highpass'); });
+    },
+    loss: function () {
+      [[329.63, 0], [293.66, 0.42], [261.63, 0.84], [246.94, 1.3]].forEach(function (n) { pluck(n[0], n[1], 0.2, 2); });
+      [110, 164.81, 220, 261.63].forEach(function (f, i) { pluck(f, 1.95 + i * 0.045, 0.14, 3); });   // accord de la mineur égrené
+    },
     victory: function () { notes([392, 523, 659, 784, 659, 784, 1046], 'triangle', 0.22, 0.13, 0.4); notes([196, 262, 330, 392], 'sawtooth', 0.05, 0.26, 0.6); },
     defeat: function () { notes([330, 294, 262, 196], 'triangle', 0.18, 0.28, 0.6); },
     dip: function () { tone(784, 0, 0.3, 'sine', 0.12); tone(1175, 0.1, 0.4, 'sine', 0.1); },

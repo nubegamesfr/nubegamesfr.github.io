@@ -183,7 +183,7 @@
       });
       if (cur.combat && cur.combat !== prev.combat) {
         var c = st.lastCombat, mine = o.online ? (o.seat === c.att ? c.win : o.seat === c.def ? !c.win : null) : c.win;
-        FOF.sfx('dice3d'); setTimeout(function () { FOF.sfx(mine === null ? 'clash' : mine ? 'win' : 'loss'); }, 1350);
+        FOF.sfx('dice3d'); if (mine !== null) setTimeout(function () { FOF.sfx(mine ? 'win' : 'loss'); }, 1350);   // v1.9.15 : plus de fracas d'épées, seulement les dés puis cor ou luth
       } else if (cur.winner && !prev.winner) {
         FOF.sfx(!o.online || o.seat === st.winner.pid ? 'victory' : 'defeat');
       } else if (Date.now() - (FOF.sfxLast || 0) < 700) { /* le clic a déjà fait son bruit */ }

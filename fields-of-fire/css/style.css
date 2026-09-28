@@ -460,18 +460,18 @@ button.hero:disabled { cursor: not-allowed; }
 .market.row1 .slot .why { font-size: 10px; }
 
 /* v1.8 : marché réduit - les cartes restent visibles, en vignettes, pour dégager la carte du jeu. */
-.market.compact { padding: 10px 16px 8px; margin-top: 0; }   /* le retrait de -10px mordait sur le bas de la carte */
-.market.compact h3 { font-size: 14px; margin-bottom: 5px; }
+.market.compact { padding: 6px 16px 6px; margin-top: 0; }   /* le retrait de -10px mordait sur le bas de la carte */
+.market.compact h3 { font-size: 13px; margin-bottom: 4px; }
 /* La largeur du marché suit celle de son contenu : rétrécir les cartes écrase toute la barre et le
    titre part sur huit lignes. On garde donc la largeur d'origine et on ne réduit que la hauteur. */
 .market.compact .market-inner { gap: 8px; align-items: start; cursor: pointer; }
-.market.compact .deckpile { visibility: hidden; }
+.market.compact .deckpile { visibility: hidden; height: 0; overflow: hidden; }   /* v1.9.15 : la pile cachée gardait sa hauteur et le plateau rétrécissait */
 .market.compact .slot .why, .market.compact .ucard .txt, .market.compact .ucard .biomes,
 .market.compact .ucard .ft, .market.compact .ucard .acts { display: none; }
 .market.compact .ucard { border-width: 3px; padding: 3px 4px 4px; }
 .market.compact .ucard .uh .ribbon { font-size: 11.5px; letter-spacing: 0; }
 .market.compact .ucard .uh .arrow { width: 17px; height: 17px; font-size: 11px; }
-.market.compact .ucard .art { height: 62px; max-height: 62px; object-fit: cover; }
+.market.compact .ucard .art { display: none; }   /* v1.9.15 : bandeau fin, seuls les noms restent, la carte garde sa taille */
 .market.compact .ucard .art.none { display: grid; place-items: center; }
 .market.compact .ucard .art.none img { width: 30px; height: 30px; }
 .market.compact .ucard:hover { transform: translateY(-3px); }
@@ -644,7 +644,7 @@ header.bar .phase + .phase::before { width: 10px; margin-right: 6px; }
 .trp span { font-size: 11.5px; line-height: 1.15; color: var(--bone-dim); }
 .trp.el img { border-color: var(--gold); box-shadow: 0 0 10px -2px var(--gold); }
 .trp.lead .portrait, .trp.lead img { border-radius: 50%; border-color: var(--gold-hi); }
-.trp.none img { filter: invert(.85); padding: 10px; }
+.trp.none img { object-position: 50% 30%; }
 .die3d { width: 56px; height: 56px; perspective: 400px; margin: 10px auto 4px; }
 .die3d .cube { width: 100%; height: 100%; position: relative; transform-style: preserve-3d; transform: var(--final); animation: roll3d 1.3s cubic-bezier(.2,.7,.3,1) both; }
 .die3d .face { position: absolute; inset: 0; border-radius: 10px; background: linear-gradient(145deg, #fffaf0, #e6dcc6); border: 2px solid var(--dc, #999); display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr); padding: 7px; box-shadow: inset 0 0 8px rgba(0,0,0,.2); backface-visibility: hidden; }
@@ -1330,3 +1330,113 @@ table.stats th { background: #3a281b; }
 .cat-card .ucard { height: 100%; }
 .cat-card .cat-x { position: absolute; top: -8px; right: -6px; z-index: 2; min-width: 30px; padding: 2px 7px; border-radius: 99px; text-align: center;
   font: 700 14px/1.2 var(--f-display); color: #2a1f10; background: linear-gradient(#f3dc9a, #c89b45); border: 1px solid #6b5530; box-shadow: 0 3px 8px -3px #000; }
+/* v1.9.15 - revenu net par tour sur les bannières des joueurs */
+.opp .st .rev { font-size: 11px; font-weight: 500; opacity: .55; margin-left: 3px; letter-spacing: 0; }
+
+/* ---------- v1.9.15 - Chausse-trapes : démineur pendant le tour des autres ---------- */
+.minijeu { background: var(--leather, #2a1f16); border: 1px solid rgba(212,176,79,.28); border-radius: 10px; padding: 10px 10px 9px; display: flex; flex-direction: column; gap: 8px; box-shadow: inset 0 1px 0 rgba(255,255,255,.05), 0 8px 18px -12px #000; }
+.minijeu[hidden] { display: none; }
+.mj-tete { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.mj-titre { font-family: var(--f-display); font-size: 15px; letter-spacing: .06em; color: #e9d7a6; }
+.mj-niveau { background: #1b150f; color: #e9d7a6; border: 1px solid rgba(212,176,79,.35); border-radius: 6px; font: inherit; font-size: 12.5px; padding: 2px 4px; }
+.mj-barre { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--bone-dim, #c9bda2); }
+.mj-barre b { color: #f1e4c2; font-variant-numeric: tabular-nums; }
+.mj-barre .ic { vertical-align: -2px; }
+.mj-barre button { margin-left: auto; background: #1b150f; color: #e9d7a6; border: 1px solid rgba(212,176,79,.35); border-radius: 6px; width: 28px; height: 26px; display: grid; place-items: center; cursor: pointer; padding: 0; }
+.mj-barre button + button { margin-left: 0; }
+.mj-barre button.on { background: #7d2a24; border-color: #c8413a; color: #fff; }
+.mj-grille { display: grid; grid-template-columns: repeat(var(--l), minmax(0, 1fr)); gap: 2px; background: #1a130c; padding: 3px; border-radius: 6px; }
+.mj-c { aspect-ratio: 1; min-width: 0; border: 0; border-radius: 3px; padding: 0; cursor: pointer; display: grid; place-items: center;
+  font-family: var(--f-display); font-weight: 700; font-size: 14px; line-height: 1;
+  background: linear-gradient(160deg, #6f7f3c, #4d5a2a); box-shadow: inset 0 1px 0 rgba(255,255,255,.18), inset 0 -2px 0 rgba(0,0,0,.28); color: #f1e4c2; }
+.mj-c:hover { filter: brightness(1.14); }
+.mj-c:focus-visible { outline: 2px solid #f1d488; outline-offset: 1px; }
+.mj-c.vue, .mj-c.piege { background: #e6d6ad; box-shadow: inset 0 0 0 1px rgba(90,64,30,.18); cursor: default; filter: none; }
+.mj-c.vue.n0 { background: #d8c595; }
+.mj-c.n1 { color: #2d4f8e; } .mj-c.n2 { color: #2f6128; } .mj-c.n3 { color: #9a2d24; } .mj-c.n4 { color: #4b2a6e; }
+.mj-c.n5 { color: #7a3b10; } .mj-c.n6 { color: #1f6a6a; } .mj-c.n7 { color: #1e1810; } .mj-c.n8 { color: #5a5048; }
+.mj-c.piege { color: #1e1810; }
+.mj-c.piege.fatal { background: #b8463c; color: #fff; }
+.mj-c.ban { color: #f1d488; }
+.mj-c.ban.faux { background: linear-gradient(160deg, #6a4a3a, #4a3326); }
+.mj-pied { font-size: 12.5px; line-height: 1.35; color: var(--bone-dim, #c9bda2); min-height: 2.7em; }
+.mj-pied b { color: #f1e4c2; }
+.mj-rejouer { margin-left: 4px; background: #7d2a24; color: #fff; border: 1px solid #c8413a; border-radius: 6px; font: inherit; font-size: 12px; padding: 1px 8px; cursor: pointer; }
+@media (prefers-reduced-motion: reduce) { .mj-c:hover { filter: none; } }
+/* v1.9.15 - main réduite : une seule ligne (bouton à gauche, noms des cartes à droite) pour que le plateau garde sa taille */
+.market.compact { display: flex; align-items: center; gap: 10px; padding: 5px 12px; -webkit-mask-image: none; mask-image: none; }
+.market.compact h3 { margin: 0; flex: none; font-size: 12px; }
+.market.compact h3 .mk-t { display: none; }
+.market.compact .market-inner { flex: 1; min-width: 0; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+.market.compact .deckpile { display: none; }
+
+/* =====================================================================================
+   v1.9.15 - HABILLAGES (choix du créateur, 29/09/2026) : « Encre et braise » par défaut,
+   « Feutre et or » au choix par un bouton. L'ancien bois et cuir reste en dessous, remplacé ici.
+   Les couleurs passent par des variables --t-* ; l'attribut data-theme est posé sur <html>.
+   ===================================================================================== */
+html[data-theme="braise"] { --t-bg: #111013; --t-table: #121114; --t-bar: #141316; --t-surf: #18171b; --t-surf2: #201f24; --t-surf3: #28262d; --t-line: #2e2c33; --t-btn-line: #3a3740; --t-text: #f0ebe3; --t-dim: #a39d95; --t-title: #f5efe6; --t-acc: #e0693a; --t-acc2: #f08457; --t-on-acc: #1a0d06; --t-acc-line: rgba(224,105,58,.55); --t-acc-glow: rgba(224,105,58,.7); --t-frame: #3a3740; --t-glass: rgba(17,16,19,.88); --t-market: #18171b; --t-modal: #1b1a1f; --t-input: #141316; --bone: #f0ebe3; --bone-dim: #a39d95; --muted: #8a847d; --panel: #18171b; --panel-2: #201f24; --line: #2e2c33 }
+html[data-theme="feutre"] { --t-bg: #0d1513; --t-table: radial-gradient(ellipse at 50% 35%, #183229 0%, #0f1c18 55%, #0b1210 100%); --t-bar: #0f1917; --t-surf: #14201c; --t-surf2: #1a2924; --t-surf3: #20342d; --t-line: rgba(214,178,94,.20); --t-btn-line: rgba(214,178,94,.35); --t-text: #eee6d2; --t-dim: #a9b3a6; --t-title: #f0cf7f; --t-acc: #d6ae52; --t-acc2: #f0cf7f; --t-on-acc: #1b1407; --t-acc-line: rgba(214,178,94,.55); --t-acc-glow: rgba(214,174,82,.6); --t-frame: #d6ae52; --t-glass: rgba(13,21,19,.9); --t-market: #173427; --t-modal: #15231e; --t-input: #0f1917; --bone: #eee6d2; --bone-dim: #a9b3a6; --muted: #8c978b; --panel: #14201c; --panel-2: #1a2924; --line: rgba(214,178,94,.20) }
+html[data-theme="braise"] body, html[data-theme="feutre"] body {background: var(--t-bg); }
+html[data-theme="braise"] #game, html[data-theme="feutre"] #game, html[data-theme="braise"] #setup, html[data-theme="feutre"] #setup {background: var(--t-table); }
+html[data-theme="braise"] header.bar, html[data-theme="feutre"] header.bar {background: var(--t-bar); box-shadow: 0 1px 0 var(--t-line); }
+html[data-theme="braise"] header.bar::before, html[data-theme="feutre"] header.bar::before, html[data-theme="braise"] header.bar::after, html[data-theme="feutre"] header.bar::after, html[data-theme="braise"] #boardWrap::before, html[data-theme="feutre"] #boardWrap::before, html[data-theme="braise"] #boardWrap::after, html[data-theme="feutre"] #boardWrap::after, html[data-theme="braise"] .opp::after, html[data-theme="feutre"] .opp::after {display: none; }
+html[data-theme="braise"] .brand, html[data-theme="feutre"] .brand, html[data-theme="braise"] .modal h2, html[data-theme="feutre"] .modal h2, html[data-theme="braise"] .cat-head h2, html[data-theme="feutre"] .cat-head h2 {background: none; color: var(--t-title); -webkit-text-fill-color: currentColor; }
+html[data-theme="braise"] .section-title, html[data-theme="feutre"] .section-title {background: none; color: var(--t-dim); -webkit-text-fill-color: currentColor; }
+html[data-theme="braise"] .section-title::after, html[data-theme="feutre"] .section-title::after {background: var(--t-line); }
+html[data-theme="braise"] .round-chip, html[data-theme="feutre"] .round-chip {color: var(--t-dim); }
+html[data-theme="braise"] aside, html[data-theme="feutre"] aside, html[data-theme="braise"] aside.left, html[data-theme="feutre"] aside.left, html[data-theme="braise"] aside.right, html[data-theme="feutre"] aside.right, html[data-theme="braise"] .mat, html[data-theme="feutre"] .mat {background: var(--t-surf); box-shadow: none; }
+html[data-theme="braise"] aside.left, html[data-theme="feutre"] aside.left {border-right: 1px solid var(--t-line); }
+html[data-theme="braise"] aside.right, html[data-theme="feutre"] aside.right {border-left: 1px solid var(--t-line); }
+html[data-theme="braise"] .mat, html[data-theme="feutre"] .mat {border-top: 1px solid var(--t-line); }
+html[data-theme="braise"] .opp, html[data-theme="feutre"] .opp {background: var(--t-surf2); border: 1px solid var(--t-line); border-left: 4px solid var(--pc); box-shadow: none; }
+html[data-theme="braise"] .opp.active, html[data-theme="feutre"] .opp.active {background: var(--t-surf3); border-color: var(--t-acc-line); border-left-color: var(--pc); box-shadow: 0 0 0 1px var(--t-acc-line); animation: none; }
+html[data-theme="braise"] .opp .ld, html[data-theme="feutre"] .opp .ld {color: var(--t-dim); }
+html[data-theme="braise"] .box, html[data-theme="feutre"] .box, html[data-theme="braise"] .minijeu, html[data-theme="feutre"] .minijeu {background: var(--t-surf2); border: 1px solid var(--t-line); box-shadow: none; }
+html[data-theme="braise"] #boardWrap, html[data-theme="feutre"] #boardWrap {box-shadow: 0 0 0 1px var(--t-frame), 0 30px 60px -24px #000; }
+html[data-theme="braise"] .legend, html[data-theme="feutre"] .legend, html[data-theme="braise"] .board-tools .btn, html[data-theme="feutre"] .board-tools .btn {background: var(--t-glass); border-color: var(--t-line); }
+html[data-theme="braise"] .market, html[data-theme="feutre"] .market {background: linear-gradient(180deg, transparent, var(--t-market) 26px); -webkit-mask-image: none; mask-image: none; }
+html[data-theme="braise"] .market.compact, html[data-theme="feutre"] .market.compact {background: var(--t-market); }
+html[data-theme="braise"] .market h3, html[data-theme="feutre"] .market h3 {color: var(--t-text); text-shadow: none; }
+html[data-theme="braise"] .btn, html[data-theme="feutre"] .btn {background: var(--t-surf2); border: 1px solid var(--t-btn-line); color: var(--t-text); box-shadow: none; text-shadow: none; }
+html[data-theme="braise"] .btn:hover:not(:disabled), html[data-theme="feutre"] .btn:hover:not(:disabled) {background-color: var(--t-surf3); border-color: var(--t-acc-line); }
+html[data-theme="braise"] .btn.ghost, html[data-theme="feutre"] .btn.ghost {background: transparent; border-color: transparent; }
+html[data-theme="braise"] .btn.ghost:hover:not(:disabled), html[data-theme="feutre"] .btn.ghost:hover:not(:disabled) {background: var(--t-surf2); }
+html[data-theme="braise"] .btn.primary, html[data-theme="feutre"] .btn.primary, html[data-theme="braise"] #setup .btn.primary, html[data-theme="feutre"] #setup .btn.primary {background: var(--t-acc); color: var(--t-on-acc); border: 1px solid var(--t-acc2); box-shadow: 0 6px 18px -8px var(--t-acc-glow); text-shadow: none; }
+html[data-theme="braise"] .btn.primary:hover:not(:disabled), html[data-theme="feutre"] .btn.primary:hover:not(:disabled), html[data-theme="braise"] #setup .btn.primary:hover:not(:disabled), html[data-theme="feutre"] #setup .btn.primary:hover:not(:disabled) {background: var(--t-acc2); color: var(--t-on-acc); box-shadow: 0 8px 22px -8px var(--t-acc-glow); }
+html[data-theme="braise"] .btn.gold, html[data-theme="feutre"] .btn.gold, html[data-theme="braise"] .cat-tab.on, html[data-theme="feutre"] .cat-tab.on {background: var(--t-acc); color: var(--t-on-acc); border-color: var(--t-acc2); box-shadow: none; }
+html[data-theme="braise"] .btn.undo, html[data-theme="feutre"] .btn.undo {background: var(--t-surf2); border-color: var(--t-btn-line); color: var(--t-text); }
+html[data-theme="braise"] .modal, html[data-theme="feutre"] .modal, html[data-theme="braise"] .popover, html[data-theme="feutre"] .popover, html[data-theme="braise"] #hoverTip, html[data-theme="feutre"] #hoverTip, html[data-theme="braise"] #pileTip, html[data-theme="feutre"] #pileTip, html[data-theme="braise"] #chatPanel, html[data-theme="feutre"] #chatPanel {background: var(--t-modal); border: 1px solid var(--t-line); box-shadow: 0 30px 70px -24px #000; }
+html[data-theme="braise"] .modal .actions, html[data-theme="feutre"] .modal .actions {background: linear-gradient(to bottom, transparent, var(--t-modal) 12px); }
+html[data-theme="braise"] .fx-toast, html[data-theme="feutre"] .fx-toast {background: var(--t-modal); border-color: var(--t-line); }
+html[data-theme="braise"] .phase .n, html[data-theme="feutre"] .phase .n {border-color: var(--t-btn-line); }
+html[data-theme="braise"] .phase.on .n, html[data-theme="feutre"] .phase.on .n {background: var(--t-acc); border-color: var(--t-acc2); color: var(--t-on-acc); box-shadow: none; }
+html[data-theme="braise"] .phase.on, html[data-theme="feutre"] .phase.on {color: var(--t-text); }
+html[data-theme="braise"] #radial .rbtn, html[data-theme="feutre"] #radial .rbtn {background: var(--t-surf2); border-color: var(--t-acc-line); }
+html[data-theme="braise"] table.stats th, html[data-theme="feutre"] table.stats th {background: var(--t-surf3); }
+html[data-theme="braise"] .ucard .art.none, html[data-theme="feutre"] .ucard .art.none {background: var(--t-surf3); }
+html[data-theme="braise"] .cover, html[data-theme="feutre"] .cover {background: var(--t-surf2); box-shadow: 0 30px 60px -24px #000, inset 0 0 0 1px var(--t-line); }
+html[data-theme="braise"] .mode-card, html[data-theme="feutre"] .mode-card {background: var(--t-surf); border: 1px solid var(--t-line); box-shadow: 0 16px 30px -18px #000; }
+html[data-theme="braise"] .mode-card:hover, html[data-theme="feutre"] .mode-card:hover {box-shadow: 0 0 0 1px var(--t-acc-line), 0 20px 34px -18px #000; }
+html[data-theme="braise"] .prow, html[data-theme="feutre"] .prow {background: var(--t-surf2); border-color: var(--t-line); box-shadow: none; }
+html[data-theme="braise"] .mode-card input, html[data-theme="feutre"] .mode-card input, html[data-theme="braise"] .linkbox input, html[data-theme="feutre"] .linkbox input, html[data-theme="braise"] .seat input, html[data-theme="feutre"] .seat input, html[data-theme="braise"] .prow input, html[data-theme="feutre"] .prow input, html[data-theme="braise"] #chatInput, html[data-theme="feutre"] #chatInput, html[data-theme="braise"] .join-row input, html[data-theme="feutre"] .join-row input {background: var(--t-input); border-color: var(--t-btn-line); color: var(--t-text); }
+html[data-theme="braise"] .setup-form h2, html[data-theme="feutre"] .setup-form h2 {color: var(--t-title); text-shadow: none; }
+html[data-theme="braise"] .setup-form .eyebrow, html[data-theme="feutre"] .setup-form .eyebrow {color: var(--t-dim); }
+html[data-theme="braise"] .catalog, html[data-theme="feutre"] .catalog {background: var(--t-surf); box-shadow: 0 0 0 1px var(--t-line), 0 30px 60px -28px #000; }
+html[data-theme="braise"] .cat-head p, html[data-theme="feutre"] .cat-head p {color: var(--t-dim); }
+html[data-theme="braise"] .cat-tab, html[data-theme="feutre"] .cat-tab {background: var(--t-surf2); border-color: var(--t-btn-line); color: var(--t-text); }
+html[data-theme="braise"] .cat-filters .chip, html[data-theme="feutre"] .cat-filters .chip {border-color: var(--t-btn-line); background: transparent; color: var(--t-text); }
+html[data-theme="braise"] .cat-filters .chip.on, html[data-theme="feutre"] .cat-filters .chip.on {background: var(--t-surf3); border-color: var(--t-acc-line); }
+html[data-theme="braise"] .mj-titre, html[data-theme="feutre"] .mj-titre {color: var(--t-title); }
+html[data-theme="braise"] .mj-niveau, html[data-theme="feutre"] .mj-niveau, html[data-theme="braise"] .mj-barre button, html[data-theme="feutre"] .mj-barre button {background: var(--t-input); border-color: var(--t-btn-line); color: var(--t-text); }
+html[data-theme="braise"] .mj-barre button.on, html[data-theme="feutre"] .mj-barre button.on, html[data-theme="braise"] .mj-rejouer, html[data-theme="feutre"] .mj-rejouer {background: var(--t-acc); border-color: var(--t-acc2); color: var(--t-on-acc); }
+/* bouton d'habillage sur l'accueil : sous la barre de musique */
+.setup-theme { position: absolute; top: 56px; right: 16px; z-index: 5; min-height: 32px; padding: 4px 12px; border-radius: 999px; font-size: 13px; gap: 6px; background: var(--t-surf2, rgba(22,21,24,.85)); border: 1px solid var(--t-btn-line, var(--line)); }
+@media (max-width: 620px) { .setup-theme { top: auto; bottom: 14px; } }
+html[data-theme] .setup-music { background: var(--t-surf2); border-color: var(--t-line); }
+/* v1.9.15 - écrans moyens (bandeau des joueurs en haut) : les fiches se partagent la largeur au lieu de
+   déborder à droite ; le revenu par tour les avait élargies et la dernière était coupée */
+@media (min-width: 901px) and (max-width: 1279px) {
+  aside.left .opp { flex: 1 1 190px; min-width: 170px; }
+  aside.left .opp .st { gap: 2px 8px; font-size: 14px; }
+}
