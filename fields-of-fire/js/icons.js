@@ -40,6 +40,15 @@
     trap: '<path d="M12 1.8 13.6 9.6 12 11.2 10.4 9.6Z"/><path d="M22.2 12 14.4 13.6 12.8 12 14.4 10.4Z"/><path d="M12 22.2 10.4 14.4 12 12.8 13.6 14.4Z"/><path d="M1.8 12 9.6 10.4 11.2 12 9.6 13.6Z"/><circle cx="12" cy="12" r="2.6"/>',
     // habillage : écu mi-parti
     theme: '<path d="M12 2.4 20 5v6.4c0 5-3.4 8.7-8 10.2-4.6-1.5-8-5.2-8-10.2V5Z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/><path d="M12 2.4V21.6c-4.6-1.5-8-5.2-8-10.2V5Z"/>',
+    // mini-jeux : onglets et enseignes des cartes (couleurs latines : coupes, deniers, épées, bâtons)
+    moulin: '<g fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="3" width="18" height="18"/><rect x="7" y="7" width="10" height="10"/><path d="M12 3v4M12 17v4M3 12h4M17 12h4"/></g><circle cx="3" cy="3" r="2"/><circle cx="12" cy="7" r="2"/><circle cx="21" cy="21" r="2"/>',
+    blason: '<path d="M4 3.2h16v8.2c0 5-3.6 8.4-8 10.2-4.4-1.8-8-5.2-8-10.2Z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/><path d="M8 7h3v3H8zM13 10h3v3h-3zM8 13h3v3H8z"/>',
+    taquin: '<rect x="3" y="3" width="8" height="8" rx="1.3"/><rect x="13" y="3" width="8" height="8" rx="1.3"/><rect x="3" y="13" width="8" height="8" rx="1.3"/><rect x="13.8" y="13.8" width="6.4" height="6.4" rx="1.1" fill="none" stroke="currentColor" stroke-width="1.6" stroke-dasharray="2 1.6"/>',
+    reussite: '<rect x="3" y="5" width="11" height="15" rx="1.8" transform="rotate(-12 8.5 12.5)" fill="none" stroke="currentColor" stroke-width="1.7"/><rect x="9.5" y="4" width="11" height="15" rx="1.8" transform="rotate(8 15 11.5)"/>',
+    coupe: '<path d="M5.5 3.5h13c0 5-2.4 8.2-5.2 9.1V17h3.2v3.5H7.5V17h3.2v-4.4C7.9 11.7 5.5 8.5 5.5 3.5Z"/>',
+    denier: '<circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2.2"/><circle cx="12" cy="12" r="4.4"/>',
+    epee: '<path d="M12 1.5 14 5v11h-4V5Z"/><path d="M6.5 15.6h11v2.2h-11z"/><path d="M11 17.8h2v3.2h-2z"/><circle cx="12" cy="22" r="1.4"/>',
+    baton: '<path d="M9.6 2.6c1.7-.5 3.4.4 3.9 2.1l4.7 15.2c.3 1-.3 2-1.3 2.3s-2-.3-2.3-1.3L9.9 5.8c-.5-1.2-1.4-1.4-.3-3.2Z"/><circle cx="8.4" cy="8.6" r="1.6"/><circle cx="16.3" cy="9.4" r="1.4"/>',
     // pause : deux barres
     pause: '<rect x="5.6" y="4.2" width="4.4" height="15.6" rx="1.2"/><rect x="14" y="4.2" width="4.4" height="15.6" rx="1.2"/>',
     // reprise : triangle

@@ -1,6 +1,20 @@
-# Fields of Fire - version web (beta 1.9.15, prototype)
+# Fields of Fire - version web (beta 1.9.16, prototype)
 
 Jeu 100 % statique (HTML/CSS/JS, sans build). Servi par GitHub Pages sur https://nubegames.fr/fields-of-fire/ (dossier `fields-of-fire/` du repo `nubegamesfr.github.io`).
+
+## v1.9.16 - sept mini-jeux pendant le tour des autres (29/09/2026)
+
+- Le coin sous la chronique devient une rangée d'onglets ; chaque jeu garde sa partie en cours quand
+  on passe à un autre, et ses records dans le navigateur. Rien ne touche à l'état de la partie.
+- **Chausse-trapes** (démineur, déjà là), **Le Moulin** (jeu de la marelle contre l'ordinateur,
+  trois niveaux), **Trésor** (façon 2048, des oboles à la Couronne), **Blasons** (23 picross tirés
+  des icônes du jeu, tous solubles par la seule logique des lignes), **Mémoire des armées** (paires
+  d'illustrations d'unités), **Taquin** (une illustration à reconstituer, 3×3 à 5×5), **Réussite de
+  la Cour** (patience du Golf aux couleurs latines ; le Roi et le 1 se suivent, sinon moins de 1 %
+  des donnes se gagnent).
+- Code : `js/minijeu.js` (hôte) et un fichier par jeu (`js/mj*.js`).
+- Vérifié : 76 assertions sur les règles (moulin, 2048, réussite), 60 parties complètes de moulin
+  entre niveaux sans coup illégal, chaque jeu joué dans le navigateur sans erreur JS.
 
 ## v1.9.15 - habillage, pause, Chausse-trapes, nouvelles icônes (29/09/2026)
 

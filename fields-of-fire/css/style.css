@@ -1440,3 +1440,97 @@ html[data-theme] .setup-music { background: var(--t-surf2); border-color: var(--
   aside.left .opp { flex: 1 1 190px; min-width: 170px; }
   aside.left .opp .st { gap: 2px 8px; font-size: 14px; }
 }
+
+/* ---------- v1.9.16 - coin des mini-jeux : onglets et six jeux de plus ---------- */
+.mj-onglets { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 3px; margin: -2px -2px 2px; }
+.mj-onglet { height: 30px; display: grid; place-items: center; padding: 0; cursor: pointer; border-radius: 6px; border: 1px solid transparent; background: transparent; color: var(--t-dim, #c9bda2); }
+.mj-onglet:hover { background: var(--t-surf3, rgba(255,255,255,.06)); color: var(--t-text, #f1e4c2); }
+.mj-onglet.on { background: var(--t-acc, #b8463c); border-color: var(--t-acc2, #c8413a); color: var(--t-on-acc, #fff); }
+.mj-onglet:focus-visible { outline: 2px solid var(--t-acc2, #f1d488); outline-offset: 1px; }
+.mj-zone { display: flex; flex-direction: column; gap: 8px; }
+.mj-bilan { opacity: .75; white-space: nowrap; }
+.mj-barre button:disabled { opacity: .4; cursor: default; }
+
+/* Moulin */
+.mj-moulin { width: 100%; max-width: 230px; align-self: center; display: block; background: #d9c79c; border-radius: 6px; box-shadow: inset 0 0 0 2px #7a5a2b; }
+.mj-moulin .ml-l { fill: none; stroke: #5a3f1e; stroke-width: 2.2; }
+.mj-moulin .ml-pt { cursor: pointer; }
+.mj-moulin .ml-zone { fill: transparent; }
+.mj-moulin .ml-trou { fill: #5a3f1e; }
+.mj-moulin .ml-pt.cible .ml-trou { fill: #2f6128; r: 5.5; }
+.mj-moulin .ml-pt.cible:hover .ml-zone { fill: rgba(47,97,40,.18); }
+.mj-moulin .ml-pion.p1 { fill: #f6ecd2; stroke: #6b5530; stroke-width: 1.6; }
+.mj-moulin .ml-pion.p2 { fill: #2a2119; stroke: #0d0a07; stroke-width: 1.6; }
+.mj-moulin .ml-pt.sel .ml-pion { stroke: var(--t-acc, #c8413a); stroke-width: 3.2; }
+.mj-moulin .ml-pt.prise .ml-pion { stroke: #c8413a; stroke-width: 3.2; stroke-dasharray: 4 2.4; }
+.mj-moulin .ml-pt.dernier .ml-pion.p2 { stroke: #d6ae52; stroke-width: 2.4; }
+.ml-mini { display: inline-block; width: 11px; height: 11px; border-radius: 50%; vertical-align: -1px; }
+.ml-mini.p1 { background: #f6ecd2; box-shadow: 0 0 0 1px #6b5530; } .ml-mini.p2 { background: #2a2119; box-shadow: 0 0 0 1px #d6ae52; }
+
+/* Trésor */
+.tr-grille { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; padding: 5px; border-radius: 8px; background: #1a130c; touch-action: none; outline: none; }
+.tr-c { aspect-ratio: 1; border-radius: 5px; background: rgba(255,255,255,.05); display: grid; place-items: center; align-content: center; gap: 1px; text-align: center; line-height: 1; }
+.tr-c b { font-family: var(--f-display); font-size: 17px; font-variant-numeric: tabular-nums; }
+.tr-c small { font-size: 9.5px; letter-spacing: .02em; opacity: .85; }
+.tr-c.v1, .tr-c.v2 { background: #8a5a3a; color: #fbe9d6; }
+.tr-c.v3, .tr-c.v4 { background: #a8703f; color: #fff4e3; }
+.tr-c.v5, .tr-c.v6 { background: #b9bcc2; color: #1e1a15; }
+.tr-c.v7, .tr-c.v8 { background: #d8b35a; color: #231a08; }
+.tr-c.v9, .tr-c.v10 { background: #e9c75e; color: #231a08; box-shadow: 0 0 10px -2px rgba(233,199,94,.7); }
+.tr-c.v11, .tr-c.v12, .tr-c.v13 { background: #f3dc8a; color: #3a1a08; box-shadow: 0 0 16px -2px rgba(243,220,138,.9); }
+.tr-c.v7 b, .tr-c.v8 b, .tr-c.v9 b, .tr-c.v10 b { font-size: 15px; }
+.tr-c.v11 b, .tr-c.v12 b, .tr-c.v13 b { font-size: 13px; }
+.tr-c.neuve { animation: trNeuve .18s ease-out; }
+@keyframes trNeuve { from { transform: scale(.6); opacity: .3; } }
+.tr-fleches { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; }
+.tr-fleches button { height: 30px; border-radius: 6px; cursor: pointer; background: var(--t-surf3, #2a2119); border: 1px solid var(--t-btn-line, #6b5530); color: var(--t-text, #f1e4c2); display: grid; place-items: center; }
+
+/* Blasons */
+.bl-jeu { display: grid; grid-template-columns: calc(var(--lc) * 11px + 4px) 1fr; grid-template-rows: auto 1fr; gap: 2px; user-select: none; }
+.bl-coin { display: grid; place-items: center; } .bl-coin img { width: 34px; height: auto; filter: invert(.9) sepia(.3); }
+.bl-cols { display: grid; grid-template-columns: repeat(var(--n), minmax(0, 1fr)); align-items: end; gap: 1px; }
+.bl-ci { display: flex; flex-direction: column; align-items: center; font-size: 10.5px; line-height: 1.1; color: var(--t-text, #f1e4c2); padding-bottom: 2px; }
+.bl-lignes { display: grid; grid-template-rows: repeat(var(--n), minmax(0, 1fr)); gap: 1px; }
+.bl-li { display: flex; justify-content: flex-end; align-items: center; gap: 4px; font-size: 10.5px; padding-right: 3px; color: var(--t-text, #f1e4c2); }
+.bl-ci.ok, .bl-li.ok { opacity: .35; }
+.bl-grille { display: grid; grid-template-columns: repeat(var(--n), minmax(0, 1fr)); gap: 1px; background: #1a130c; padding: 1px; border-radius: 3px; touch-action: none; }
+.bl-c { aspect-ratio: 1; min-width: 0; padding: 0; border: 0; border-radius: 1px; background: #e6d6ad; cursor: pointer; }
+.bl-c:hover { background: #f1e4c2; }
+.bl-c.plein { background: #2a2119; }
+.bl-c.croix { background: #e6d6ad linear-gradient(45deg, transparent 44%, #9a2d24 45%, #9a2d24 55%, transparent 56%), linear-gradient(-45deg, transparent 44%, #9a2d24 45%, #9a2d24 55%, transparent 56%); }
+.bl-c.bd { margin-right: 1px; box-shadow: 1px 0 0 #1a130c; } .bl-c.bb { margin-bottom: 1px; box-shadow: 0 1px 0 #1a130c; }
+.bl-jeu.fini .bl-c.croix, .bl-jeu.fini .bl-c:not(.plein) { background: #e6d6ad; }
+.bl-jeu.fini .bl-c.plein { background: #7d2a24; }
+
+/* Mémoire */
+.me-grille { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 5px; }
+.me-c { aspect-ratio: 1; padding: 0; border-radius: 6px; overflow: hidden; cursor: pointer; border: 2px solid #6b5530; background: #2a2119 url(../assets/cardback.jpg) center / cover; }
+.me-c img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.me-c.face { border-color: #d6ae52; cursor: default; }
+.me-c.gagnee { border-color: #4aa43d; opacity: .82; }
+.me-c:not(.face):hover { filter: brightness(1.15); }
+
+/* Taquin */
+.tq-plateau { position: relative; align-self: center; background: #1a130c; border-radius: 4px; overflow: hidden; }
+.tq-c, .tq-vide { position: absolute; box-sizing: border-box; }
+.tq-c { border: 1px solid rgba(0,0,0,.45); padding: 0; cursor: pointer; transition: left .12s ease, top .12s ease; }
+.tq-c:hover { filter: brightness(1.12); }
+.tq-plateau.fini .tq-c { border-color: transparent; cursor: default; }
+@media (prefers-reduced-motion: reduce) { .tq-c { transition: none; } .tr-c.neuve { animation: none; } }
+
+/* Réussite */
+.rs-cols { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 3px; min-height: 112px; }
+.rs-col { display: flex; flex-direction: column; }
+.rs-col .rs-carte + .rs-carte { margin-top: -26px; }
+.rs-carte { position: relative; aspect-ratio: 32 / 44; width: 100%; border-radius: 4px; background: #f3ead3; border: 1px solid #8a7550; box-shadow: 0 1px 2px rgba(0,0,0,.4); display: grid; place-items: center; color: #1e1810; }
+.rs-carte b { position: absolute; top: 1px; left: 3px; font: 700 11px/1 var(--f-display); }
+.rs-carte .ic { margin-top: 8px; }
+.rs-carte.coupe { color: #9a2d24; } .rs-carte.denier { color: #8a6a1a; } .rs-carte.epee { color: #2d4f8e; } .rs-carte.baton { color: #2f6128; }
+.rs-carte.der { cursor: pointer; }
+.rs-carte.der.ok { box-shadow: 0 0 0 2px var(--t-acc, #d6ae52), 0 2px 6px rgba(0,0,0,.4); }
+.rs-carte.der:hover { transform: translateY(-2px); }
+.rs-bas { display: grid; grid-template-columns: 40px 40px 1fr; gap: 8px; align-items: center; }
+.rs-pioche { aspect-ratio: 32 / 44; width: 40px; padding: 0; border-radius: 4px; cursor: pointer; border: 1px solid #6b5530; background: #2a2119 url(../assets/cardback.jpg) center / cover; color: #fff; font: 700 13px var(--f-display); text-shadow: 0 1px 2px #000; }
+.rs-pioche:disabled { opacity: .35; cursor: default; }
+.rs-def .rs-carte { width: 40px; }
+.rs-aide { font-size: 11.5px; line-height: 1.3; color: var(--t-dim, #c9bda2); }

@@ -1,144 +1,112 @@
-/* Fields of Fire - « Chausse-trapes », un démineur pour patienter pendant le tour des autres (v1.9.15).
-   Un pré semé de chausse-trapes : on sonde les parcelles, les chiffres disent combien de pièges
-   touchent la parcelle, on plante une bannière là où l'on soupçonne un piège.
-   Clic : sonder. Clic droit (ou mode bannière) : planter / retirer une bannière.
-   Clic sur un chiffre déjà sondé entouré d'assez de bannières : sonde tous ses voisins.
-   Le module est indépendant du moteur : il ne lit ni ne modifie l'état de la partie. */
+/* Fields of Fire - le coin des mini-jeux (v1.9.16), sous la chronique, pendant le tour des autres.
+   Ce fichier est l'hôte : une rangée d'onglets, le jeu actif dessous. Chaque jeu vit dans son propre
+   fichier (mjchausse.js, mjmoulin.js…) et s'enregistre avec FOF.Minijeux.enregistrer(def).
+
+   Contrat d'un jeu :
+     def = { id, nom, ic (nom d'icône FOF.ic), creer: function (api) { return instance; } }
+     instance.html()            -> le HTML du jeu (en-tête compris), redessiné à chaque action
+     instance.clic(e)           -> true s'il faut redessiner (idem clicDroit, change, touche)
+     instance.temps()           -> facultatif : ms écoulées, affichées dans .mj-temps b chaque seconde
+     instance.pause() / reprise() -> facultatif : appelés quand le jeu est caché ou montré
+   Les jeux ne lisent ni ne modifient l'état de la partie. Leurs parties en cours restent en mémoire
+   le temps de la session ; seuls les records et le dernier jeu choisi vont dans le navigateur. */
 (function (FOF) {
   'use strict';
-  var NIVEAUX = {
-    ecuyer:    { nom: 'Écuyer',    l: 9, h: 9,  pieges: 10 },
-    chevalier: { nom: 'Chevalier', l: 9, h: 13, pieges: 20 },
-    seigneur:  { nom: 'Seigneur',  l: 9, h: 16, pieges: 30 }
+  var defs = [], inst = {}, actif = null, root = null, visible = false, tic = null;
+  try { actif = localStorage.getItem('fof-mj-actif'); } catch (e) {}
+
+  var api = {
+    duree: function (ms) { var s = Math.floor(ms / 1000); return Math.floor(s / 60) + ':' + ('0' + (s % 60)).slice(-2); },
+    son: function (n) { if (FOF.sfx) FOF.sfx(n); },
+    lire: function (cle, defaut) { try { var v = JSON.parse(localStorage.getItem('fof-mj-' + cle)); return v === null ? defaut : v; } catch (e) { return defaut; } },
+    ecrire: function (cle, v) { try { localStorage.setItem('fof-mj-' + cle, JSON.stringify(v)); } catch (e) {} },
+    // record : garde la meilleure valeur (plus petite si petitMieux) ; renvoie true si battu
+    record: function (cle, v, petitMieux) {
+      var r = api.lire('rec', {}), old = r[cle];
+      if (old === undefined || (petitMieux ? v < old : v > old)) { r[cle] = v; api.ecrire('rec', r); return true; }
+      return false;
+    },
+    meilleur: function (cle) { return api.lire('rec', {})[cle]; },
+    rendre: function () { rendre(); },
+    visible: function () { return visible; },
+    // chronomètre qui ne tourne que lorsque le jeu est montré (pause / reprise gérées par l'hôte)
+    chrono: function () {
+      var c = { ecoule: 0, depuis: 0, marche: false };
+      c.demarrer = function () { c.ecoule = 0; c.marche = true; c.depuis = visible ? Date.now() : 0; };
+      c.arreter = function () { c.pause(); c.marche = false; };
+      c.pause = function () { if (c.depuis) { c.ecoule += Date.now() - c.depuis; c.depuis = 0; } };
+      c.reprise = function () { if (c.marche && !c.depuis) c.depuis = Date.now(); };
+      c.ms = function () { return c.ecoule + (c.depuis ? Date.now() - c.depuis : 0); };
+      c.remise = function () { c.ecoule = 0; c.depuis = 0; c.marche = false; };
+      return c;
+    }
   };
-  var root = null, jeu = null, niveau = 'ecuyer', modeBanniere = false, visible = false, tic = null;
-  try { var n0 = localStorage.getItem('fof-mj-niveau'); if (NIVEAUX[n0]) niveau = n0; } catch (e) {}
 
-  function records() { try { return JSON.parse(localStorage.getItem('fof-mj-records')) || {}; } catch (e) { return {}; } }
-  function noterRecord(ms) {
-    var r = records(); if (!r[niveau] || ms < r[niveau]) { r[niveau] = ms; try { localStorage.setItem('fof-mj-records', JSON.stringify(r)); } catch (e) {} return true; }
-    return false;
+  function courant() {
+    if (!defs.length) return null;
+    var d = defs.filter(function (x) { return x.id === actif; })[0] || defs[0];
+    actif = d.id;
+    if (!inst[d.id]) inst[d.id] = d.creer(api);
+    return inst[d.id];
   }
-  function duree(ms) { var s = Math.floor(ms / 1000); return Math.floor(s / 60) + ':' + ('0' + (s % 60)).slice(-2); }
-
-  function nouveau() {
-    var N = NIVEAUX[niveau];
-    jeu = { l: N.l, h: N.h, pieges: N.pieges, cases: [], pret: false, fini: null, ecoule: 0, depuis: 0, bannieres: 0, sondees: 0 };
-    for (var i = 0; i < N.l * N.h; i++) jeu.cases.push({ piege: false, n: 0, vue: false, banniere: false });
-    rendre();
-  }
-  function voisins(i) {
-    var x = i % jeu.l, y = Math.floor(i / jeu.l), v = [];
-    for (var dy = -1; dy <= 1; dy++) for (var dx = -1; dx <= 1; dx++) {
-      if (!dx && !dy) continue; var nx = x + dx, ny = y + dy;
-      if (nx >= 0 && ny >= 0 && nx < jeu.l && ny < jeu.h) v.push(ny * jeu.l + nx);
-    }
-    return v;
-  }
-  // les pièges sont posés au premier coup, jamais sur la parcelle sondée ni autour d'elle
-  function semer(premiere) {
-    var interdit = [premiere].concat(voisins(premiere)), libres = [];
-    for (var i = 0; i < jeu.cases.length; i++) if (interdit.indexOf(i) < 0) libres.push(i);
-    for (var k = 0; k < jeu.pieges && libres.length; k++) { var j = Math.floor(Math.random() * libres.length); jeu.cases[libres.splice(j, 1)[0]].piege = true; }
-    jeu.cases.forEach(function (c, i) { c.n = voisins(i).filter(function (v) { return jeu.cases[v].piege; }).length; });
-    jeu.pret = true; jeu.depuis = Date.now();
-  }
-  function sonder(i) {
-    var c = jeu.cases[i]; if (c.vue || c.banniere) return;
-    if (!jeu.pret) semer(i);
-    if (c.piege) { c.vue = true; c.fatal = true; finir(false); return; }
-    var pile = [i];
-    while (pile.length) {
-      var k = pile.pop(), d = jeu.cases[k]; if (d.vue || d.banniere) continue;
-      d.vue = true; jeu.sondees++;
-      if (d.n === 0) voisins(k).forEach(function (v) { if (!jeu.cases[v].vue) pile.push(v); });
-    }
-    if (jeu.sondees === jeu.cases.length - jeu.pieges) finir(true);
-  }
-  function accorder(i) {   // clic sur un chiffre : si assez de bannières autour, on sonde le reste
-    var c = jeu.cases[i], vs = voisins(i);
-    if (!c.vue || !c.n) return;
-    if (vs.filter(function (v) { return jeu.cases[v].banniere; }).length !== c.n) return;
-    vs.forEach(function (v) { if (!jeu.fini) sonder(v); });
-  }
-  function planter(i) {
-    var c = jeu.cases[i]; if (c.vue) return;
-    c.banniere = !c.banniere; jeu.bannieres += c.banniere ? 1 : -1;
-  }
-  function finir(gagne) {
-    jeu.ecoule += Date.now() - jeu.depuis; jeu.depuis = 0;
-    jeu.fini = gagne ? 'gagne' : 'perdu';
-    if (gagne) jeu.record = noterRecord(jeu.ecoule);
-    else jeu.cases.forEach(function (c) { if (c.piege) c.vue = true; });
-    if (FOF.sfx) FOF.sfx(gagne ? 'flag' : 'bad');
-  }
-  function temps() { return jeu.ecoule + (jeu.depuis && visible ? Date.now() - jeu.depuis : 0); }
-
   function rendre() {
-    if (!root || !jeu) return;
-    var h = [];
-    var rec = records()[niveau];
-    h.push('<div class="mj-tete"><div class="mj-titre">Chausse-trapes</div>' +
-      '<select class="mj-niveau" aria-label="Difficulté">' + Object.keys(NIVEAUX).map(function (k) { return '<option value="' + k + '"' + (k === niveau ? ' selected' : '') + '>' + NIVEAUX[k].nom + '</option>'; }).join('') + '</select></div>');
-    h.push('<div class="mj-barre"><span class="mj-compte" title="Bannières restant à planter">' + FOF.ic('flag', 13) + ' <b>' + (jeu.pieges - jeu.bannieres) + '</b></span>' +
-      '<span class="mj-temps" title="Temps">' + FOF.ic('hourglass', 13) + ' <b>' + duree(temps()) + '</b></span>' +
-      '<button type="button" class="mj-mode' + (modeBanniere ? ' on' : '') + '" aria-pressed="' + modeBanniere + '" title="Mode bannière : un clic plante une bannière (utile au pavé tactile)">' + FOF.ic('flag', 13) + '</button>' +
-      '<button type="button" class="mj-neuf" title="Nouveau pré">' + FOF.ic('restart', 13) + '</button></div>');
-    h.push('<div class="mj-grille" style="--l:' + jeu.l + '" role="grid" aria-label="Pré de ' + jeu.l + ' sur ' + jeu.h + ', ' + jeu.pieges + ' chausse-trapes">');
-    jeu.cases.forEach(function (c, i) {
-      var cls = 'mj-c', txt = '', lbl = 'parcelle non sondée';
-      if (c.vue && c.piege) { cls += ' piege' + (c.fatal ? ' fatal' : ''); txt = FOF.ic('trap', 15); lbl = 'chausse-trape'; }
-      else if (c.vue) { cls += ' vue n' + c.n; txt = c.n || ''; lbl = c.n ? c.n + ' pièges autour' : 'rien autour'; }
-      else if (c.banniere) { cls += ' ban'; txt = FOF.ic('banner', 14); lbl = 'bannière'; if (jeu.fini === 'perdu' && !c.piege) cls += ' faux'; }
-      h.push('<button type="button" class="' + cls + '" data-mj="' + i + '" aria-label="' + lbl + '"' + (jeu.fini ? ' tabindex="-1"' : '') + '>' + txt + '</button>');
-    });
-    h.push('</div>');
-    var pied = jeu.fini === 'gagne' ? '<b>Pré traversé en ' + duree(jeu.ecoule) + '.</b>' + (jeu.record ? ' Nouveau record.' : '')
-      : jeu.fini === 'perdu' ? '<b>Pris au piège.</b> Un nouveau pré ?'
-      : !jeu.pret ? 'Sondez une parcelle pour commencer. Clic droit : bannière.'
-      : rec ? 'Record ' + NIVEAUX[niveau].nom.toLowerCase() + ' : ' + duree(rec) : 'Clic droit : bannière. Clic sur un chiffre : sonder autour.';
-    h.push('<div class="mj-pied">' + pied + (jeu.fini ? ' <button type="button" class="mj-neuf mj-rejouer">Rejouer</button>' : '') + '</div>');
-    root.innerHTML = h.join('');
+    if (!root || !visible) return;
+    var j = courant(); if (!j) return;
+    var onglets = '<div class="mj-onglets" role="tablist" aria-label="Mini-jeux">' + defs.map(function (d) {
+      var on = d.id === actif;
+      return '<button type="button" role="tab" class="mj-onglet' + (on ? ' on' : '') + '" aria-selected="' + on + '" data-mjtab="' + d.id + '" title="' + d.nom + '">' + FOF.ic(d.ic, 16) + '</button>';
+    }).join('') + '</div>';
+    root.innerHTML = onglets + '<div class="mj-zone" data-jeu="' + actif + '">' + j.html() + '</div>';
   }
-  function majTemps() { if (!root || !jeu) return; var t = root.querySelector('.mj-temps b'); if (t) t.textContent = duree(temps()); }
-
-  function agir(i, banniere) {
-    if (!jeu || jeu.fini) return;
-    var c = jeu.cases[i];
-    if (banniere) { if (jeu.pret) planter(i); }
-    else if (c.vue) accorder(i);
-    else sonder(i);
+  function majTemps() {
+    var j = inst[actif]; if (!root || !j || !j.temps) return;
+    var t = root.querySelector('.mj-temps b'); if (t) t.textContent = api.duree(j.temps());
+  }
+  function changer(id) {
+    if (id === actif) return;
+    var j = inst[actif]; if (j && j.pause) j.pause();
+    actif = id; try { localStorage.setItem('fof-mj-actif', id); } catch (e) {}
+    j = courant(); if (j && j.reprise) j.reprise();
     rendre();
+  }
+  function passer(nom, e) {
+    var j = inst[actif]; if (!j || !j[nom]) return;
+    if (j[nom](e)) rendre();
   }
   function brancher() {
     root.addEventListener('click', function (e) {
-      var b = e.target.closest('[data-mj]');
-      if (b) { agir(+b.dataset.mj, modeBanniere); return; }
-      if (e.target.closest('.mj-neuf')) { nouveau(); return; }
-      if (e.target.closest('.mj-mode')) { modeBanniere = !modeBanniere; rendre(); }
+      var t = e.target.closest('[data-mjtab]'); if (t) { changer(t.dataset.mjtab); return; }
+      passer('clic', e);
     });
-    root.addEventListener('contextmenu', function (e) {
-      var b = e.target.closest('[data-mj]'); if (!b) return;
-      e.preventDefault(); agir(+b.dataset.mj, true);
-    });
-    root.addEventListener('change', function (e) {
-      if (!e.target.classList.contains('mj-niveau')) return;
-      niveau = e.target.value; try { localStorage.setItem('fof-mj-niveau', niveau); } catch (x) {} nouveau();
+    root.addEventListener('contextmenu', function (e) { var j = inst[actif]; if (j && j.clicDroit) { e.preventDefault(); if (j.clicDroit(e)) rendre(); } });
+    root.addEventListener('change', function (e) { passer('change', e); });
+    root.addEventListener('pointerdown', function (e) { passer('appui', e); });
+    root.addEventListener('pointerup', function (e) { passer('relache', e); });
+    root.addEventListener('pointerover', function (e) { passer('survol', e); });
+    // clavier : seulement si le panneau est montré et qu'on n'écrit pas dans un champ
+    document.addEventListener('keydown', function (e) {
+      if (!visible || !root || e.defaultPrevented) return;
+      var tag = (document.activeElement && document.activeElement.tagName) || '';
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+      if (document.querySelector('#modal:not([hidden]) .modal')) return;
+      passer('touche', e);
     });
   }
 
-  /* montre ou cache le pré ; le chronomètre ne tourne que lorsqu'il est visible */
+  FOF.Minijeux = {
+    enregistrer: function (def) { defs.push(def); },
+    api: api
+  };
+  // interface attendue par ui.js
   FOF.Minijeu = {
-    monter: function (el) { if (root === el) return; root = el; brancher(); nouveau(); },
+    monter: function (el) { if (root === el) return; root = el; brancher(); },
     afficher: function (oui) {
       if (!root) return;
       oui = !!oui;
       if (oui === visible) return;
-      if (jeu && jeu.pret && !jeu.fini) {
-        if (oui) jeu.depuis = Date.now();
-        else if (jeu.depuis) { jeu.ecoule += Date.now() - jeu.depuis; jeu.depuis = 0; }
-      }
       visible = oui; root.hidden = !oui;
+      var j = courant();
+      if (j) { if (oui && j.reprise) j.reprise(); if (!oui && j.pause) j.pause(); }
       clearInterval(tic); tic = oui ? setInterval(majTemps, 1000) : null;
       if (oui) rendre();
     }
