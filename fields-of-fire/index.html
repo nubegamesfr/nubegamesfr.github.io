@@ -21,7 +21,7 @@
 <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
 <link rel="preload" href="assets/fonts/cinzel-700.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="assets/fonts/alegreya-sans-400.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="css/style.css?v=beta-1.9.16">
+<link rel="stylesheet" href="css/style.css?v=beta-1.9.17">
 <script>try{document.documentElement.dataset.theme=localStorage.getItem('fof-theme')==='feutre'?'feutre':'braise'}catch(e){document.documentElement.dataset.theme='braise'}</script>
 </head>
 <body>
@@ -61,7 +61,7 @@
         <p class="note" id="onlineNote" hidden>Le jeu en ligne n’est pas encore activé sur ce site.</p>
         <div class="setup-actions" id="resumeBox"></div>
         <footer class="setup-foot">
-          <p><b>Version beta 1.9.16</b> · prototype. Les parties sont enregistrées de façon anonyme (durée, tours, dirigeants, type de victoire) pour équilibrer le jeu. Hugues le Bâtisseur et Alinor l’Amirale se débloquent en laissant votre adresse e-mail.</p>
+          <p><b>Version beta 1.9.17</b> · prototype. Les parties sont enregistrées de façon anonyme (durée, tours, dirigeants, type de victoire) pour équilibrer le jeu. Hugues le Bâtisseur et Alinor l’Amirale se débloquent en laissant votre adresse e-mail.</p>
           <p>Illustrations, portraits et icônes : Nube Games. Musique : domaine public (CC0) d’OpenGameArt, détail dans CREDITS. Polices sous licence SIL OFL 1.1, hébergées sur notre serveur.</p>
           <p class="setup-legal"><a href="/">Nube Games</a> · <a href="/mentions-legales.html">Mentions légales</a> · <a href="/confidentialite.html">Confidentialité</a> · <a href="/conditions.html">CGU</a></p>
         </footer>
@@ -71,6 +71,7 @@
         <h2>Partie locale</h2>
         <p class="lead">Tout le monde joue sur cet écran. Cliquez sur la fiche d’un dirigeant pour en choisir un autre.</p>
         <div class="count-pick" id="countPick"></div>
+        <div class="map-pick" id="mapPick"></div>
         <div id="tutoOpt" class="tuto-opt"></div>
         <div id="rows"></div>
         <p class="note" id="winInfo"></p>
@@ -124,31 +125,32 @@
 <div id="bugModal" hidden></div>
 <div id="chatPanel" hidden><div class="chat-head"><b><span data-ic="chat"></span> Tchat de la partie</b><button class="btn small ghost" data-chatclose="1" aria-label="Fermer">✕</button></div><div id="chatList"></div><div class="chat-in"><input id="chatInput" maxlength="300" placeholder="Votre message…" autocomplete="off"><button class="btn small primary" data-chatsend="1">Envoyer</button></div></div>
 
-<script src="js/config.js?v=beta-1.9.16"></script>
-<script src="js/icons.js?v=beta-1.9.16"></script>
-<script src="js/data.js?v=beta-1.9.16"></script>
-<script src="js/map.js?v=beta-1.9.16"></script>
-<script src="js/engine.js?v=beta-1.9.16"></script>
-<script src="js/cards.js?v=beta-1.9.16"></script>
-<script src="js/board.js?v=beta-1.9.16"></script>
-<script src="js/net.js?v=beta-1.9.16"></script>
-<script src="js/stats.js?v=beta-1.9.16"></script>
-<script src="js/sfx.js?v=beta-1.9.16"></script>
-<script src="js/fx.js?v=beta-1.9.16"></script>
-<script src="js/music.js?v=beta-1.9.16"></script>
-<script src="js/bot.js?v=beta-1.9.16"></script>
-<script src="js/tutorial.js?v=beta-1.9.16"></script>
-<script src="js/extras.js?v=beta-1.9.16"></script>
-<script src="js/minijeu.js?v=beta-1.9.16"></script>
-<script src="js/mjchausse.js?v=beta-1.9.16"></script>
-<script src="js/mjmoulin.js?v=beta-1.9.16"></script>
-<script src="js/mjtresor.js?v=beta-1.9.16"></script>
-<script src="js/mjblasons.js?v=beta-1.9.16"></script>
-<script src="js/mjmemoire.js?v=beta-1.9.16"></script>
-<script src="js/mjtaquin.js?v=beta-1.9.16"></script>
-<script src="js/mjreussite.js?v=beta-1.9.16"></script>
-<script src="js/ui.js?v=beta-1.9.16"></script>
-<script src="js/main.js?v=beta-1.9.16"></script>
+<script src="js/config.js?v=beta-1.9.17"></script>
+<script src="js/icons.js?v=beta-1.9.17"></script>
+<script src="js/data.js?v=beta-1.9.17"></script>
+<script src="js/map.js?v=beta-1.9.17"></script>
+<script src="js/cartes.js?v=beta-1.9.17"></script>
+<script src="js/engine.js?v=beta-1.9.17"></script>
+<script src="js/cards.js?v=beta-1.9.17"></script>
+<script src="js/board.js?v=beta-1.9.17"></script>
+<script src="js/net.js?v=beta-1.9.17"></script>
+<script src="js/stats.js?v=beta-1.9.17"></script>
+<script src="js/sfx.js?v=beta-1.9.17"></script>
+<script src="js/fx.js?v=beta-1.9.17"></script>
+<script src="js/music.js?v=beta-1.9.17"></script>
+<script src="js/bot.js?v=beta-1.9.17"></script>
+<script src="js/tutorial.js?v=beta-1.9.17"></script>
+<script src="js/extras.js?v=beta-1.9.17"></script>
+<script src="js/minijeu.js?v=beta-1.9.17"></script>
+<script src="js/mjchausse.js?v=beta-1.9.17"></script>
+<script src="js/mjmoulin.js?v=beta-1.9.17"></script>
+<script src="js/mjtresor.js?v=beta-1.9.17"></script>
+<script src="js/mjblasons.js?v=beta-1.9.17"></script>
+<script src="js/mjmemoire.js?v=beta-1.9.17"></script>
+<script src="js/mjtaquin.js?v=beta-1.9.17"></script>
+<script src="js/mjreussite.js?v=beta-1.9.17"></script>
+<script src="js/ui.js?v=beta-1.9.17"></script>
+<script src="js/main.js?v=beta-1.9.17"></script>
 
 </body>
 </html>

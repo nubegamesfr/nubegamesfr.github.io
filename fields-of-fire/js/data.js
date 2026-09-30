@@ -21,7 +21,7 @@
     ecumeurs:   { name: 'Écumeurs', move: 2, pow: [1,1,1,2], upkeep: 1, req: ['C', 3] },
     brigands:   { name: 'Brigands', move: 2, pow: [1,1,2,1], upkeep: 1, req: ['C', 3] },
     bandits:    { name: 'Bandits', move: 2, pow: [0,2,2,1], upkeep: 1, req: ['C', 4] },
-    nomades:    { name: 'Cavaliers nomades', move: 3, pow: [4,1,1,3], upkeep: 3, req: ['C', 5] },
+    nomades:    { name: 'Cavaliers nomades', move: 3, pow: [4,1,1,3], upkeep: 2, req: ['C', 5] },
     fantassins: { name: 'Fantassins', move: 1, pow: [2,2,2,2], upkeep: 2, req: ['F', 2] },
     archers:    { name: 'Archers', move: 1, pow: [1,3,3,2], upkeep: 2, req: ['F', 2], copies: 3 },
     piquiers:   { name: 'Piquiers', move: 1, pow: [4,1,1,4], upkeep: 2, req: ['F', 3] },
@@ -30,6 +30,7 @@
     chevaliers: { name: 'Chevaliers', move: 2, pow: [5,3,1,3], upkeep: 3, req: ['F', 3] },
     archmontes: { name: 'Archers montés', move: 2, pow: [4,3,2,3], upkeep: 4, req: ['F', 4] },
     cuirassiers:{ name: 'Cuirassiers', move: 2, pow: [6,3,2,2], upkeep: 4, req: ['F', 4] },
+    varegues:   { name: 'Garde varègue', move: 1, pow: [3,3,3,5], upkeep: 3, req: ['P', 3] },   // v1.9.17
     garde:      { name: 'Garde royale', move: 1, pow: [4,4,4,4], upkeep: 4, req: ['F', 5] },
     croises:    { name: 'Croisés', move: 1, pow: [3,3,3,3], upkeep: 2, req: ['T', 4] }
   };
@@ -43,19 +44,19 @@
     ambassadeur: { name: 'Ambassadeur', move: 1, upkeep: 3, req: ['A', 1], copies: 3, text: 'Sur une capitale adverse (hors Tyran) : pacte de non-agression tant qu’il y reste. S’il n’y est plus, quelle qu’en soit la raison, vous perdez 1 de diplomatie.' },
     colonie:     { name: 'Colonie', move: 1, upkeep: 3, req: ['Ci', 1], copies: 3, text: 'Sur un territoire neutre, défausser pour le conquérir et y bâtir un campement.' },
     exploratrice:{ name: 'Exploratrice', move: 2, upkeep: 2, req: ['P', 2], copies: 3, text: 'À la collecte, sur un territoire neutre d’un autre continent que votre capitale, défausser pour conquérir et gagner 1 or.' },
-    caboteur:    { name: 'Caboteur', move: 1, upkeep: 1, req: ['P', 1], copies: 3, text: 'À la collecte, sur une case avec le port d’un adversaire : +2 or.' },
-    caravanier:  { name: 'Caravanier', move: 1, upkeep: 1, req: ['Ci', 1], copies: 3, text: 'À la collecte, sur une case avec la cité d’un adversaire : +2 or.' },
+    caboteur:    { name: 'Caboteur', move: 1, upkeep: 1, req: ['P', 1], copies: 3, text: 'À la collecte, sur une case avec le port d’un adversaire : +3 or.' },
+    caravanier:  { name: 'Caravanier', move: 1, upkeep: 1, req: ['Ci', 1], copies: 3, text: 'À la collecte, sur une case avec la cité d’un adversaire : +3 or.' },
     espion:      { name: 'Espion', move: 1, upkeep: 0, req: ['Ci', 1], copies: 3, text: 'Une seule fois, à tout moment (même au tour d’un autre) : payez 1 or, regardez en secret la carte du dessus du deck et défaussez-la si vous voulez. Puis défaussez l’Espion.' },
     partisan:    { name: 'Partisan', move: 1, upkeep: 2, req: ['Ci', 3], text: 'Sur un territoire adverse, défausser pour convertir tous les aménagements adverses, sauf les temples.' },
     predicateur: { name: 'Prédicateur', move: 1, upkeep: 2, req: ['T', 3], text: 'Sur un territoire adverse : convertit son temple. Puis défausse.' },
     gouverneur:  { name: 'Gouverneur', move: 1, upkeep: 5, req: ['F', 4], text: 'Défausser pour convertir tous les aménagements adverses sur vos territoires, sauf les temples.' },
-    pretresse:   { name: 'Prêtresse', move: 1, upkeep: 3, req: ['T', 1], copies: 3, text: 'Lors d’un combat sur sa case, si vous perdez, vous relancez votre dé. Une relance par Prêtresse.' },
+    pretresse:   { name: 'Prêtresse', move: 1, upkeep: 2, req: ['T', 1], copies: 3, text: 'Lors d’un combat sur sa case, si vous perdez, vous relancez votre dé. Une relance par Prêtresse.' },
     trebuchets:  { name: 'Trébuchets', move: 1, upkeep: 4, req: ['F', 5], text: 'Sur un territoire adverse, peut détruire un aménagement adverse, une fois par tour. C’est une attaque : 1 de diplomatie (sauf contre un Tyran), et elle rompt un pacte.' },
     maitre:      { name: 'Maître d’œuvre', move: 1, upkeep: 1, req: ['T', 1], copies: 3, text: 'Vos temples coûtent 1 or de moins (cumulable).' },
     // v1.9.14 - deux nouvelles unités spéciales (créateur, 28/09/2026)
     calomniateur:{ name: 'Calomniateur', move: 2, upkeep: 3, req: ['Ci', 1], copies: 3, text: 'Sur un territoire adverse, défausser : son propriétaire perd 2 de diplomatie (sans descendre sous 0).' },
-    boutefeu:    { name: 'Boutefeu', move: 1, upkeep: 1, req: ['Ci', 2], text: 'Sur un territoire adverse : tant qu’il y reste, la cité de cette case ne rapporte rien à son propriétaire à la collecte.' },
-    prelat:      { name: 'Prélat', move: 1, upkeep: 3, req: ['T', 4], text: 'À la collecte, gagner +1 or pour chaque temple que vous possédez (cumulable).' }
+    boutefeu:    { name: 'Boutefeu', move: 1, upkeep: 1, req: ['Ci', 2], text: 'Sur un territoire adverse : tant qu’il y reste, tout revenu de cette case est bloqué pour son maître (territoire, cité, unités spéciales).' },
+    prelat:      { name: 'Prélat', move: 1, upkeep: 3, req: ['T', 4], text: 'À la collecte, gagnez +2 or par temple que vous possédez (cumulable).' }
   };
 
 

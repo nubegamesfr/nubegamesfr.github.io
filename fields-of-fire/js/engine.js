@@ -13,6 +13,7 @@
     // en cours ». On la copie : si l'écriture en ligne est rejouée, la carte d'origine reste intacte.
     var pg = cfg.pregen;
     if (pg && pg.n === st.n) { st.seed = pg.seed; st.map = JSON.parse(JSON.stringify(pg.map)); }
+    else if (pg && pg.carte) st.map = FOF.historicMap(pg.carte, st.n);   // v1.9.17 : le nombre de joueurs a changé
     else st.map = FOF.generateMap(st, st.n);
     st.players = cfg.players.map(function (p, i) {
       return { id: i, name: p.name, color: p.color, leader: p.leader, bot: !!p.bot, mod: FOF.LEADERS[p.leader].mod, gold: 3, dip: 3, tyran: false, tyranStamp: null,
@@ -22,10 +23,12 @@
     });
     // v1.5 : dirigeants placés au hasard n'importe où, jamais sur deux cases voisines
     // (on garde, parmi plusieurs tirages, celui qui les écarte le plus)
-    var TT = st.map.terr, W = st.map.W, best = null, bestD = -1;
+    // v1.9.17 - FOF.terrDistance : distance en cases sur une carte générée (inchangé), en pas sur une
+    // carte historique (voir map.js).
+    var TT = st.map.terr, best = null, bestD = -1;
     for (var tr = 0; tr < 60; tr++) {
       var pick = FOF.shuffle(st, range(TT.length)).slice(0, st.players.length), md = 99;
-      for (var i1 = 0; i1 < pick.length; i1++) for (var i2 = i1 + 1; i2 < pick.length; i2++) md = Math.min(md, FOF.hexDistance(TT[pick[i1]].hex, TT[pick[i2]].hex, W));
+      for (var i1 = 0; i1 < pick.length; i1++) for (var i2 = i1 + 1; i2 < pick.length; i2++) md = Math.min(md, FOF.terrDistance(st.map, pick[i1], pick[i2]));
       if (md >= 2 && md > bestD) { bestD = md; best = pick; }
     }
     if (!best) throw new Error('Placement des dirigeants impossible');
@@ -43,8 +46,14 @@
   // v1.9.10 - génère la carte sans bloquer la page. fin({ n, seed, map }) : à passer tel
   // quel à FOF.newGame({ pregen: ... }). La graine rendue est celle d'après la génération, pour que
   // la suite de la partie (placement, deck) se tire exactement comme avec FOF.generateMap.
-  FOF.prepareMap = function (n, fin, echec) {
+  // v1.9.17 - carte : absente ou 'proc' = carte générée ; sinon clé d'une carte historique (FOF.CARTES).
+  FOF.prepareMap = function (n, fin, echec, carte) {
     var s = { seed: Date.now() & 0x7fffffff };
+    if (carte && carte !== 'proc') {
+      var m; try { m = FOF.historicMap(carte, n); } catch (e) { if (echec) echec(e); return; }
+      setTimeout(function () { fin({ n: n, seed: s.seed, map: m, carte: carte }); }, 0);
+      return;
+    }
     FOF.generateMapAsync(s, n, function (map) { fin({ n: n, seed: s.seed, map: map }); }, echec);
   };
   function range(n) { var a = []; for (var i = 0; i < n; i++) a.push(i); return a; }
@@ -64,7 +73,7 @@
   FOF.terrOf = function (st, pid) { return st.map.terr.filter(function (t) { return t.ctrl === pid; }); };
   FOF.countBld = function (st, pid, type) { var n = 0; st.map.terr.forEach(function (t) { t.blds.forEach(function (b) { if (b.o === pid && b.t === type) n++; }); }); return n; };
   FOF.army = function (st, pid) { return st.units.filter(function (u) { return u.owner === pid; }); };
-  FOF.locName = function (st, loc) { return loc[0] === 't' ? T(st, +loc.slice(1)).name : 'Mer ' + ['du Nord','des Brumes','d’Argent','des Tempêtes','Pourpre','de Jade','d’Ambre','des Soupirs'][+loc.slice(1) % 8]; };
+  FOF.locName = function (st, loc) { var z = loc[0] === 's' && st.map.seas[+loc.slice(1)]; if (z && z.name) return z.name; return loc[0] === 't' ? T(st, +loc.slice(1)).name : 'Mer ' + ['du Nord','des Brumes','d’Argent','des Tempêtes','Pourpre','de Jade','d’Ambre','des Soupirs'][+loc.slice(1) % 8]; };
   FOF.pName = function (st, pid) { return st.players[pid].name; };
 
   FOF.bldCost = function (st, p, type) {
@@ -94,23 +103,30 @@
   };
   FOF.income = function (st, p) {
     var inc = { terr: FOF.terrOf(st, p.id).length, cities: FOF.countBld(st, p.id, 'Ci'), ports: 0, trade: 0, temples: 0, boutefeu: 0 };
-    // v1.9.14 - Boutefeu : posté sur le territoire d'un autre joueur, il annule le revenu de la cité
-    // de cette case pour le propriétaire de la cité (un seul retrait par cité, même avec deux Boutefeux).
+    /* v1.9.17 - Boutefeu (décision du créateur, 30/09/2026) : posté sur le territoire d'un adversaire,
+       il bloque TOUT le revenu que le maître du territoire tire de cette case : le territoire (+1), ses
+       cités sur la case, et ses Caravaniers / Caboteurs qui s'y trouvent. Les autres joueurs gardent
+       leurs revenus. Plusieurs Boutefeux sur la même case ne bloquent pas plus. */
+    var bloquees = {};
     st.map.terr.forEach(function (t) {
-      if (t.ctrl === null || !t.blds.some(function (b) { return b.t === 'Ci' && b.o === p.id; })) return;
-      if (st.units.some(function (u) { return u.key === 'boutefeu' && u.pos === 't' + t.id && u.owner !== t.ctrl && u.owner !== p.id; })) inc.boutefeu++;
+      if (t.ctrl !== p.id) return;
+      if (!st.units.some(function (u) { return u.key === 'boutefeu' && u.pos === 't' + t.id && u.owner !== p.id; })) return;
+      bloquees[t.id] = 1;
+      inc.boutefeu += 1 + t.blds.filter(function (b) { return b.t === 'Ci' && b.o === p.id; }).length;
     });
-    inc.cities -= inc.boutefeu;
-    
     FOF.army(st, p.id).forEach(function (u) {
       if ((u.key === 'caboteur' || u.key === 'caravanier') && u.pos[0] === 't') {
-        var typ = u.key === 'caboteur' ? 'P' : 'Ci';
-        if (T(st, +u.pos.slice(1)).blds.some(function (b) { return b.t === typ && b.o !== p.id; })) inc.trade += 2;
+        var typ = u.key === 'caboteur' ? 'P' : 'Ci', tid = +u.pos.slice(1);
+        // v1.9.17 : 3 or au lieu de 2
+        if (T(st, tid).blds.some(function (b) { return b.t === typ && b.o !== p.id; })) { if (bloquees[tid]) inc.boutefeu += 3; else inc.trade += 3; }
       }
     });
-    // v1.9.6 - Prélat : +1 or par temple possédé, à la collecte.
-    // v1.9.11 - cumulable : deux Prélats rapportent 2 or par temple (décision du créateur, 27/09/2026).
-    inc.temples = FOF.army(st, p.id).filter(function (u) { return u.key === 'prelat'; }).length * FOF.countBld(st, p.id, 'T');
+    // le Boutefeu retire du revenu ce qui vient de la case bloquée (territoire et cités ; le commerce n'y est pas compté)
+    var blocTerrCites = 0; Object.keys(bloquees).forEach(function (id) { blocTerrCites += 1 + T(st, +id).blds.filter(function (b) { return b.t === 'Ci' && b.o === p.id; }).length; });
+    inc.terr -= Object.keys(bloquees).length;
+    inc.cities -= blocTerrCites - Object.keys(bloquees).length;
+    // Prélat : v1.9.17 +2 or par temple possédé (cumulable, décision du 27/09/2026 maintenue)
+    inc.temples = FOF.army(st, p.id).filter(function (u) { return u.key === 'prelat'; }).length * 2 * FOF.countBld(st, p.id, 'T');
     inc.total = inc.terr + inc.cities + inc.ports + inc.trade + inc.temples;
     inc.upkeep = FOF.army(st, p.id).reduce(function (a, u) { return a + FOF.unitDef(u.key).upkeep; }, 0);
     return inc;
@@ -467,7 +483,10 @@
 
   /* ---------- effets des unités spéciales ---------- */
   FOF.effectAvailable = function (st, u) {
-    var p = st.players[u.owner]; if (u.pos[0] !== 't') return null;
+    var p = st.players[u.owner];
+    // v1.9.17 - le Gouverneur se défausse depuis n'importe quelle case, mer comprise (décision du créateur, 30/09/2026)
+    if (u.key === 'gouverneur') return FOF.terrOf(st, p.id).some(function (x) { return x.blds.some(function (b) { return b.o !== p.id && b.t !== 'T'; }); }) ? 'Convertir les aménagements adverses' : null;
+    if (u.pos[0] !== 't') return null;
     var t = T(st, +u.pos.slice(1));
     var others = st.players.filter(function (q) { return q.id !== p.id && q.alive; });
     switch (u.key) {
@@ -493,7 +512,7 @@
     return null;
   };
   function useEffect(st, u, arg) {
-    var p = st.players[u.owner], t = T(st, +u.pos.slice(1)), name = FOF.unitDef(u.key).name;
+    var p = st.players[u.owner], t = u.pos[0] === 't' ? T(st, +u.pos.slice(1)) : null, name = FOF.unitDef(u.key).name;
     switch (u.key) {
       case 'corbeau': gainDip(st, p, 1, name); discardUnit(st, u); break;
       case 'emissaire': gainDip(st, p, 2, name); discardUnit(st, u); break;
@@ -508,7 +527,10 @@
       }
       case 'pelerin':
         var tb = t.blds.filter(function (b) { return b.t === 'T' && b.o !== p.id; })[0];
-        gainDip(st, p, 1, name); gainDip(st, st.players[tb.o], 1, 'pèlerinage reçu', true);   // v1.9.12 : l'Ambassade ne relaie pas un gain reçu discardUnit(st, u); break;
+        gainDip(st, p, 1, name); gainDip(st, st.players[tb.o], 1, 'pèlerinage reçu', true);   // v1.9.12 : l'Ambassade ne relaie pas un gain reçu
+        // v1.9.17 - la défausse et le break étaient restés dans le commentaire ci-dessus : l'effet
+        // enchaînait sur celui de la Colonie et le Pèlerin prenait le territoire (playtest du 30/09).
+        discardUnit(st, u); break;
       case 'colonie':
         if (t.revoltFrom === p.id) throw new Error('Ce territoire s\u2019est soulevé contre vous : vous ne pouvez plus vous y établir.');
         t.ctrl = p.id; t.conqStamp = st.turnNo; t.revoltFrom = null; t.takenFrom = null; if (t.blds.length < FOF.slotsOf(st, p, t.id)) t.blds.push({ t: 'C', o: p.id, b: p.id });

@@ -42,6 +42,11 @@
     return Math.max(Math.abs(A[0]-B[0]), Math.abs(A[1]-B[1]), Math.abs(A[2]-B[2]));
   }
 
+  /* v1.9.17 - règle du créateur (30/09/2026) : un continent ne peut pas contenir autant de cases, ou
+     plus, qu'il n'en faut pour la victoire militaire (8 + joueurs). Taille maximale : 7 + joueurs. Il
+     faut donc au moins ⌈7n / (7 + n)⌉ continents : 3 à 3, 4 et 5 joueurs, 4 à 6 joueurs. */
+  FOF.maxContinent = function (n) { return 7 + n; };
+  FOF.minContinents = function (n) { return Math.ceil(7 * n / (7 + n)); };
   // v1.5 : continents libres (nombre et tailles au hasard), total = 7 × joueurs
   function continentSizes(s, n, k) {
     var total = 7 * n;
@@ -53,7 +58,7 @@
       //   3 j : 2      4 j : 2-3      5 j : 2-4      6 j : 2-4
       // La grille est ensuite choisie en fonction de k (voir GRID dans tryGenerate) : une masse de
       // plus demande une carte un peu plus large, sinon la génération échoue ou la mer déborde.
-      var vmax = Math.max(8, Math.ceil(total / k) + 5);
+      var vmax = Math.min(FOF.maxContinent(n), Math.max(8, Math.ceil(total / k) + 5));
       var sizes = [], left = total;
       for (var i = 0; i < k; i++) {
         var rest = k - i - 1, lo = Math.max(5, left - rest * vmax), hi = Math.min(vmax, left - rest * 5);
@@ -63,9 +68,7 @@
       }
       if (sizes.length === k && left === 0 && sizes.every(function (v) { return v >= 5 && v <= vmax; })) return { sizes: sizes, extra: 0 };
     }
-    var base = [], k2 = 2, q0 = Math.floor(total / k2);
-    for (var q = 0; q < k2; q++) base.push(q === k2 - 1 ? total - q0 * (k2 - 1) : q0);
-    return { sizes: base, extra: 0 };
+    return null;   // v1.9.17 : plus de repli à deux moitiés, qui pouvait dépasser la taille maximale d'un continent
   }
 
   // Nombre de continents. Jamais un seul (une masse unique retire tout l'intérêt de la mer),
@@ -73,7 +76,12 @@
   // d'eau, et les terres disponibles valent 7 × joueurs. Mesuré : à 3 joueurs (21 cases) trois
   // masses séparées ne tiennent dans aucune grille respectant le plafond de 55 % de mer.
   //   3 j : 2      4 j : 2-3      5 j : 2-4      6 j : 2-4
-  var KMAX = { 3: 2, 4: 3, 5: 4, 6: 4 };
+  // v1.9.17 - la taille maximale d'un continent (7 + joueurs) impose désormais un minimum :
+  //   3 j : 3      4 j : 3      5 j : 3-4      6 j : 4
+  var KMAX = { 3: 3, 4: 3, 5: 4, 6: 4 };
+  // part de mer tolérée dans la boîte des centres de territoires (filtre rapide avant la découpe des
+  // mers). v1.9.17 : 0,32 à 3 joueurs (trois continents obligatoires ; 0,215 avant). Mesuré : boîte à 30 % → 58 % de mer à l'écran, 34 % → 61 %.
+  function seuilMer(n) { return n <= 3 ? 0.32 : 0.48; }
 
   /* Une passe : tous les essais d'un tirage de continents. Renvoie une carte CONFORME à la règle
      des 4 débarquements, ou null si aucun essai n'y est arrivé. */
@@ -83,9 +91,9 @@
     // plusieurs tentatives, si bien que le hasard retombait sur deux dans 87 % des parties
     // (mesuré : 26 cartes à deux continents sur 30 à cinq joueurs). On tient donc le nombre voulu,
     // et on ne descend d'un cran que s'il est réellement impossible à placer.
-    var kmax = KMAX[n] || Math.min(n + 1, 4);
-    var kVoulu = FOF.FORCE_K || (2 + ri(s, kmax - 1));
-    for (var want = kVoulu; want >= 2; want--) {
+    var kmin = Math.max(2, FOF.minContinents(n)), kmax = Math.max(kmin, KMAX[n] || Math.min(n + 1, 4));
+    var kVoulu = FOF.FORCE_K || (kmin + ri(s, kmax - kmin + 1));
+    for (var want = kVoulu; want >= kmin; want--) {
       for (var attempt = 0; attempt < 300; attempt++) {
         var m = tryGenerate(s, n, want);
         if (m && m.pireDeb <= FOF.MAX_DEBARQUEMENTS) { FOF.dernierePireDeb = m.pireDeb; return m; }
@@ -97,8 +105,8 @@
     var seuilInitial = FOF.SEA_EST;
     try {
       for (var relache = 0; relache < 4; relache++) {
-        FOF.SEA_EST = (n <= 3 ? 0.215 : 0.48) + 0.04 * (relache + 1);
-        for (var w2 = kVoulu; w2 >= 2; w2--) {
+        FOF.SEA_EST = Math.min(seuilMer(n) + 0.04 * (relache + 1), n <= 3 ? seuilMer(n) : 1);   // v1.9.17 : à 3 j, pas de desserrage (plafond de 60 % à l'écran)
+        for (var w2 = kVoulu; w2 >= kmin; w2--) {
           for (var a2 = 0; a2 < 200; a2++) {
             var m2 = tryGenerate(s, n, w2);
             if (m2 && m2.pireDeb <= FOF.MAX_DEBARQUEMENTS) { FOF.dernierePireDeb = m2.pireDeb; return m2; }
@@ -142,7 +150,7 @@
 
   function tryGenerate(s, n, k) {
     var wide = true;   // v1.9.11 : un seul type de mer (l'ancienne « mer élargie »)
-    var cs = continentSizes(s, n, k);
+    var cs = continentSizes(s, n, k); if (!cs) return null;
     var targets = cs.sizes.slice(); if (cs.extra) targets.push(cs.extra);
     // v1.9.2 : grille choisie pour que la carte rendue tienne dans un rapport ~2:1, qui remplit
     // mieux un écran large et se lit plus clairement. Géométrie hexagonale : un pas en x vaut
@@ -156,11 +164,15 @@
     //   3 j  k2 10×6 → 54 %        5 j  k2 11×7 → 48 %   k3 11×7 → 49 %   k4 12×7 → 55 %
     //   4 j  k2 10×6 → 47 %        6 j  k2 12×8 → 53 %   k3 12×8 → 54 %   k4 12×8 → 55 %
     //        k3 11×6 → 55 %
+    // v1.9.17 - règle des continents : 3 j et 4 j passent à 3 continents, 6 j à 4. Plafond de mer
+    // relevé à 60 % par le créateur (01/10/2026) : trois masses séparées ne tiennent pas sous 55 %
+    // à 3 joueurs. Mer mesurée à l'écran : 3 j k3 10×6 → 60 %, 4 j k3 12×6 → 56 %,
+    // 6 j k4 14×8 → 59 % (choisie pour la vitesse : 12×8 donnait 55 % mais 4,5 s de génération).
     var GRID = {
-      3: { 2: [10, 6] },
-      4: { 2: [10, 6], 3: [11, 6] },
+      3: { 2: [10, 6], 3: [10, 6] },
+      4: { 2: [10, 6], 3: [12, 6] },
       5: { 2: [11, 7], 3: [11, 7], 4: [12, 7] },
-      6: { 2: [12, 8], 3: [12, 8], 4: [12, 8] }
+      6: { 2: [12, 8], 3: [12, 8], 4: [14, 8] }
     };
     var TABLE = { 3: [9, 6], 4: [10, 6], 5: [11, 7], 6: [12, 8] };
     var ASP = FOF.MAP_ASPECT || 1.56;   // rapport rendu ≈ 1,155 × W/H
@@ -270,7 +282,7 @@
       var cc = FOF.hexCenter(ci, W, R0);
       if (cc.x >= bx0 && cc.x <= bx1 && cc.y >= by0 && cc.y <= by1) dansBoite++;
     }
-    var SEUIL = FOF.SEA_EST || (n <= 3 ? 0.215 : 0.48);
+    var SEUIL = FOF.SEA_EST || seuilMer(n);
     if (dansBoite && 1 - terr.length / dansBoite > SEUIL) return null;   // marge : la boîte rendue déborde d'un rayon d'hexagone
     var decoupe = decouperMers(terr, hexToT, water, waterSet, W, H, wide ? 3 * n + 6 : 2 * n + 4);
     if (!decoupe) return null;
@@ -922,6 +934,49 @@
     var restes = rayons.filter(function (r, i) { return utile[i]; });
     return { seas: seas, seasOfT: seasOfT, rayons: restes, triSea: Array.prototype.slice.call(triSea) };
   }
+
+  /* ============================================================================
+     v1.9.17 - CARTES HISTORIQUES
+     Dessinées par le créateur, pas générées. Le graphe (noms, biomes, voisins, mers) vient de
+     js/cartes.js ; la forme exacte des territoires, d'une trame d'étiquettes (assets/cartes/),
+     chargée seulement par le rendu. L'état de partie ne garde que le graphe et la clé de la carte :
+     la synchronisation en ligne reste légère. La règle des continents (FOF.maxContinent) et celle
+     des 4 débarquements ne s'appliquent pas à ces cartes : elles sont reprises telles quelles.
+     ============================================================================ */
+  FOF.HIST_S = 3;                                  // pixels de trame par unité logique
+  FOF.historicMap = function (cle, n) {
+    var c = FOF.CARTES && FOF.CARTES[cle], v = c && c.versions[n];
+    if (!v) throw new Error('Carte historique introuvable : ' + cle + ' à ' + n + ' joueurs');
+    var S = FOF.HIST_S;
+    return {
+      hist: cle, n: n, px: v.px.slice(), W: 0, H: 0, nCont: 1 + Math.max.apply(null, v.terr.map(function (t) { return t.cont; })),
+      terr: v.terr.map(function (t, i) { return { id: i, hex: null, cont: t.cont, biome: t.biome, ctrl: null, blds: [], adj: t.adj.slice(), seas: t.seas.slice(), name: t.name }; }),
+      seas: v.seas.map(function (z, i) { return { id: i, name: z.name, adjT: z.adjT.slice(), adjS: z.adjS.slice(), anchor: null }; }),
+      seaRays: v.rays.map(function (r) { return { pts: [{ x: r[0] / S, y: r[1] / S }, { x: r[2] / S, y: r[3] / S }] }; })
+    };
+  };
+  FOF.historicList = function () {
+    return Object.keys(FOF.CARTES || {}).map(function (k) { return { cle: k, nom: FOF.CARTES[k].nom, joueurs: Object.keys(FOF.CARTES[k].versions).map(Number) }; });
+  };
+  // Distance entre deux territoires, pour écarter les capitales. Carte générée : distance en cases
+  // (inchangé). Carte historique : nombre de pas, un pas par frontière terrestre, deux pour
+  // traverser une mer (comme une case d'eau entre deux terres sur une carte générée).
+  FOF.terrDistance = function (m, a, b) {
+    if (!m.hist) return hexDist(m.terr[a].hex, m.terr[b].hex, m.W);
+    if (a === b) return 0;
+    var d = {}; d[a] = 0;
+    // parcours par couches de coût croissant (coûts 1 ou 2 : deux files suffisent)
+    var courant = [a], suivant = [], apres = [], k = 0;
+    while (courant.length || suivant.length || apres.length) {
+      if (!courant.length) { courant = suivant; suivant = apres; apres = []; k++; continue; }
+      var x = courant.pop();
+      if (d[x] < k) continue;
+      if (x === b) return k;
+      m.terr[x].adj.forEach(function (y) { if (d[y] === undefined || d[y] > k + 1) { d[y] = k + 1; suivant.push(y); } });
+      m.terr[x].seas.forEach(function (s) { m.seas[s].adjT.forEach(function (y) { if (d[y] === undefined || d[y] > k + 2) { d[y] = k + 2; apres.push(y); } }); });
+    }
+    return 99;
+  };
 
   var NAMES = ['Aubelande','Brumeval','Cendrelac','Dorvanne','Éperonde','Fauxmont','Givrecœur','Hautelys','Isarde','Joncval','Karnhelm','Lorvanne','Mortebrise','Noirsable','Orgemont','Pierrelune','Quellrive','Rochebrune','Sombrelac','Taillefer','Ulmecombe','Valbrise','Wyrmelande','Ysembre','Zéphirelle','Argenfeu','Boisroux','Corvelle','Dunemar','Estival','Ferhaven','Grisecôte','Harfleur','Ivrelande','Jaspemont','Lancerive','Merlefond','Nordelys','Oriflamme','Pâlemarche','Roncevaux','Sélune','Tourmaline','Vermeil','Vieilleroche','Aiguemorte','Bellegarde','Clairefont'];
   function names(s, terr) { var pool = shuffle(s, NAMES.slice()); terr.forEach(function (t, i) { t.name = pool[i % pool.length]; }); }

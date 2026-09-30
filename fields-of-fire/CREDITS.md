@@ -6,12 +6,15 @@
 bâtiments appartiennent à Nube Games.** Elles ont été produites pour le jeu, nous en détenons tous
 les droits d'usage, et **personne n'est à créditer**.
 
-Cela vaut pour les 35 illustrations d'unités (`assets/units/`), les 8 portraits de dirigeants
+Cela vaut pour les 38 illustrations d'unités (`assets/units/`, dont la Garde varègue ajoutée en v1.9.17), les 8 portraits de dirigeants
 (`assets/heroes/`), les icônes de bâtiments `bld-*`, les quatre icônes de terrain `biome-*`,
 l'icône de diplomatie `dip` et l'icône de territoires `terr` (`assets/icons/`), chacune dans ses
 deux teintes quand elle apparaît sur fond clair et sur fond sombre.
 
 L'illustration de la garnison (`assets/images/garnison.jpg`, v1.9.15) appartient aussi à Nube Games.
+
+La carte historique « Mer de la Manche » (`assets/cartes/manche-*.png`, `js/cartes.js`, v1.9.17) est
+tirée des plans dessinés par Nube Games : découpage, noms et terrains sont les leurs.
 
 La texture de planches de bois du fond (`assets/images/table-bois.jpg`, v1.9.13) a été générée
 par calcul pour le jeu : aucune photo ni image extérieure n'a servi à la produire.

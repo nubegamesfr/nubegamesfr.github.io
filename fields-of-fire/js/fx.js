@@ -20,9 +20,13 @@
       units: st.units.length
     };
   }
+  function cle(g) { return (g.dataset.fk || g.dataset.tk) + '|' + g.dataset.own; }
   function tokPos() {
     var m = {};
-    document.querySelectorAll('#tokens .tk').forEach(function (g) { m[g.dataset.tk + '|' + g.dataset.own] = [+g.dataset.x, +g.dataset.y]; });
+    // v1.9.17 - clé = pion représenté (dirigeant ou unité), et non plus data-tk : toutes les piles
+    // d'un joueur portaient la même clé « G », si bien qu'avec deux piles sur la carte l'une
+    // repartait de la position de l'autre à chaque action (va-et-vient signalé en playtest).
+    document.querySelectorAll('#tokens .tk').forEach(function (g) { m[cle(g)] = [+g.dataset.x, +g.dataset.y]; });
     return m;
   }
   function board() { return document.getElementById('board'); }
@@ -121,7 +125,7 @@
       var anim = FOF.animOn !== false;
       // 1) les pions glissent vers leur nouvelle case
       if (anim) document.querySelectorAll('#tokens .tk').forEach(function (g) {
-        var k = g.dataset.tk + '|' + g.dataset.own, p0 = before.pos[k]; if (!p0) { g.classList.add('fx-in'); return; }
+        var k = cle(g), p0 = before.pos[k]; if (!p0) { g.classList.add('fx-in'); return; }
         var dx = p0[0] - +g.dataset.x, dy = p0[1] - +g.dataset.y; if (Math.abs(dx) + Math.abs(dy) < 0.5) return;
         var inner = g.querySelector('.tki'); if (!inner) return;
         inner.style.transition = 'none'; inner.style.transform = 'translate(' + dx + 'px,' + dy + 'px)';

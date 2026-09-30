@@ -5,6 +5,20 @@
   var esc = function (s) { return FOF.esc(s); };
   var count = 4, rows = [], picking = null, room = null, step = 'mode';
   var tutoWanted = true; try { tutoWanted = localStorage.getItem('fof-tuto') !== '0'; } catch (e) {}
+  // v1.9.17 - choix de la carte : 'proc' (générée) ou la clé d'une carte historique (FOF.CARTES)
+  var carte = 'proc'; try { carte = localStorage.getItem('fof-carte') || 'proc'; } catch (e) {}
+  function carteValide(c) { return c && (c === 'proc' || (FOF.CARTES && FOF.CARTES[c])) ? c : 'proc'; }
+  carte = carteValide(carte);
+  function carteDuSalon(row) { var h = row.seats.filter(function (s) { return s.cid === row.host_id; })[0]; return carteValide(h && h.carte); }
+  // deux familles : cartes procédurales (générées à chaque partie) et cartes historiques (dessinées)
+  function mapPickHTML(val, actif) {
+    function bouton(c, nom, titre) {
+      return '<button type="button" class="mp-b" data-carte="' + c + '" aria-pressed="' + (val === c) + '"' + (actif ? '' : ' disabled') + ' title="' + esc(titre) + '">' + esc(nom) + '</button>';
+    }
+    return '<span class="muted mp-l">Carte</span>' +
+      '<div class="mp-grp"><small>Procédurales</small>' + bouton('proc', 'Aléatoire', 'Une nouvelle carte générée pour chaque partie') + '</div>' +
+      '<div class="mp-grp"><small>Historiques</small>' + FOF.historicList().map(function (h) { return bouton(h.cle, h.nom, 'Carte dessinée, de ' + Math.min.apply(null, h.joueurs) + ' à ' + Math.max.apply(null, h.joueurs) + ' joueurs'); }).join('') + '</div>';
+  }
   var DEFAULT_NAMES = ['Aurèle', 'Bérénice', 'Corentin', 'Daphné', 'Élouan', 'Faustine'];
   var LEAD_KEYS = Object.keys(FOF.LEADERS);
   var TRIAL = ['hugues', 'alienor'];
@@ -23,9 +37,10 @@
   }
   function colorHex(id) { return FOF.PLAYER_COLORS.filter(function (c) { return c.id === id; })[0].hex; }
   // les seuils étaient figés dans une table et ne suivaient plus l'équilibrage : on les calcule.
-  function winText(n) {
+  function winText(n, c) {
     if (!n) return '';
-    return 'À ' + n + ' joueurs : ' + (7 * n) + ' territoires sur la carte. Victoire à ' + (8 + n) + ' territoires, '
+    var nomC = c && c !== 'proc' && FOF.CARTES[c] ? ' (' + FOF.CARTES[c].nom + ')' : '';
+    return 'À ' + n + ' joueurs : ' + (7 * n) + ' territoires sur la carte' + nomC + '. Victoire à ' + (8 + n) + ' territoires, '
       + (6 + n) + ' temples ou ' + (6 + n) + ' de diplomatie.';
   }
   function setErr(msg) { $('netErr').textContent = msg || ''; }
@@ -122,7 +137,8 @@
         '<button type="button" class="btn small bot-toggle' + (r.bot ? ' on' : '') + '" data-bot="' + i + '" aria-pressed="' + !!r.bot + '" title="Joueur humain ou ordinateur">' + (r.bot ? FOF.ic('helm', 14) + ' Ordinateur' : FOF.ic('person', 14) + ' Humain') + '</button></div>' +
         FOF.heroHTML(r.leader, { button: true, attrs: 'type="button" data-pickhero="' + i + '" title="Changer de dirigeant"', note: TRIAL.indexOf(r.leader) >= 0 ? 'à l’essai · changer ▾' : 'changer ▾' }) + '</div>';
     }).join('');
-    $('winInfo').textContent = winText(count);
+    $('mapPick').innerHTML = mapPickHTML(carte, true);
+    $('winInfo').textContent = winText(count, carte);
     var tw = document.getElementById('tutoOpt');
     if (tw) tw.innerHTML = '<label class="tuto-check"><input type="checkbox" id="tutoChk"' + (tutoWanted ? ' checked' : '') + '> ' + FOF.ic('book', 15) + ' Didacticiel (3 tours, on peut l’arrêter à tout moment)</label>';
   }
@@ -150,7 +166,9 @@
         (mine ? FOF.heroHTML(s.leader, { button: true, attrs: 'type="button" data-opick="1" title="Changer de dirigeant"', note: 'vous · changer ▾' }) : FOF.heroHTML(s.leader, { note: 'joueur ' + (i + 1) })) + '</div>');
     });
     for (var k = n; k < 6; k++) h.push('<div class="prow seat empty"><span class="swatch"></span><div class="seat-name muted">Place libre' + (k < 3 ? ' · minimum 3 joueurs' : '') + '</div></div>');
-    h.push('</div><p class="note">' + winText(Math.max(3, n)) + '</p><div class="setup-actions">');
+    var cs = carteDuSalon(row);
+    h.push('</div><div class="map-pick">' + mapPickHTML(cs, host) + (host ? '' : '<small class="muted mp-note">choisie par l’hôte</small>') + '</div>');
+    h.push('<p class="note">' + winText(Math.max(3, n), cs) + '</p><div class="setup-actions">');
     if (host && n < 6) h.push('<button class="btn" type="button" data-addbot="1">' + FOF.ic('helm', 15) + ' Ajouter un bot</button>');
     if (host) {
       var lock = n < 3 || !allRdy;
@@ -280,6 +298,13 @@
     $('setup').addEventListener('click', function (e) {
       var cb = e.target.closest('[data-cattab],[data-catf]');
       if (cb) { if (cb.dataset.cattab) catTab = cb.dataset.cattab; if (cb.dataset.catf) catFiltre = cb.dataset.catf; return renderCatalog(); }
+      var bc = e.target.closest('[data-carte]');
+      if (bc && !bc.disabled) {
+        var vc = carteValide(bc.dataset.carte);
+        if (step === 'lobby') return mySeatUpdate(function (s, row) { if (row.host_id !== room.cid) return false; s.carte = vc; });
+        carte = vc; try { localStorage.setItem('fof-carte', carte); } catch (x) {}
+        return renderLocal();
+      }
       var b = e.target.closest('[data-mode],[data-resume],[data-back],[data-count],[data-swatch],[data-pickhero],[data-copy],[data-oswatch],[data-opick],[data-ostart],[data-oready],[data-oleave],[data-bot],[data-addbot],[data-rmbot],[data-allbots]'); if (!b) return;
       var d = b.dataset; setErr('');
       if (d.mode === 'local') return show('local');
@@ -332,8 +357,8 @@
       if (d.oready !== undefined) { var want = d.oready === '1'; return mySeatUpdate(function (s) { s.ready = want; }); }
       if (d.ostart) {
         b.disabled = true;
-        var nPrev = room.row ? room.row.seats.length : 0;
-        ecranGeneration(true);
+        var nPrev = room.row ? room.row.seats.length : 0, cSalon = room.row ? carteDuSalon(room.row) : 'proc';
+        if (cSalon === 'proc') ecranGeneration(true);
         // La carte est préparée AVANT l'écriture du salon. Si le nombre de joueurs a changé entre-temps
         // (départ de dernière seconde), newGame la refait elle-même, de façon synchrone.
         FOF.prepareMap(nPrev, function (pg) {
@@ -345,7 +370,7 @@
             FOF.statsTick(st);
             return { status: 'playing', state: st };
           }).then(function () { ecranGeneration(false); }, function (err) { ecranGeneration(false); setErr(err.message); b.disabled = false; });
-        }, function (err) { ecranGeneration(false); setErr(err.message); b.disabled = false; });
+        }, function (err) { ecranGeneration(false); setErr(err.message); b.disabled = false; }, cSalon);
         return;
       }
       if (d.oleave) {
@@ -391,7 +416,7 @@
       tutoWanted = chk ? chk.checked : tutoWanted;
       try { localStorage.setItem('fof-tuto', tutoWanted ? '1' : '0'); localStorage.removeItem('fof-widesea'); } catch (e) {}
       var btn = $('startBtn'); if (btn.disabled) return;
-      btn.disabled = true; ecranGeneration(true);
+      btn.disabled = true; if (carte === 'proc') ecranGeneration(true);
       FOF.prepareMap(players.length, function (pg) {
         ecranGeneration(false); btn.disabled = false;
         FOF.startUI(FOF.newGame({ players: players, pregen: pg }));
@@ -399,7 +424,7 @@
       }, function (err) {
         ecranGeneration(false); btn.disabled = false;
         $('winInfo').textContent = 'La carte n’a pas pu être générée (' + err.message + '). Relancez la partie.';
-      });
+      }, carte);
     });
     FOF.showSetup();
     // reprise automatique seulement dans l'onglet qui était déjà assis dans ce salon (après un rechargement)

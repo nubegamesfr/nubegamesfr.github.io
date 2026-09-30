@@ -45,7 +45,9 @@
       winner_leader: w ? st.players[w.pid].leader : null, winner_seat: w ? w.pid : null, victory_type: w ? w.type : null,
       avg_gold: players.length ? +(players.reduce(function (s, p) { return s + p.avg_gold; }, 0) / players.length).toFixed(2) : null,
       n_tyrans: players.filter(function (p) { return p.tyran; }).length, n_alive: alive.length,
-      players: players, victory_cfg: st.victory, app_version: FOF.CONFIG.version
+      players: players, app_version: FOF.CONFIG.version,
+      // v1.9.17 - la carte jouée (« proc » = générée) est rangée dans ce champ JSON : pas de nouvelle colonne en base
+      victory_cfg: Object.assign({}, st.victory, { carte: (st.map && st.map.hist) || 'proc' })
     }, extra || {});
   }
   function send(r) {

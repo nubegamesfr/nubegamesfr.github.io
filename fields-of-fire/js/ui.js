@@ -111,6 +111,19 @@
     render(); save();
   }
 
+  /* v1.9.17 - l'Espion joue hors de son tour. En ligne, son écriture pouvait croiser celle du joueur
+     actif : l'état était rechargé et l'Espion perdu, alors que la carte avait déjà été montrée. On
+     passe donc par net.mutate, qui relit le dernier état du salon, y rejoue l'action et réessaie en
+     cas de conflit. La carte n'est montrée qu'une fois l'écriture acceptée. */
+  function espionEnLigne(a, ok) {
+    net.mutate(function (row) {
+      if (!row.state) return null;
+      FOF.act(row.state, a);
+      return { state: row.state, status: row.state.winner ? 'ended' : 'playing' };
+    }).then(function (fait) { if (fait) { err = ''; if (ok) ok(); } }, function (e) { err = e.message; if (FOF.sfx) FOF.sfx('error'); render(); });
+    render();
+  }
+
   /* ================= rendu ================= */
   function render() {
     if (!st) return;
@@ -120,7 +133,7 @@
     if (paused && !modal && !st.winner) modal = { kind: 'pause' };
     var pbtn = $('pauseBtn'); if (pbtn) pbtn.hidden = !!net || !!st.winner;
     var before = FOF.FX ? FOF.FX.before() : null;
-    renderHeader(); renderOpponents(); renderBoard(); renderMat(); renderRight(); renderModal();
+    renderHeader(); renderOpponents(); renderBoard(); renderMat(); renderRight(); renderModal(); renderEspionFlottant();
     var waiting = !st.winner && !myTurn();
     document.body.classList.toggle('waiting', waiting);
     document.body.style.setProperty('--wc', color(actor()));
@@ -218,6 +231,21 @@
     if (vu) return '<button class="btn small gold spy-btn" data-spyview="' + p.id + '">' + FOF.ic('cards', 13) + ' Carte espionnée</button>';
     if (!FOF.army(st, p.id).some(function (u) { return u.key === 'espion'; })) return '';
     return '<button class="btn small gold spy-btn" data-spy="' + p.id + '" ' + (p.gold < 1 ? 'disabled title="Il faut 1 or"' : 'title="Usage unique : 1 or, vous regardez la carte du dessus du deck"') + '>' + FOF.ic('cards', 13) + ' Espion · 1 or</button>';
+  }
+  /* v1.9.17 - « à tout moment » : quand une fenêtre est ouverte (début de tour, bataille, décision en
+     attente...), son voile recouvrait le panneau des joueurs et le bouton de l'Espion ne répondait
+     plus (vérifié en test : clic bloqué dans les cinq situations). Le bouton est alors reproduit
+     au-dessus du voile, en bas à gauche de l'écran. */
+  function renderEspionFlottant() {
+    var el = $('spyFab');
+    if (!el) { el = document.createElement('div'); el.id = 'spyFab'; el.className = 'spy-fab'; document.body.appendChild(el); }
+    var voile = !$('modal').hidden && !(modal && modal.kind === 'spy');
+    var plusieurs = !net && st.players.filter(function (q) { return !q.bot; }).length > 1;
+    var h = voile ? st.players.map(function (q) {
+      var b = espionBtn(q); if (!b) return '';
+      return plusieurs ? b.replace('</button>', ' <small>(' + esc(q.name) + ')</small></button>') : b;
+    }).join('') : '';
+    el.innerHTML = h; el.hidden = !h;
   }
   // v1.9.15 - revenu net par tour (revenus moins entretien), discret, sur chaque bannière
   function revenuNet(p) {
@@ -361,7 +389,7 @@
         var nMob = mine && st.phase === 'military' && !st.pending.length ? gr.list.filter(bouge).length : 0;
         var piece = seul ? (it.leader ? 'L' : it.uid) : 'G';
         var selected = mine && mode && mode.kind === 'move' && gr.list.some(function (o) { return mode.piece === (o.leader ? 'L' : o.uid); });
-        var g = '<g class="tk' + (nMob ? ' can' : '') + (gr.owner === st.cur ? ' cur' : '') + (seul ? '' : ' grp') + '" data-tk="' + piece + '" data-tloc="' + loc + '" data-own="' + gr.owner + '" data-x="' + x + '" data-y="' + y + '" transform="translate(' + x + ' ' + y + ')"><g class="tki"><g transform="scale(1.1)">';
+        var g = '<g class="tk' + (nMob ? ' can' : '') + (gr.owner === st.cur ? ' cur' : '') + (seul ? '' : ' grp') + '" data-tk="' + piece + '" data-fk="' + (it.leader ? 'L' : it.uid) + '" data-tloc="' + loc + '" data-own="' + gr.owner + '" data-x="' + x + '" data-y="' + y + '" transform="translate(' + x + ' ' + y + ')"><g class="tki"><g transform="scale(1.1)">';
         var ringW = selected ? 3.4 : 2.4, ringC = selected ? '#fff' : col;
         if (it.leader) {
           var art = FOF.heroArt(st.players[it.owner].leader);
@@ -882,6 +910,16 @@
       var w = st.players[st.winner.pid], label = { mil: 'Victoire militaire', rel: 'Victoire religieuse', dip: 'Victoire diplomatique', survie: 'Dernier dirigeant debout' }[st.winner.type];
       h = '<div class="modal victory" style="text-align:center"><div class="confetti" aria-hidden="true">' + new Array(40).join('<i></i>') + '</div><div class="vcrown" style="width:140px;margin:0 auto 10px">' + FOF.heroImg(w.leader) + '</div><h2 style="color:' + color(w.id) + ';font-size:30px">' + esc(w.name) + '</h2><p class="verdict">' + label + '</p><p class="muted">' + esc(FOF.LEADERS[w.leader].name) + ' · tour ' + st.round + '</p><div class="actions" style="justify-content:center"><button class="btn" data-endstats="1">' + FOF.ic('scroll', 15) + ' Statistiques de la partie</button><button class="btn primary" data-act="newgame">Nouvelle partie</button></div></div>';
       if (modal && modal.kind === 'endstats') h = endStatsHTML();
+    }
+    // v1.9.17 - le rapport de l'Espion passe devant tout (décision en attente comprise) : on peut
+    // l'envoyer à tout moment, il doit donc pouvoir s'afficher à tout moment.
+    else if (modal && modal.kind === 'spy') {
+      var vs = st.spies && st.spies[modal.pid];
+      h = vs ? '<div class="modal edouardc spy-modal"><h2>' + FOF.ic('cards', 20) + ' Le rapport de votre Espion</h2>' +
+        '<p>' + esc(st.players[modal.pid].name) + ', voici la carte du dessus du deck. Vous seul la voyez.</p>' +
+        '<div class="spy-card">' + FOF.cardHTML(vs.key) + '</div>' +
+        '<div class="actions"><button class="btn" data-spydecide="0">La laisser sur le deck</button><button class="btn gold" data-spydecide="1">La défausser</button></div></div>'
+        : '<div class="modal"><p>Aucune carte espionnée.</p><div class="actions"><button class="btn primary" data-close="1">Fermer</button></div></div>';
     } else if (modal && modal.kind === 'combat' && st.lastCombat) h = combatHTML(st.lastCombat);
     else if (pd && net && net.seatIndex() !== pd.pid && (pd.type === 'conquest' || pd.type === 'deficit' || pd.type === 'razeSlot')) h = '<div class="modal"><h2>En attente</h2><p><b>' + esc(st.players[pd.pid].name) + '</b> prend une décision…</p></div>';
     else if (pd && pd.type === 'conquest') {
@@ -905,14 +943,6 @@
         }).join('') + '</div></div>';
     } else if (modal && modal.kind === 'attack') h = attackHTML(modal);
     else if (modal && modal.kind === 'turn') h = collectHTML();
-    else if (modal && modal.kind === 'spy') {
-      var vs = st.spies && st.spies[modal.pid];
-      h = vs ? '<div class="modal edouardc spy-modal"><h2>' + FOF.ic('cards', 20) + ' Le rapport de votre Espion</h2>' +
-        '<p>' + esc(st.players[modal.pid].name) + ', voici la carte du dessus du deck. Vous seul la voyez.</p>' +
-        '<div class="spy-card">' + FOF.cardHTML(vs.key) + '</div>' +
-        '<div class="actions"><button class="btn" data-spydecide="0">La laisser sur le deck</button><button class="btn gold" data-spydecide="1">La défausser</button></div></div>'
-        : '<div class="modal"><p>Aucune carte espionnée.</p><div class="actions"><button class="btn primary" data-close="1">Fermer</button></div></div>';
-    }
     else if (modal && modal.kind === 'killc') {
       var uk = st.units.filter(function (x) { return x.uid === modal.uid; })[0];
       h = uk ? '<div class="modal edouardc"><h2>' + FOF.ic('skull', 20) + ' Licencier ' + esc(FOF.unitDef(uk.key).name) + ' ?</h2>' +
@@ -1019,12 +1049,13 @@
     row('<img class="icn" src="assets/icons/terr.png" alt=""> Territoires × ' + inc.terr, inc.terr, 'plus');
     if (inc.cities) row('<img class="icn" src="assets/icons/bld-Ci.png" alt=""> Cités × ' + inc.cities, inc.cities, 'plus');
     if (inc.ports) row('<img class="icn" src="assets/icons/bld-P.png" alt=""> Ports d’Alinor × ' + inc.ports, inc.ports, 'plus');
-    if (inc.boutefeu) rows.push('<div class="lg minus"><span>Cités incendiées par un Boutefeu × ' + inc.boutefeu + ' (déjà retirées)</span><b>0</b></div>');
+    if (inc.boutefeu) rows.push('<div class="lg minus"><span>Revenus bloqués par un Boutefeu : ' + inc.boutefeu + ' or (déjà retirés)</span><b>0</b></div>');
     if (inc.temples) row('Prélat : ' + FOF.countBld(st, cp.id, 'T') + ' temple' + (FOF.countBld(st, cp.id, 'T') > 1 ? 's' : ''), inc.temples, 'plus');
     FOF.army(st, cp.id).forEach(function (u) {
       if ((u.key === 'caboteur' || u.key === 'caravanier') && u.pos[0] === 't') {
         var typ = u.key === 'caboteur' ? 'P' : 'Ci', tt = st.map.terr[+u.pos.slice(1)];
-        if (tt.blds.some(function (b) { return b.t === typ && b.o !== cp.id; })) row('Commerce : ' + esc(FOF.unitDef(u.key).name) + ' à ' + esc(tt.name), 2, 'plus');
+        var bloque = tt.ctrl === cp.id && st.units.some(function (x) { return x.key === 'boutefeu' && x.pos === u.pos && x.owner !== cp.id; });
+        if (!bloque && tt.blds.some(function (b) { return b.t === typ && b.o !== cp.id; })) row('Commerce : ' + esc(FOF.unitDef(u.key).name) + ' à ' + esc(tt.name), 3, 'plus');
       }
     });
     FOF.army(st, cp.id).forEach(function (u) { row('Solde : ' + esc(FOF.unitDef(u.key).name), -FOF.unitDef(u.key).upkeep, 'minus'); });
@@ -1233,9 +1264,9 @@
     if (radial && (ds.move || ds.conquer || ds.attack)) radial = null;
     if (ds.collectgo) { modal = null; if (st.phase === 'collect' && !st.pending.length) return dispatch({ type: 'nextPhase' }); return render(); }
     // Espion : action hors tour (force), puis la modale montre la carte à son seul propriétaire
-    if (ds.spy !== undefined) { var spid = +ds.spy; dispatch({ type: 'spy', pid: spid }, true, true); if (!err) openOver('spy', { pid: spid }); return; }
+    if (ds.spy !== undefined) { var spid = +ds.spy; if (net) return espionEnLigne({ type: 'spy', pid: spid }, function () { openOver('spy', { pid: spid }); render(); }); dispatch({ type: 'spy', pid: spid }, true, true); if (!err) openOver('spy', { pid: spid }); return; }
     if (ds.spyview !== undefined) return openOver('spy', { pid: +ds.spyview });
-    if (ds.spydecide !== undefined) { var sm = modal; modal = prevModal; prevModal = null; return dispatch({ type: 'spyDecide', pid: sm.pid, discard: ds.spydecide === '1' }, true, true); }
+    if (ds.spydecide !== undefined) { var sm = modal, ad = { type: 'spyDecide', pid: sm.pid, discard: ds.spydecide === '1' }; modal = prevModal; prevModal = null; if (net) return espionEnLigne(ad); return dispatch(ad, true, true); }
     if (!VIEW && !myTurn()) { err = 'Ce n’est pas à vous de jouer.'; pop = null; return render(); }
     if (ds.undo) return undoMove();
     if (ds.backphase) { mode = null; pop = null; modal = null; return dispatch({ type: 'prevPhase' }); }

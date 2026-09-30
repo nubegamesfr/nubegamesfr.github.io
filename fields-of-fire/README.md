@@ -1,6 +1,27 @@
-# Fields of Fire - version web (beta 1.9.16, prototype)
+# Fields of Fire - version web (beta 1.9.17, prototype)
 
 Jeu 100 % statique (HTML/CSS/JS, sans build). Servi par GitHub Pages sur https://nubegames.fr/fields-of-fire/ (dossier `fields-of-fire/` du repo `nubegamesfr.github.io`).
+
+## v1.9.17 - playtest du 30/09, cartes historiques (01/10/2026)
+
+- **Cartes historiques** : le salon propose deux familles, cartes procédurales (générées) et cartes
+  historiques (dessinées). Première carte : **Mer de la Manche**, une version par nombre de joueurs
+  (21, 28, 35 et 42 territoires), découpage validé par le créateur le 01/10/2026. Le graphe est dans
+  `js/cartes.js`, la forme exacte des territoires dans `assets/cartes/manche-N.png` (trame
+  d'étiquettes lue par le rendu). Capitales tirées au hasard, jamais voisines. En ligne, la carte est
+  choisie par l'hôte. Les statistiques notent la carte jouée (champ `victory_cfg.carte`).
+- **Cartes générées** : un continent ne peut plus contenir autant de cases qu'il en faut pour la
+  victoire militaire (au plus 7 + joueurs). Il faut donc 3 continents à 3 et 4 joueurs, 3 ou 4 à
+  5 joueurs, 4 à 6 joueurs. Plafond de mer à l'écran relevé à 60 % (décision du créateur).
+- **Règles (playtest)** : Prêtresse et Cavaliers nomades à 2 d'entretien ; Prélat : 4 temples,
+  entretien 3, +2 or par temple à la collecte ; Caravanier et Caboteur : +3 or ; Boutefeu : bloque
+  tout le revenu que le maître tire de la case (territoire, cités, Caravanier / Caboteur) ;
+  Gouverneur : se défausse depuis n'importe quelle case, mer comprise ; nouvelle élite
+  **Garde varègue** (3 ports, entretien 3, 3/3/3/5, déplacement 1, 2 exemplaires, deck à 87 cartes).
+- **Corrections** : le Pèlerin prenait le territoire (son effet enchaînait sur celui de la Colonie) ;
+  un pion faisait des allers-retours à chaque action quand un joueur avait deux piles sur la carte ;
+  le bouton de l'Espion ne répondait plus dès qu'une fenêtre était ouverte (il passe au-dessus), et
+  en ligne son usage pouvait se perdre si le joueur actif jouait au même moment.
 
 ## v1.9.16 - sept mini-jeux pendant le tour des autres (29/09/2026)
 

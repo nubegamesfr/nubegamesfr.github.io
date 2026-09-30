@@ -36,8 +36,31 @@
   var MOTTLE = { P: 10, F: 22, M: 12, Ma: 14 };
 
   var cache = null;
-  function build(st) {
-    var m = st.map, W = m.W, H = m.H, seed = m.terr.length * 131 + W;
+  /* v1.9.17 - cartes historiques : la trame d'étiquettes (une valeur par pixel, voir js/cartes.js)
+     remplace les hexagones déformés. Chargée une fois par carte et gardée en mémoire. */
+  var trames = {};
+  function chargerTrame(m) {
+    if (!m.hist) return Promise.resolve(null);
+    var cle = m.hist + '-' + m.terr.length / 7;
+    if (trames[cle]) return trames[cle];
+    trames[cle] = new Promise(function (res, rej) {
+      var im = new Image();
+      im.onload = function () {
+        var c = document.createElement('canvas'); c.width = im.naturalWidth; c.height = im.naturalHeight;
+        var x = c.getContext('2d'); x.drawImage(im, 0, 0);
+        var d = x.getImageData(0, 0, c.width, c.height).data, lab = new Uint8Array(c.width * c.height);
+        for (var i = 0; i < lab.length; i++) lab[i] = d[i * 4];
+        res({ w: c.width, h: c.height, lab: lab });
+      };
+      im.onerror = function () { delete trames[cle]; rej(new Error('Trame de carte introuvable : ' + cle)); };
+      im.src = 'assets/cartes/' + cle + '.png?v=' + encodeURIComponent((FOF.CONFIG && FOF.CONFIG.version) || '');
+    });
+    return trames[cle];
+  }
+  function build(st, trame) {
+    var m = st.map;
+    if (m.hist) return buildHist(st, trame);
+    var W = m.W, H = m.H, seed = m.terr.length * 131 + W;
     var hexT = {}; m.terr.forEach(function (t) { hexT[t.hex] = t.id; });
     // v1.9.7 - une case d'eau n'appartient plus forcément à une seule mer : les traits la coupent
     // par son centre. Chaque case est donc lue en six triangles, et map.js dit à quelle mer va
@@ -67,6 +90,19 @@
       }
       else kind[i] = 0;
     }
+    return finir(st, { seed: seed, minX: minX, minY: minY, maxX: maxX, maxY: maxY, wU: wU, hU: hU, S: S, gw: gw, gh: gh, kind: kind, id: id, W: W });
+  }
+  function buildHist(st, tr) {
+    var m = st.map, S = FOF.HIST_S, gw = tr.w, gh = tr.h, N = gw * gh;
+    var kind = new Int8Array(N), id = new Int16Array(N), lab = tr.lab;
+    for (var i = 0; i < N; i++) {
+      var v = lab[i];
+      if (v >= 100) { kind[i] = 2; id[i] = v - 100; } else if (v > 0) { kind[i] = 1; id[i] = v - 1; } else kind[i] = 0;
+    }
+    return finir(st, { seed: m.terr.length * 131 + 7, minX: 0, minY: 0, maxX: gw / S, maxY: gh / S, wU: gw / S, hU: gh / S, S: S, gw: gw, gh: gh, kind: kind, id: id, W: 0, hist: true });
+  }
+  function finir(st, o) {
+    var m = st.map, seed = o.seed, minX = o.minX, minY = o.minY, maxX = o.maxX, maxY = o.maxY, wU = o.wU, hU = o.hU, S = o.S, gw = o.gw, gh = o.gh, N = gw * gh, kind = o.kind, id = o.id, W = o.W;
     // champ de distance au bord de sa région, et distance de la mer à la terre
     var CAP = Math.round(14 * S);
     function bfs(isSeed, same) {
@@ -115,10 +151,11 @@
     Object.keys(best).forEach(function (k) { var j = best[k].i; anchor[k] = { x: minX + ((j % gw) + 0.5) / S, y: minY + (((j / gw) | 0) + 0.5) / S }; });
     m.seas.forEach(function (z) {
       if (anchor['s' + z.id]) return;
+      if (o.hist) return;
       var c = z.anchor && z.anchor.x !== undefined ? z.anchor : FOF.hexCenter(z.anchor, W, R);
       anchor['s' + z.id] = { x: Math.max(minX + 10, Math.min(maxX - 10, c.x)), y: Math.max(minY + 10, Math.min(maxY - 10, c.y)) };
     });
-    return { key: st.seed + ':' + m.terr.length, seed: seed, minX: minX, minY: minY, wU: wU, hU: hU, S: S, gw: gw, gh: gh, kind: kind, id: id, dist: dist, shore: shore, coastD: coastD, anchor: anchor, box: box, masks: {}, tint: {} };
+    return { key: st.seed + ':' + m.terr.length, hist: !!o.hist, seed: seed, minX: minX, minY: minY, wU: wU, hU: hU, S: S, gw: gw, gh: gh, kind: kind, id: id, dist: dist, shore: shore, coastD: coastD, anchor: anchor, box: box, masks: {}, tint: {} };
   }
 
   /* ---------- v1.5b : habillage « carte 16 bits » (pixel art tramé, sprites) ---------- */
@@ -352,7 +389,8 @@
       for (var s = 0; s < ray.pts.length - 1; s++) {
         var a = ray.pts[s], b = ray.pts[s + 1], n = 6;
         for (var k = (s === 0 ? 0 : 1); k <= n; k++) {
-          var p = deformInv(a.x + (b.x - a.x) * k / n, a.y + (b.y - a.y) * k / n, rs.seed);
+          var qx = a.x + (b.x - a.x) * k / n, qy = a.y + (b.y - a.y) * k / n;
+          var p = rs.hist ? { x: qx, y: qy } : deformInv(qx, qy, rs.seed);   // carte historique : pas d'ondulation
           var px = (p.x - rs.minX) * rs.S, py = (p.y - rs.minY) * rs.S;
           if (premier) { ctx.moveTo(px, py); premier = false; } else ctx.lineTo(px, py);
         }
@@ -865,14 +903,14 @@
     bounds: function () { return cache ? { x: cache.minX, y: cache.minY, w: cache.wU, h: cache.hU } : null; },
     prepare: function (st, baseCanvas, done) {
       // le style fait partie de la clé de cache : changer de style suffit à redessiner le terrain
-      var key = st.seed + ':' + st.map.terr.length + ':' + FOF.mapStyle();
+      var key = st.seed + ':' + st.map.terr.length + ':' + (st.map.hist || '') + ':' + FOF.mapStyle();
       if (cache && cache.key === key && baseCanvas.dataset.key === key) { done(); return; }
-      loadImages().then(function () {
-        cache = build(st); cache.key = key;
+      Promise.all([loadImages(), chargerTrame(st.map)]).then(function (r) {
+        cache = build(st, r[1]); cache.key = key;
         drawBase(st, cache, baseCanvas);
         styleBase(baseCanvas, FOF.mapStyle());
         baseCanvas.dataset.key = key; done();
-      });
+      }).catch(function (e) { if (window.console) console.error(e); });
     },
     // couche des propriétaires, sélection et cibles à choisir
     overlay: function (st, canvas, view, colorOf) {
