@@ -4,7 +4,7 @@ Jeu 100 % statique (HTML/CSS/JS, sans build). Servi par GitHub Pages sur https:/
 
 ## v1.9.18 - statistiques (04/10/2026)
 
-- Une partie n'est enregistrée et comptée que si elle dure au moins 5 minutes et compte au moins un
+- Une partie n'est enregistrée et comptée que si elle dure au moins 5 minutes, dépasse le tour 1 et compte au moins un
   joueur humain (décision du 04/10 : les tables humains + bots comptent désormais, les tables 100 %
   bots jamais). Chaque joueur porte `bot` dans `players`. `stats.html` applique les mêmes conditions
   aux lignes déjà en base et indique le nombre de bots par partie.

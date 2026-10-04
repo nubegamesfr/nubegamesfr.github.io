@@ -15,7 +15,8 @@
     return !!st && !!st.players && st.players.some(function (p) { return !p.bot; });
   }
   FOF.statsHumainsSeuls = humainsSeuls;
-  function assezLongue(st) { return !!st.meta && (Date.now() - new Date(st.meta.startedAt)) / 1000 >= FOF.STATS_DUREE_MIN; }
+  // v1.9.18 - et une partie restée au tour 1 non plus (décision du 04/10/2026)
+  function assezLongue(st) { return !!st.meta && st.round >= 2 && (Date.now() - new Date(st.meta.startedAt)) / 1000 >= FOF.STATS_DUREE_MIN; }
   function uuid() { return (crypto.randomUUID ? crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) { var r = Math.random() * 16 | 0; return (c === 'x' ? r : (r & 3 | 8)).toString(16); })); }
 
   // à appeler une fois à la création de la partie

@@ -34,7 +34,7 @@ button:hover { border-color:var(--gold); }
 <body>
 <main>
   <h1>Fields of Fire · statistiques</h1>
-  <p class="lead"><b>Seules les parties d’au moins 5 minutes avec au moins un joueur humain sont comptées</b> : une partie 100 % bots, ou plus courte que 5 minutes (terminée, abandonnée ou inachevée), n’apparaît pas ici. Avant la version 1.9.18, le jeu n’enregistrait que les parties 100 % humaines. Les parties retenues le sont anonymement (une ligne par partie, mise à jour à chaque tour). « Inachevée » = pas de vainqueur et plus d’activité depuis 2 h. <b>Compteurs remis à zéro le 23/09/2026</b> : seules les parties commencées après cette date sont affichées.</p>
+  <p class="lead"><b>Seules les parties d’au moins 5 minutes, allées au-delà du tour 1, avec au moins un joueur humain sont comptées</b> : une partie 100 % bots, plus courte que 5 minutes ou arrêtée au tour 1 (terminée, abandonnée ou inachevée), n’apparaît pas ici. Avant la version 1.9.18, le jeu n’enregistrait que les parties 100 % humaines. Les parties retenues le sont anonymement (une ligne par partie, mise à jour à chaque tour). « Inachevée » = pas de vainqueur et plus d’activité depuis 2 h. <b>Compteurs remis à zéro le 23/09/2026</b> : seules les parties commencées après cette date sont affichées.</p>
   <div class="bar-row"><button id="reload">Actualiser</button><button data-csv="games">Télécharger les parties (CSV)</button><button data-csv="leaders">Télécharger les dirigeants (CSV)</button><button data-csv="players">Télécharger les joueurs (CSV)</button><a class="btn" href="./">← Retour au jeu</a></div>
   <p class="err" id="err"></p>
   <div class="kpis" id="kpis"></div>
@@ -58,6 +58,7 @@ button:hover { border-color:var(--gold); }
   var DUREE_MIN = 300;   // secondes
   function retenue(g) {
     if ((+g.duration_sec || 0) < DUREE_MIN) return false;
+    if ((+g.rounds || 0) < 2) return false;   // partie restée au tour 1
     var ps = g.players || [];
     return !ps.length || ps.some(function (p) { return !p.bot; });   // au moins un humain
   }
