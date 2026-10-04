@@ -6,10 +6,16 @@
    table suffit donc à écarter la partie : rien n'est envoyé, ni en cours de jeu, ni à l'abandon. */
 (function (FOF) {
   'use strict';
-  function humainsSeuls(st) {
-    return !!st && !!st.players && !st.players.some(function (p) { return p.bot; });
+  /* v1.9.18 - décision du 04/10/2026 (Awen) : une partie compte dès qu'au moins un humain est à la
+     table ; seules les parties 100 % bots sont écartées. Chaque joueur porte désormais « bot » dans
+     players, pour pouvoir séparer les tables mixtes à l'analyse. Et une partie de moins de 5 minutes
+     n'est jamais envoyée (ni en cours, ni à la fin, ni à l'abandon). */
+  FOF.STATS_DUREE_MIN = 300;   // secondes
+  function humainsSeuls(st) {   // nom conservé : « au moins un humain »
+    return !!st && !!st.players && st.players.some(function (p) { return !p.bot; });
   }
   FOF.statsHumainsSeuls = humainsSeuls;
+  function assezLongue(st) { return !!st.meta && (Date.now() - new Date(st.meta.startedAt)) / 1000 >= FOF.STATS_DUREE_MIN; }
   function uuid() { return (crypto.randomUUID ? crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) { var r = Math.random() * 16 | 0; return (c === 'x' ? r : (r & 3 | 8)).toString(16); })); }
 
   // à appeler une fois à la création de la partie
@@ -29,7 +35,7 @@
     var m = st.meta, now = new Date(), w = st.winner;
     var players = st.players.map(function (p, i) {
       var g = m.gold[i];
-      return { seat: i, leader: p.leader, alive: p.alive, tyran: !!p.tyran, gold: p.gold, avg_gold: g[1] ? +(g[0] / g[1]).toFixed(2) : p.gold, dip: p.dip,
+      return { seat: i, leader: p.leader, bot: !!p.bot, alive: p.alive, tyran: !!p.tyran, gold: p.gold, avg_gold: g[1] ? +(g[0] / g[1]).toFixed(2) : p.gold, dip: p.dip,
         territories: FOF.terrOf(st, p.id).length, max_territories: m.maxTerr[i], temples: FOF.countBld(st, p.id, 'T'), cities: FOF.countBld(st, p.id, 'Ci'),
         units: FOF.army(st, p.id).length, winner: !!(w && w.pid === p.id) };
     });
@@ -60,11 +66,12 @@
     var ended = !!st.winner && !st.meta.sentEnd;
     if (st.turnNo !== st.meta.lastTurn || ended) {
       if (st.turnNo !== st.meta.lastTurn) { sample(st); st.meta.lastTurn = st.turnNo; }
+      if (!assezLongue(st)) return;   // ni ligne ni fin envoyées avant 5 minutes
       if (ended) st.meta.sentEnd = true;
       send(row(st));
     }
   };
   // Les parties sauvegardées avant cette version peuvent contenir des bots : on revérifie ici,
   // sinon une vieille sauvegarde rejouée enverrait encore sa ligne à l'abandon.
-  FOF.statsAbandon = function (st) { if (st && st.meta && !st.winner && humainsSeuls(st)) send(row(st, { abandoned: true })); };
+  FOF.statsAbandon = function (st) { if (st && st.meta && !st.winner && humainsSeuls(st) && assezLongue(st)) send(row(st, { abandoned: true })); };
 })(window.FOF = window.FOF || {});

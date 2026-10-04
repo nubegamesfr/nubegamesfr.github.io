@@ -34,7 +34,7 @@ button:hover { border-color:var(--gold); }
 <body>
 <main>
   <h1>Fields of Fire · statistiques</h1>
-  <p class="lead"><b>Seules les parties 100 % humaines sont enregistrées</b> : dès qu’une IA occupe un siège, la partie est ignorée, parce que les bots jouent une stratégie régulière qui fausserait toute lecture. Les parties retenues le sont anonymement (une ligne par partie, mise à jour à chaque tour). « Inachevée » = pas de vainqueur et plus d’activité depuis 2 h. <b>Compteurs remis à zéro le 23/09/2026</b> : seules les parties commencées après cette date sont affichées.</p>
+  <p class="lead"><b>Seules les parties d’au moins 5 minutes avec au moins un joueur humain sont comptées</b> : une partie 100 % bots, ou plus courte que 5 minutes (terminée, abandonnée ou inachevée), n’apparaît pas ici. Avant la version 1.9.18, le jeu n’enregistrait que les parties 100 % humaines. Les parties retenues le sont anonymement (une ligne par partie, mise à jour à chaque tour). « Inachevée » = pas de vainqueur et plus d’activité depuis 2 h. <b>Compteurs remis à zéro le 23/09/2026</b> : seules les parties commencées après cette date sont affichées.</p>
   <div class="bar-row"><button id="reload">Actualiser</button><button data-csv="games">Télécharger les parties (CSV)</button><button data-csv="leaders">Télécharger les dirigeants (CSV)</button><button data-csv="players">Télécharger les joueurs (CSV)</button><a class="btn" href="./">← Retour au jeu</a></div>
   <p class="err" id="err"></p>
   <div class="kpis" id="kpis"></div>
@@ -55,12 +55,22 @@ button:hover { border-color:var(--gold); }
   var VT = { mil: 'Militaire', rel: 'Religieuse', dip: 'Diplomatique', survie: 'Dernier debout' };
   function get(path) { return fetch(C.supabaseUrl + '/rest/v1/' + path, { headers: { apikey: C.supabaseKey } }).then(function (r) { if (!r.ok) throw new Error('Erreur ' + r.status); return r.json(); }); }
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  var DUREE_MIN = 300;   // secondes
+  function retenue(g) {
+    if ((+g.duration_sec || 0) < DUREE_MIN) return false;
+    var ps = g.players || [];
+    return !ps.length || ps.some(function (p) { return !p.bot; });   // au moins un humain
+  }
   function avg(a) { return a.length ? a.reduce(function (s, x) { return s + x; }, 0) / a.length : 0; }
   function load() {
     document.getElementById('err').textContent = '';
     var f = '&started_at=gte.' + SINCE;
-    Promise.all([get('game_summary?select=*&limit=2000' + f), get('game_stats?select=id,started_at,mode,n_players,finished,abandoned,victory_type,rounds,players&order=started_at.desc&limit=2000' + f)]).then(function (r) {
-      games = r[0]; raw = r[1]; leaders = buildLeaders(raw); render();
+    Promise.all([get('game_summary?select=*&limit=2000' + f), get('game_stats?select=id,started_at,mode,n_players,finished,abandoned,victory_type,rounds,duration_sec,players&order=started_at.desc&limit=2000' + f)]).then(function (r) {
+      // v1.9.18 - conditions d'affichage : au moins 5 minutes et au moins un humain à la table
+      raw = r[1].filter(retenue);
+      var ok = {}; raw.forEach(function (g) { ok[g.id] = g; });
+      games = r[0].filter(function (g) { return ok[g.id]; }).map(function (g) { g.n_bots = (ok[g.id].players || []).filter(function (p) { return p.bot; }).length; return g; });
+      leaders = buildLeaders(raw); render();
     }).catch(function (e) { document.getElementById('err').textContent = 'Impossible de charger les données : ' + e.message; });
   }
   // Le tableau des dirigeants est recalculé ici à partir des parties retenues, et non lu dans la vue
@@ -102,7 +112,7 @@ button:hover { border-color:var(--gold); }
     document.getElementById('leaders').innerHTML = '<tr><th>Dirigeant</th><th>Parties</th><th>Terminées</th><th>Victoires</th><th>Taux de victoire</th><th>Or moyen</th><th>Territoires max moyens</th><th>Devenu Tyran</th></tr>' +
       leaders.map(function (l) { return '<tr><td>' + esc(LN(l.leader)) + '</td><td class="n">' + l.parties + '</td><td class="n">' + l.parties_terminees + '</td><td class="n">' + l.victoires + '</td><td class="n">' + (l.taux_victoire_pct == null ? '-' : l.taux_victoire_pct + ' %') + '</td><td class="n">' + (l.or_moyen ?? '-') + '</td><td class="n">' + (l.territoires_max_moyen ?? '-') + '</td><td class="n">' + l.fois_tyran + '</td></tr>'; }).join('');
     document.getElementById('games').innerHTML = '<tr><th>Début</th><th>Mode</th><th>Joueurs</th><th>Tours</th><th>Durée</th><th>Issue</th><th>Vainqueur</th><th>Victoire</th><th>Or moyen</th><th>Tyrans</th><th>Dirigeants</th></tr>' +
-      games.map(function (g) { return '<tr><td>' + new Date(g.started_at).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' }) + '</td><td>' + (g.mode === 'online' ? 'en ligne' : 'local') + '</td><td class="n">' + g.n_players + '</td><td class="n">' + g.rounds + '</td><td class="n">' + g.minutes + ' min</td><td><span class="tag ' + g.issue + '">' + g.issue + '</span></td><td>' + esc(g.winner_leader ? LN(g.winner_leader) : '-') + '</td><td>' + (VT[g.victory_type] || '-') + '</td><td class="n">' + (g.avg_gold ?? '-') + '</td><td class="n">' + g.n_tyrans + '</td><td>' + esc((g.leaders || []).map(LN).join(', ')) + '</td></tr>'; }).join('');
+      games.map(function (g) { return '<tr><td>' + new Date(g.started_at).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' }) + '</td><td>' + (g.mode === 'online' ? 'en ligne' : 'local') + '</td><td class="n">' + g.n_players + (g.n_bots ? ' <span style="color:#8b8577">(' + g.n_bots + ' bot' + (g.n_bots > 1 ? 's' : '') + ')</span>' : '') + '</td><td class="n">' + g.rounds + '</td><td class="n">' + g.minutes + ' min</td><td><span class="tag ' + g.issue + '">' + g.issue + '</span></td><td>' + esc(g.winner_leader ? LN(g.winner_leader) : '-') + '</td><td>' + (VT[g.victory_type] || '-') + '</td><td class="n">' + (g.avg_gold ?? '-') + '</td><td class="n">' + g.n_tyrans + '</td><td>' + esc((g.leaders || []).map(LN).join(', ')) + '</td></tr>'; }).join('');
   }
   function csv(rows) {
     if (!rows.length) return '';
