@@ -14,6 +14,11 @@ Jeu 100 % statique (HTML/CSS/JS, sans build). Servi par GitHub Pages sur https:/
 
 ## v1.9.21 - notes de mise à jour, illustrations provisoires (07/10/2026)
 
+- **Règle pour `notes.html` (Awen, 07/10)** : ne pas détailler les petites retouches ni ce qui touche
+  à des sujets qu'on n'a pas intérêt à mettre en avant (ex. la mention des illustrations IA) : écrire
+  seulement « Changements textuels », sans en faire une version à part. Les versions 1.9.21 à 1.9.23
+  sont regroupées en une seule entrée.
+
 - Nouvelle page publique `notes.html` (« Note de mise à jour », lien en bas de l'accueil) : toutes
   les versions, de la plus récente à la plus ancienne, en langage de joueur. **À compléter à chaque
   nouvelle version**, en même temps que ce README.
