@@ -29,7 +29,14 @@
       { t: 'Market Day', a: 'RandomMind', f: 'market-day.mp3', u: OGA + 'Market_Day.mp3', g: g(-8.1) },
       { t: 'Rejoicing', a: 'RandomMind', f: 'rejoicing.mp3', u: OGA + 'Rejoicing_0.mp3', g: g(-12.1), d: 0.5 },
       { t: 'Victory Theme', a: 'RandomMind', f: 'victory-theme.mp3', u: OGA + 'victory_0.mp3', g: g(-10.7) },
-      { t: 'Lament for a Warrior’s Soul', a: 'RandomMind', f: 'lament-for-a-warriors-soul.mp3', u: OGA + 'Lament_for_a_Warriors_Soul.mp3', g: g(-17.6), d: 1.6 }
+      { t: 'Lament for a Warrior’s Soul', a: 'RandomMind', f: 'lament-for-a-warriors-soul.mp3', u: OGA + 'Lament_for_a_Warriors_Soul.mp3', g: g(-17.6), d: 1.6 },
+      // v1.9.19 - six morceaux CC0 de plus (OpenGameArt), sonie mesurée (EBU R128)
+      { t: 'The Woodsman', a: 'Some Weirdo', f: 'the-woodsman.ogg', u: OGA + 'the_woodsman_0.ogg', x: 1, g: g(-18.9) },
+      { t: 'A Knight’s Challenge', a: 'Umplix', f: 'a-knights-challenge.mp3', u: OGA + 'audio_preview/a_knights_challenge.wav.mp3', x: 1, g: g(-13.7) },
+      { t: 'Merchants and Sea Salt', a: 'nbjdlukasabsolute', f: 'merchants-and-sea-salt.mp3', u: OGA + 'audio_preview/merchants_and_sea_salt.wav.mp3', x: 1, g: g(-19.2) },
+      { t: 'The Lord’s Court', a: 'Umplix', f: 'the-lords-court.mp3', u: OGA + 'audio_preview/lords_court.wav.mp3', g: g(-25.1) },
+      { t: 'Peasant Theme', a: 'nihilocrat', f: 'peasant-theme.ogg', u: OGA + 'peasantry.ogg', g: g(-15.7) },
+      { t: 'Crowded Pub', a: 'bobjt', f: 'crowded-pub.mp3', u: OGA + 'crowded_pub_2025_2.mp3', g: g(-13.5) }
     ],
     battle: [
       { t: 'Battle Theme A', a: 'cynicmusic', f: 'battle-theme-a.mp3', u: OGA + 'battleThemeA.mp3', g: g(-10.3) },
@@ -37,7 +44,8 @@
       { t: 'Medieval Battle', a: 'RandomMind', f: 'medieval-battle.mp3', u: OGA + 'battle_8.mp3', g: g(-13.5) },
       { t: 'War Theme', a: 'Spring Spring', f: 'war-theme.ogg', u: OGA + 'war%20theme%20ver%202_0.ogg', g: g(-12.0) },
       { t: 'Orcs Victorious', a: 'bobjt', f: 'orcs-victorious.mp3', u: OGA + 'orcs_victorious_2024.mp3', g: g(-9.7) },
-      { t: 'Hope', a: 'MintoDog', f: 'hope.ogg', u: OGA + 'hope_orchestral_battle_music_bpm165_0.ogg', g: g(-9.9) }
+      { t: 'Hope', a: 'MintoDog', f: 'hope.ogg', u: OGA + 'hope_orchestral_battle_music_bpm165_0.ogg', g: g(-9.9) },
+      { t: 'Prepare Your Swords', a: 'bojidar-bg', f: 'prepare-your-swords.mp3', u: OGA + 'prepare_your_swords.mp3', g: g(-14.9) }   // v1.9.19
     ]
   };
   /* v1.9.9 - la réglette suit une courbe perceptive et ne dépasse jamais PLAFOND. */

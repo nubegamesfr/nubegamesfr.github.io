@@ -1,6 +1,32 @@
-# Fields of Fire - version web (beta 1.9.18, prototype)
+# Fields of Fire - version web (beta 1.9.19, prototype)
 
 Jeu 100 % statique (HTML/CSS/JS, sans build). Servi par GitHub Pages sur https://nubegames.fr/fields-of-fire/ (dossier `fields-of-fire/` du repo `nubegamesfr.github.io`).
+
+## v1.9.19 - retours du créateur du 07/10/2026
+
+- **Règles** : capitale à +3 en défense (au lieu de +2) ; victoire religieuse à 5 + joueurs temples
+  (un de moins) ; victoire diplomatique à 12, quel que soit le nombre de joueurs. Des unités
+  spéciales seules (ni élite ni dirigeant) attaquées hors de leur territoire sont défaites d'office,
+  sans dé ; un territoire garde son dé et sa défense passive. Les pertes de diplomatie (attaque,
+  rupture de pacte, unités spéciales détruites) sont détaillées avant l'assaut et dans la bataille.
+- **Collecte** : revenus moins solde vont au trésor, en plus ou en moins. Si le trésor passe sous 0,
+  le joueur reprend des pièces sur ses unités (nouvelle fenêtre : on clique les pièces, on peut les
+  relâcher) ; toute unité touchée déserte, toutes ses pièces peuvent être reprises. Faute de pièces,
+  le trésor reste négatif : ni recrutement ni construction. Avant, seule la recette du tour comptait.
+- **Unités** : Exploratrice en phase militaire dès son arrivée, +3 or ; déplacements (Nomades et
+  Partisan 2 ; Bandits, Pillards, Écumeurs, Brigands 1 ; Héraut, Gouverneur, Prélat 0) ; Écumeurs,
+  Brigands, Bandits et Fantassins en 3 exemplaires ; nouvelle spéciale **Chroniqueur** (0 déplacement,
+  entretien 5, 3 temples, 2 exemplaires : +1 diplomatie par bataille gagnée, en attaque comme en
+  défense, sans l'Ambassade, cumulable). Deck : 93 cartes.
+- **Dirigeants** : nouveau **Yusuf le Marchand** (étoile 2, Caboteurs et Caravaniers +1 déplacement et
+  5 or, à débloquer par e-mail avec Hugues et Alinor) ; Gustave : +1 défense sur tous ses territoires,
+  cités à 6 ; Hugues : forts et ports à -1 (les campements reviennent au prix normal).
+- **Interface** : en phase militaire, un clic sur une unité ouvre le même menu circulaire que le
+  dirigeant (se déplacer, attaquer, pacifier, effet) ; une pile s'ouvre d'abord en bulles
+  individuelles. Carte historique : pions, pastilles et menus 20 % plus grands, et plus rien ne sort
+  du cadre. Sept musiques CC0 de plus (six d'ambiance, une de combat).
+- **Cartes générées** : frontières de mer droites, redessinées depuis les vraies limites des zones ;
+  le large est rattaché à la mer voisine, plus aucun trait ne s'arrête au milieu de l'eau.
 
 ## v1.9.18 - statistiques (04/10/2026)
 

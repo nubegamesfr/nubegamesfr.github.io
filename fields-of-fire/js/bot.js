@@ -129,8 +129,13 @@
       return { type: 'resolve', idx: pick };
     }
     if (pd.type === 'deficit') {
-      var u = FOF.army(st, pd.pid).filter(function (x) { return x.gold > 0; }).sort(function (a, b) { return valeurUnite(st, p, a) - valeurUnite(st, p, b); })[0];
-      return u ? { type: 'deficitTake', uid: u.uid } : null;
+      // v1.9.19 : on sacrifie les unités les moins utiles, toutes leurs pièces, puis on retire les superflues
+      var cand = FOF.army(st, pd.pid).filter(function (x) { return x.gold > 0; }).sort(function (a, b) { return valeurUnite(st, p, a) - valeurUnite(st, p, b); });
+      var pris = [], somme = 0;
+      for (var ci = 0; ci < cand.length && somme < pd.left; ci++) { pris.push(cand[ci]); somme += cand[ci].gold; }
+      for (var cj = pris.length - 1; cj >= 0; cj--) if (somme - pris[cj].gold >= pd.left) { somme -= pris[cj].gold; pris.splice(cj, 1); }
+      var coins = {}; pris.forEach(function (x) { coins[x.uid] = x.gold; });
+      return pris.length ? { type: 'deficitTake', coins: coins } : null;
     }
     // cession forcée / révolte : le territoire qui vaut le moins, loin de la capitale
     var mine = FOF.terrOf(st, p.id).filter(function (x) { return x.id !== p.capital; });
@@ -411,7 +416,7 @@
     // 3. effets des unités spéciales
     for (i = 0; i < army.length; i++) {
       var su = army[i];
-      if (FOF.isElite(su.key) || su.key === 'exploratrice' || !FOF.effectAvailable(st, su)) continue;
+      if (FOF.isElite(su.key) || !FOF.effectAvailable(st, su)) continue;   // v1.9.19 : l'Exploratrice agit en phase militaire
       var ea = { type: 'effect', uid: su.uid };
       if (su.key === 'trebuchets') {
         var tt = T(st, tid(su.pos)), ix = -1, br = -1;
@@ -552,7 +557,6 @@
   function collectAct(st, p) {
     if (p.leader === 'edouard' && !p.edouardUsed && p.dip < st.victory.dip && p.gold >= FOF.EDOUARD_COUT + 1 && !p.tyran && !p.attackedLast && !p.raidedLast && (p.dip <= 2 || plan(st, p) === 'dip' || p.gold >= 6)) return { type: 'edouard' };
     var a = null;
-    FOF.army(st, p.id).forEach(function (u) { if (!a && u.key === 'exploratrice' && FOF.effectAvailable(st, u)) a = { type: 'effect', uid: u.uid }; });
     return a;
   }
 

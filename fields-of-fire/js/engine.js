@@ -38,7 +38,8 @@
     FOF.shuffle(st, st.deck); st.discard = [];
     st.zone = [draw(st), draw(st), draw(st), draw(st), draw(st)];
     st.turnNo = 1; st.round = 1; st.cur = 0; st.phase = 'collect'; st.log = []; st.pending = []; st.winner = null;
-    st.victory = { mil: 8 + st.n, rel: 6 + st.n, dip: 6 + st.n };   // v1.9.15 : aligné sur la victoire religieuse (décision du 29/09/2026)
+    // v1.9.19 (créateur, 07/10/2026) : un temple de moins pour la victoire religieuse, diplomatie fixée à 12
+    st.victory = { mil: 8 + st.n, rel: 5 + st.n, dip: 12 };
     log(st, 'Ainsi s’ouvre la chronique : ' + st.players.length + ' seigneurs se disputent ' + st.map.terr.length + ' terres.', undefined, 'start');
     startTurn(st);
     return st;
@@ -82,7 +83,8 @@
     if (type === 'Ci' && p.leader === 'mathilde' && FOF.countBld(st, p.id, 'Ci') === 0) c = 4;
     if (type === 'T' && p.leader === 'adele') c = 6;
     if (type === 'P' && p.leader === 'alienor') c = 2;
-    if (p.leader === 'hugues' && (type === 'C' || type === 'F' || type === 'P')) c = Math.max(1, c - 1);
+    // v1.9.19 - Hugues : forts et ports seulement (les campements reviennent au prix normal, créateur 07/10/2026)
+    if (p.leader === 'hugues' && (type === 'F' || type === 'P')) c = Math.max(1, c - 1);
     // v1.9.6 - Maître d'œuvre : la remise s'applique APRÈS le pouvoir du dirigeant, donc elle se
     // cumule avec Adèle (temple 7 → 6 par Adèle → 5 avec le Maître d'œuvre).
     // v1.9.11 - cumulable : deux Maîtres d'œuvre retirent 2 or (décision du créateur, 27/09/2026).
@@ -94,11 +96,12 @@
     t.blds.forEach(function (b) {
       if (b.o !== p.id) return;
       d += B[b.t].def;
-      if (p.leader === 'gustave' && (b.t === 'C' || b.t === 'F' || b.t === 'P')) d += 1;
       if (p.leader === 'alienor' && b.t === 'P') d += 1;   // v1.9.14 : ports d'Alinor à +2 défense
       if (p.leader === 'adele' && b.t === 'T') d += 1;
     });
-    if (t.id === p.capital && t.ctrl === p.id) d += 2;
+    // v1.9.19 - capitale : +3 au lieu de +2 ; Gustave : +1 sur chacun de ses territoires (créateur, 07/10/2026)
+    if (t.id === p.capital && t.ctrl === p.id) d += 3;
+    if (p.leader === 'gustave' && t.ctrl === p.id) d += 1;
     return d;
   };
   FOF.income = function (st, p) {
@@ -118,7 +121,9 @@
       if ((u.key === 'caboteur' || u.key === 'caravanier') && u.pos[0] === 't') {
         var typ = u.key === 'caboteur' ? 'P' : 'Ci', tid = +u.pos.slice(1);
         // v1.9.17 : 3 or au lieu de 2
-        if (T(st, tid).blds.some(function (b) { return b.t === typ && b.o !== p.id; })) { if (bloquees[tid]) inc.boutefeu += 3; else inc.trade += 3; }
+        // v1.9.19 : 5 or pour Yusuf le Marchand
+        var gainC = p.leader === 'yusuf' ? 5 : 3;
+        if (T(st, tid).blds.some(function (b) { return b.t === typ && b.o !== p.id; })) { if (bloquees[tid]) inc.boutefeu += gainC; else inc.trade += gainC; }
       }
     });
     // le Boutefeu retire du revenu ce qui vient de la case bloquée (territoire et cités ; le commerce n'y est pas compté)
@@ -134,6 +139,7 @@
   FOF.unitMove = function (st, u) {
     var d = FOF.unitDef(u.key).move;
     if (FOF.isElite(u.key) && st.players[u.owner].leader === 'henri') d += 1;
+    if ((u.key === 'caboteur' || u.key === 'caravanier') && st.players[u.owner].leader === 'yusuf') d += 1;   // v1.9.19
     return d;
   };
 
@@ -285,28 +291,54 @@
     // v1.9.12 - cumulable : deux Hérauts donnent +2 (décision du créateur, 27/09/2026).
     var nHer = FOF.army(st, p.id).filter(function (u) { return u.key === 'heraut'; }).length;
     if (!p.tyran && !p.attackedLast && !p.raidedLast && nHer) gainDip(st, p, nHer, 'Héraut', true);
+    /* v1.9.19 - collecte (règle réécrite par le créateur, 07/10/2026) : revenus moins solde ; le solde,
+       positif ou négatif, va au trésor. La solde puise donc dans le trésor. Si le trésor devient
+       négatif, le joueur reprend des pièces sur ses unités jusqu'à le ramener à 0 ou plus ; chaque
+       unité dont il reprend au moins une pièce déserte (il peut reprendre toutes les pièces d'une
+       unité qu'il sacrifie, le surplus va au trésor). Faute de pièces, le trésor reste négatif :
+       ni recrutement ni construction tant qu'il l'est. Avant : seule la recette du tour comptait. */
     var net = inc.total - inc.upkeep;
-    st.collect = { inc: inc, net: net, deficit: net < 0 ? -net : 0 };
-    if (net >= 0) { p.gold += net; p.tally.gold += net; log(st, p.name + ' lève l’impôt : ' + inc.total + ' écus récoltés, ' + inc.upkeep + ' pour la solde des troupes, +' + net + ' en coffre.', p.id, 'gold'); }
-    else {
-      log(st, p.name + ' lève l’impôt : ' + inc.total + ' écus, mais la solde en exige ' + inc.upkeep + ' ; il manque ' + (-net) + ' écus au trésor.', p.id, 'deficit');
+    p.gold += net; if (net > 0) p.tally.gold += net;
+    st.collect = { inc: inc, net: net, deficit: p.gold < 0 ? -p.gold : 0, taken: 0 };
+    log(st, p.name + ' lève l’impôt : ' + inc.total + ' écus récoltés, ' + inc.upkeep + ' pour la solde des troupes, ' + (net >= 0 ? '+' : '−') + Math.abs(net) + ' au trésor (' + p.gold + ').', p.id, net >= 0 ? 'gold' : 'deficit');
+    if (p.gold < 0) {
       var reserve = FOF.army(st, p.id).reduce(function (a, u) { return a + u.gold; }, 0);
-      if (reserve < -net) {
-        // tout est perdu : toutes les unités sans assez de pièces sont défaussées
-        FOF.army(st, p.id).forEach(function (u) { u.gold = 0; });
-        settleDeficit(st, p);
-      } else {
-        st.pending.push({ type: 'deficit', pid: p.id, left: -net });
-      }
+      if (reserve <= -p.gold) {
+        // pas assez de pièces (ou tout juste) : toutes sont reprises, toutes les unités qui en portaient désertent
+        var tout = {}; FOF.army(st, p.id).forEach(function (u) { if (u.gold > 0) tout[u.uid] = u.gold; });
+        reprendre(st, p, tout);
+      } else st.pending.push({ type: 'deficit', pid: p.id, left: -p.gold });
     }
     checkWin(st);
   }
-  function settleDeficit(st, p) {
-    FOF.army(st, p.id).slice().forEach(function (u) {
-      if (u.gold < FOF.unitDef(u.key).upkeep) { log(st, 'Faute de solde, les ' + FOF.unitDef(u.key).name + ' de ' + p.name + ' désertent.', p.id, 'bad'); discardUnit(st, u); }
+  // pièces reprises : { uid: nombre }. Les pièces vont au trésor, chaque unité touchée déserte.
+  function reprendre(st, p, coins) {
+    var total = 0;
+    Object.keys(coins).forEach(function (k) {
+      var u = st.units.filter(function (x) { return x.uid === +k && x.owner === p.id; })[0]; if (!u) return;
+      var n = Math.min(u.gold, coins[k]); if (n <= 0) return;
+      total += n; u.gold -= n;
+      log(st, 'Faute de solde, l’unité « ' + FOF.unitDef(u.key).name + ' » de ' + p.name + ' déserte (' + n + ' or repris).', p.id, 'bad');
+      discardUnit(st, u);
     });
-    st.collect.deficit = 0;
+    p.gold += total;
+    if (st.collect) { st.collect.taken = (st.collect.taken || 0) + total; st.collect.deficit = 0; }
+    return total;
   }
+  // une sélection est valable si elle couvre le manque et si chaque unité choisie est nécessaire
+  FOF.deficitValide = function (st, pid, coins, manque) {
+    var parU = {}, somme = 0, ok = true;
+    Object.keys(coins).forEach(function (k) {
+      var u = st.units.filter(function (x) { return x.uid === +k && x.owner === pid; })[0], n = coins[k];
+      if (!n) return;
+      if (!u || n < 0 || n > u.gold || n !== Math.floor(n)) ok = false; else { parU[k] = n; somme += n; }
+    });
+    if (!ok) return 'Sélection impossible.';
+    if (somme < manque) return 'Il manque encore ' + (manque - somme) + ' or.';
+    var inutile = Object.keys(parU).some(function (k) { return somme - parU[k] >= manque; });
+    if (inutile) return 'Une des unités choisies n’est pas nécessaire : le trésor serait déjà revenu à 0 sans elle.';
+    return null;
+  };
   function nextPlayer(st) {
     var n = st.players.length, i = st.cur, wrapped = false;
     for (var k = 0; k < n; k++) {
@@ -401,7 +433,10 @@
       if (dl) { D += d.mod; detD.push(['Dirigeant', d.mod]); }
     }
     var cost = d.tyran ? 0 : 1; if (p.pact === d.id) cost += 2;
-    return { A: A, D: D, detA: detA, detD: detD, att: att, lead: lead, du: du, dl: dl, cost: cost };
+    // v1.9.19 : défaite d'office des unités spéciales seules ; chaque spéciale détruite coûte 1 (sauf Tyran)
+    var auto = a.kind === 'units' && !dl && !du.some(function (u) { return FOF.isElite(u.key); });
+    var nSpe = d.tyran ? 0 : du.filter(function (u) { return !FOF.isElite(u.key); }).length;
+    return { auto: auto, nSpe: nSpe, A: A, D: D, detA: detA, detD: detD, att: att, lead: lead, du: du, dl: dl, cost: cost };
   };
   FOF.attackTargets = function (st, loc) {
     var p = FOF.cur(st), out = [];
@@ -427,14 +462,20 @@
     // coûts - v1.9.1 : la reprise d'une terre perdue coûte de nouveau 1 diplomatie. La gratuité,
     // mesurée sur 1 000 parties, faisait passer la voie diplomatique de 29 % à 60 % des victoires.
     p.attackedNow = true; d.raidedNow = true;
-    if (p.pact === d.id) breakPact(st, p, d);
-    if (!d.tyran) loseDip(st, p, 1, 'attaque');
+    // v1.9.19 - chaque perte de diplomatie est annoncée dans la fenêtre de bataille (créateur, 07/10/2026)
+    var pertes = [], dipAvant = p.dip, dipDef = d.dip;
+    if (p.pact === d.id) { breakPact(st, p, d); pertes.push('Pacte de non-agression rompu : ' + p.name + ' perd 2 de diplomatie, ' + d.name + ' en gagne 1.'); }
+    if (!d.tyran) { loseDip(st, p, 1, 'attaque'); pertes.push('Attaque : ' + p.name + ' perd 1 de diplomatie.'); }
+    // v1.9.19 - des unités spéciales seules (ni élite ni dirigeant) attaquées hors de leur territoire ne
+    // lancent pas de dé : elles perdent d'office. Un territoire attaqué garde son dé et sa défense
+    // passive, même s'il n'est gardé que par des unités spéciales (créateur, 07/10/2026).
+    var auto = a.kind === 'units' && !pv.dl && !pv.du.some(function (u) { return FOF.isElite(u.key); });
     // dés
     // v1.9.12 - cumulable : une relance par Prêtresse présente (décision du créateur, 27/09/2026)
     var aPr = FOF.unitsAt(st, loc, p.id).filter(function (u) { return u.key === 'pretresse'; }).length;
     var dPr = pv.du.filter(function (u) { return u.key === 'pretresse'; }).length;
-    var rolls = [], ra, rd;
-    for (;;) {
+    var rolls = [], ra = 0, rd = 0;
+    for (; !auto;) {
       ra = d6(st); rd = d6(st);
       var r = { a: ra, d: rd, notes: [] };
       if (pv.A + ra < pv.D + rd && aPr > 0) { aPr--; ra = d6(st); r.notes.push('Prêtresse : l’attaquant relance (' + ra + ')'); r.a = ra; }
@@ -442,14 +483,16 @@
       rolls.push(r);
       if (pv.A + ra !== pv.D + rd) break;
     }
-    var win = pv.A + ra > pv.D + rd;
-    var res = { loc: loc, att: p.id, def: d.id, A: pv.A, D: pv.D, detA: pv.detA, detD: pv.detD, rolls: rolls, win: win, events: [], unitsA: pv.att.map(function (u) { return u.key; }), unitsD: pv.du.map(function (u) { return u.key; }), leadA: !!pv.lead, leadD: !!pv.dl, kind: a.kind };
+    var win = auto || pv.A + ra > pv.D + rd;
+    var res = { n: (st.combatN = (st.combatN || 0) + 1), auto: auto, loc: loc, att: p.id, def: d.id, A: pv.A, D: pv.D, detA: pv.detA, detD: pv.detD, rolls: rolls, win: win, events: [], unitsA: pv.att.map(function (u) { return u.key; }), unitsD: pv.du.map(function (u) { return u.key; }), leadA: !!pv.lead, leadD: !!pv.dl, kind: a.kind };
     pv.att.forEach(function (u) { u.fought = true; u.movesLeft = 0; });
     if (pv.lead) { p.lFought = true; p.lMovesLeft = 0; }
     p.tally.battles++; d.tally.battles++; if (win) { p.tally.wins++; d.tally.losses++; } else { p.tally.losses++; d.tally.wins++; }
     if (win) {
-      pv.du.forEach(function (u) { if (!FOF.isElite(u.key) && !d.tyran) loseDip(st, p, 1, 'unité spéciale détruite'); discardUnit(st, u); });
-      res.events.push('Victoire de ' + p.name + ' !');
+      var nSpe = 0;
+      pv.du.forEach(function (u) { if (!FOF.isElite(u.key) && !d.tyran) { loseDip(st, p, 1, 'unité spéciale détruite'); nSpe++; } discardUnit(st, u); });
+      if (nSpe) pertes.push(nSpe + ' unité' + (nSpe > 1 ? 's' : '') + ' spéciale' + (nSpe > 1 ? 's' : '') + ' détruite' + (nSpe > 1 ? 's' : '') + ' : ' + p.name + ' perd ' + nSpe + ' de diplomatie.');
+      res.events.push(auto ? 'Les unités spéciales de ' + d.name + ' ne se battent pas : elles sont défaites d’office.' : 'Victoire de ' + p.name + ' !');
       if (a.kind === 'terr' && t && t.ctrl === d.id) st.pending.push({ type: 'conquest', pid: p.id, tid: t.id, def: d.id });
       if (pv.dl) leaderDefeated(st, d, p, res);
     } else {
@@ -457,8 +500,19 @@
       res.events.push('Victoire de ' + d.name + ' en défense.');
       if (pv.lead) leaderDefeated(st, p, d, res);
     }
+    // v1.9.19 - Chroniqueur : +1 de diplomatie par bataille gagnée, en attaque comme en défense, sans
+    // relais de l'Ambassade, cumulable (créateur, 07/10/2026). Il ne bouge pas : peu importe où il est.
+    var vainqueur = win ? p : d, nChr = FOF.army(st, vainqueur.id).filter(function (u) { return u.key === 'chroniqueur'; }).length;
+    if (nChr && vainqueur.alive && !vainqueur.tyran) {
+      var avChr = vainqueur.dip; gainDip(st, vainqueur, nChr, 'Chroniqueur', true);
+      if (vainqueur.dip > avChr) res.events.push('Chroniqueur : ' + vainqueur.name + ' gagne ' + (vainqueur.dip - avChr) + ' de diplomatie.');
+    }
+    if (pertes.length) {
+      res.dip = pertes;
+      res.dipBilan = { att: p.tyran ? null : p.dip - dipAvant, def: d.tyran ? null : d.dip - dipDef };
+    }
     st.lastCombat = res;
-    log(st, p.name + ' lance l’assaut contre ' + d.name + ' à ' + FOF.locName(st, loc) + ' : ' + (pv.A + ra) + ' contre ' + (pv.D + rd) + ' - ' + (win ? 'les assaillants l’emportent' : 'les défenseurs tiennent bon') + '.', p.id, win ? 'attackwin' : 'attacklose');
+    log(st, p.name + ' lance l’assaut contre ' + d.name + ' à ' + FOF.locName(st, loc) + (auto ? ' : ses unités spéciales sont défaites sans combat.' : ' : ' + (pv.A + ra) + ' contre ' + (pv.D + rd) + ' - ' + (win ? 'les assaillants l’emportent' : 'les défenseurs tiennent bon') + '.'), p.id, win ? 'attackwin' : 'attacklose');
     checkWin(st);
   }
   function leaderDefeated(st, loser, winner, res) {
@@ -497,7 +551,8 @@
         return host && !host.tyran && !p.tyran && p.pact === null && host.pact === null ? 'Conclure un pacte avec ' + host.name : null;
       case 'pelerin': return t.blds.some(function (b) { return b.t === 'T' && b.o !== p.id; }) && !p.tyran ? 'Faire pèlerinage' : null;
       case 'colonie': return t.ctrl === null && t.revoltFrom !== p.id ? 'Fonder une colonie' : null;
-      case 'exploratrice': return st.phase === 'collect' && t.ctrl === null && t.revoltFrom !== p.id && t.cont !== T(st, p.capital).cont ? 'Revendiquer ce territoire' : null;
+      // v1.9.19 - l'Exploratrice agit dès son arrivée, en phase militaire, comme la Colonie (créateur, 07/10/2026)
+      case 'exploratrice': return t.ctrl === null && t.revoltFrom !== p.id && t.cont !== T(st, p.capital).cont ? 'Revendiquer ce territoire' : null;
       // v1.9.11 - le Partisan convertit tout SAUF les temples (décision du créateur, 27/09/2026)
       case 'partisan': return t.ctrl !== null && t.ctrl !== p.id && t.blds.some(function (b) { return b.o !== p.id && b.t !== 'T'; }) ? 'Soulever les aménagements (sauf temples)' : null;
       case 'predicateur': return t.ctrl !== null && t.ctrl !== p.id && t.blds.some(function (b) { return b.t === 'T' && b.o !== p.id; }) ? 'Convertir le temple' : null;
@@ -536,7 +591,7 @@
         t.ctrl = p.id; t.conqStamp = st.turnNo; t.revoltFrom = null; t.takenFrom = null; if (t.blds.length < FOF.slotsOf(st, p, t.id)) t.blds.push({ t: 'C', o: p.id, b: p.id });
         log(st, 'Des colons de ' + p.name + ' fondent un établissement à ' + t.name + '.', p.id, 'land'); discardUnit(st, u); break;
       case 'exploratrice':
-        t.ctrl = p.id; t.conqStamp = st.turnNo; t.revoltFrom = null; t.takenFrom = null; p.gold += 1; log(st, 'L’exploratrice de ' + p.name + ' plante sa bannière à ' + t.name + ' (+1 écu).', p.id, 'land'); discardUnit(st, u); break;
+        t.ctrl = p.id; t.conqStamp = st.turnNo; t.revoltFrom = null; t.takenFrom = null; p.gold += 3; log(st, 'L’exploratrice de ' + p.name + ' plante sa bannière à ' + t.name + ' (+3 écus).', p.id, 'land'); discardUnit(st, u); break;
       case 'partisan': {
         var rp = convertir(st, t, p.id, true);
         log(st, 'Le Partisan de ' + p.name + ' soulève les bâtisses de ' + t.name + ' en sa faveur (les temples restent fidèles).', p.id, 'convert');
@@ -657,10 +712,11 @@
         break;
       }
       case 'deficitTake': {
-        var u = st.units.filter(function (x) { return x.uid === a.uid; })[0];
-        if (!pend || pend.type !== 'deficit' || !u || u.owner !== pend.pid || u.gold <= 0) throw new Error('Impossible.');
-        u.gold--; pend.left--;
-        if (pend.left <= 0) { st.pending.shift(); settleDeficit(st, p); }
+        // v1.9.19 : a.coins = { uid: nombre de pièces reprises }, validé d'un bloc
+        if (!pend || pend.type !== 'deficit') throw new Error('Impossible.');
+        var dp = st.players[pend.pid], errD = FOF.deficitValide(st, dp.id, a.coins || {}, pend.left);
+        if (errD) throw new Error(errD);
+        reprendre(st, dp, a.coins); st.pending.shift();
         break;
       }
       case 'resolve': resolvePending(st, a); break;
@@ -774,7 +830,7 @@
       case 'effect': {
         var eu = st.units.filter(function (x) { return x.uid === a.uid && x.owner === p.id; })[0];
         if (!eu || !FOF.effectAvailable(st, eu)) throw new Error('Effet indisponible.');
-        if (st.phase !== 'military' && !(eu.key === 'exploratrice' && st.phase === 'collect')) throw new Error('Les effets se jouent en phase militaire.');
+        if (st.phase !== 'military') throw new Error('Les effets se jouent en phase militaire.');
         useEffect(st, eu, a.arg); break;
       }
       case 'build': {

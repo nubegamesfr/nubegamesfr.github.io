@@ -90,7 +90,141 @@
       }
       else kind[i] = 0;
     }
-    return finir(st, { seed: seed, minX: minX, minY: minY, maxX: maxX, maxY: maxY, wU: wU, hU: hU, S: S, gw: gw, gh: gh, kind: kind, id: id, W: W });
+    // v1.9.19 - le large (au-delà de la bande d'eau découpée en mers) est rattaché à la mer la plus
+    // proche : les frontières de mer vont ainsi jusqu'au bord de la carte au lieu de s'arrêter au
+    // milieu de l'eau, ce qui faisait des traits isolés, sans rien délimiter.
+    if (!FOF.SANS_REDRESSE) {
+      var fl = new Int32Array(N), hl = 0, tl = 0;
+      for (var q0 = 0; q0 < N; q0++) if (kind[q0] === 2) fl[tl++] = q0;
+      while (hl < tl) {
+        var u0 = fl[hl++], x0 = u0 % gw;
+        if (x0 > 0) larg(u0 - 1); if (x0 < gw - 1) larg(u0 + 1); if (u0 >= gw) larg(u0 - gw); if (u0 + gw < N) larg(u0 + gw);
+      }
+    }
+    function larg(j) { if (kind[j] === 0) { kind[j] = 2; id[j] = id[u0]; fl[tl++] = j; } }
+    var u0;
+    var segs = FOF.SANS_REDRESSE ? null : redresserMers(kind, id, gw, gh, S);
+    var rs = finir(st, { seed: seed, minX: minX, minY: minY, maxX: maxX, maxY: maxY, wU: wU, hU: hU, S: S, gw: gw, gh: gh, kind: kind, id: id, W: W });
+    rs.seaSegs = segs;
+    return rs;
+  }
+
+  /* v1.9.19 - frontières de mer DROITES (créateur, 07/10/2026). Les frontières tirées des hexagones
+     ondulaient (déformation du bruit) et certains traits filaient au large sans séparer deux mers.
+     On part maintenant des frontières réelles entre zones de mer sur la trame : chaque frontière
+     (pixels d'une mer qui touchent une autre mer) est remplacée par un segment droit entre ses deux
+     bouts (ou quelques segments si elle fait un coude), puis la mer est redécoupée le long de ces
+     segments. Les mers gardent leur identité (vote majoritaire) ; le moteur n'est pas touché.
+     Si le redécoupage fait disparaître une mer, on garde l'ancien tracé. Renvoie les segments
+     en pixels de trame, ou null. */
+  function redresserMers(kind, id, gw, gh, S) {
+    var N = gw * gh, i, x, y;
+    // 1. pixels frontière : mer a qui touche (4-voisins) une mer b ≠ a ; regroupés par paire
+    var front = new Int32Array(N).fill(-1), paires = {}, nP = 0;
+    for (i = 0; i < N; i++) {
+      if (kind[i] !== 2) continue;
+      x = i % gw; var a = id[i], b = -1;
+      if (x < gw - 1 && kind[i + 1] === 2 && id[i + 1] !== a) b = id[i + 1];
+      else if (i + gw < N && kind[i + gw] === 2 && id[i + gw] !== a) b = id[i + gw];
+      else if (x > 0 && kind[i - 1] === 2 && id[i - 1] !== a) b = id[i - 1];
+      else if (i >= gw && kind[i - gw] === 2 && id[i - gw] !== a) b = id[i - gw];
+      if (b < 0) continue;
+      var cle = Math.min(a, b) + ':' + Math.max(a, b);
+      if (paires[cle] === undefined) paires[cle] = nP++;
+      front[i] = paires[cle];
+    }
+    if (!nP) return null;
+    // 2. composantes (8-connexité) de chaque frontière, puis segments droits
+    var vu = new Uint8Array(N), segs = [], file = new Int32Array(N), dist = new Int32Array(N);
+    function voisins8(k, f) { var kx = k % gw; for (var dy = -1; dy <= 1; dy++) for (var dx = -1; dx <= 1; dx++) { if (!dx && !dy) continue; var nx = kx + dx, j = k + dy * gw + dx; if (nx < 0 || nx >= gw || j < 0 || j >= N) continue; f(j); } }
+    function simplifier(ordre, d) {   // Douglas-Peucker sur la frontière ordonnée
+      var A = ordre[0], B = ordre[ordre.length - 1], ax = A % gw, ay = (A / gw) | 0, bx = B % gw, by = (B / gw) | 0;
+      var L = Math.hypot(bx - ax, by - ay) || 1, imax = -1, dmax = 0;
+      for (var q = 1; q < ordre.length - 1; q++) {
+        var px = ordre[q] % gw, py = (ordre[q] / gw) | 0, e = Math.abs((bx - ax) * (ay - py) - (ax - px) * (by - ay)) / L;
+        if (e > dmax) { dmax = e; imax = q; }
+      }
+      if (dmax > Math.max(6 * S, L * 0.15) && imax > 0) return simplifier(ordre.slice(0, imax + 1), d).concat(simplifier(ordre.slice(imax), d).slice(1));
+      return [A, B];
+    }
+    for (i = 0; i < N; i++) {
+      if (front[i] < 0 || vu[i]) continue;
+      var membres = [], f0 = front[i], h2 = 0, t2 = 0; file[t2++] = i; vu[i] = 1;
+      while (h2 < t2) { var u2 = file[h2++]; membres.push(u2); voisins8(u2, function (j) { if (!vu[j] && front[j] === f0) { vu[j] = 1; file[t2++] = j; } }); }
+      if (membres.length < 2) continue;
+      var marque = {}; membres.forEach(function (k) { marque[k] = 1; });
+      // bouts : le plus loin d'un pixel quelconque, puis le plus loin de celui-là (dans la composante)
+      membres.forEach(function (k) { dist[k] = -1; });
+      var bout1 = parcours(membres[0]); parcours(bout1);
+      var ordre = membres.filter(function (k) { return dist[k] >= 0; }).sort(function (p1, p2) { return dist[p1] - dist[p2]; });
+      var pts = simplifier(ordre, 0);
+      for (var q2 = 0; q2 < pts.length - 1; q2++) segs.push([pts[q2] % gw + 0.5, ((pts[q2] / gw) | 0) + 0.5, pts[q2 + 1] % gw + 0.5, ((pts[q2 + 1] / gw) | 0) + 0.5]);
+      function parcours(dep) {   // parcours limité à la composante
+        membres.forEach(function (k) { dist[k] = -1; });
+        var hh = 0, tt = 0, der = dep; file[tt++] = dep; dist[dep] = 0;
+        while (hh < tt) { var uu = file[hh++]; der = uu; voisins8(uu, function (j) { if (marque[j] && dist[j] === -1) { dist[j] = dist[uu] + 1; file[tt++] = j; } }); }
+        return der;
+      }
+    }
+    if (!segs.length) return null;
+    // 3. barrière le long des segments (prolongés de quelques pixels pour bien fermer)
+    var bar = new Uint8Array(N), ep = Math.max(1, Math.round(0.7 * S)), ext = Math.round(3 * S);
+    segs.forEach(function (g) {
+      var dx = g[2] - g[0], dy = g[3] - g[1], L = Math.hypot(dx, dy) || 1, ux = dx / L, uy = dy / L;
+      for (var tq = -ext; tq <= L + ext; tq += 0.5) {
+        var cx = g[0] + ux * tq, cy = g[1] + uy * tq;
+        for (var oy = -ep; oy <= ep; oy++) for (var ox = -ep; ox <= ep; ox++) {
+          var px = Math.round(cx + ox), py = Math.round(cy + oy); if (px < 0 || py < 0 || px >= gw || py >= gh) continue;
+          var k = py * gw + px; if (kind[k] === 2) bar[k] = 1;
+        }
+      }
+    });
+    // 4. composantes de mer hors barrière, vote majoritaire de l'ancienne mer
+    var comp = new Int32Array(N).fill(-1), nC = 0, votes = [];
+    for (i = 0; i < N; i++) {
+      if (kind[i] !== 2 || bar[i] || comp[i] >= 0) continue;
+      var vote = {}, h3 = 0, t3 = 0; file[t3++] = i; comp[i] = nC;
+      while (h3 < t3) {
+        var u3 = file[h3++], x3 = u3 % gw; vote[id[u3]] = (vote[id[u3]] || 0) + 1;
+        if (x3 > 0) pousse(u3 - 1); if (x3 < gw - 1) pousse(u3 + 1); if (u3 >= gw) pousse(u3 - gw); if (u3 + gw < N) pousse(u3 + gw);
+      }
+      var best = -1, bv = -1; Object.keys(vote).forEach(function (kk) { if (vote[kk] > bv) { bv = vote[kk]; best = +kk; } });
+      votes.push(best); nC++;
+    }
+    function pousse(j) { if (kind[j] === 2 && !bar[j] && comp[j] < 0) { comp[j] = nC; file[t3++] = j; } }
+    var t3;   // (partagé avec pousse)
+    // garde-fou : chaque mer doit garder au moins la moitié de sa surface
+    var avant = {}, apres = {};
+    for (i = 0; i < N; i++) if (kind[i] === 2) { avant[id[i]] = (avant[id[i]] || 0) + 1; if (comp[i] >= 0) apres[votes[comp[i]]] = (apres[votes[comp[i]]] || 0) + 1; }
+    var ok = Object.keys(avant).every(function (z) { return (apres[z] || 0) >= 0.5 * avant[z]; });
+    if (!ok) return null;
+    var nouv = new Int16Array(N);
+    for (i = 0; i < N; i++) if (kind[i] === 2 && comp[i] >= 0) nouv[i] = votes[comp[i]];
+    // pixels de barrière : la mer voisine la plus fréquente (on balaie jusqu'à ce que tout soit pris)
+    var reste = 1;
+    for (var passe = 0; reste && passe < 40; passe++) {
+      reste = 0;
+      for (i = 0; i < N; i++) {
+        if (kind[i] !== 2 || comp[i] >= 0) continue;
+        x = i % gw; var c = -1;
+        if (x > 0 && kind[i - 1] === 2 && comp[i - 1] >= 0) c = i - 1; else if (x < gw - 1 && kind[i + 1] === 2 && comp[i + 1] >= 0) c = i + 1;
+        else if (i >= gw && kind[i - gw] === 2 && comp[i - gw] >= 0) c = i - gw; else if (i + gw < N && kind[i + gw] === 2 && comp[i + gw] >= 0) c = i + gw;
+        if (c >= 0) { nouv[i] = nouv[c]; comp[i] = comp[c]; } else reste++;
+      }
+    }
+    // le long des côtes (bande de 4 unités), on garde l'ancienne mer : un trait redressé ne doit pas
+    // faire toucher à un territoire une mer qui ne le borde pas dans le moteur (mesuré : 129 contacts
+    // parasites de 8 px en médiane sur 12 cartes sans cette bande).
+    var bande = Math.round(4 * S), dL = new Uint8Array(N).fill(255), hq = 0, tq2 = 0;
+    for (i = 0; i < N; i++) if (kind[i] === 1) { dL[i] = 0; file[tq2++] = i; }
+    while (hq < tq2) {
+      var uq = file[hq++], xq = uq % gw; if (dL[uq] >= bande) continue;
+      if (xq > 0) pl(uq - 1); if (xq < gw - 1) pl(uq + 1); if (uq >= gw) pl(uq - gw); if (uq + gw < N) pl(uq + gw);
+    }
+    function pl(j) { if (dL[j] === 255 && kind[j] !== 1) { dL[j] = dL[uq] + 1; file[tq2++] = j; } }
+    var uq;
+    for (i = 0; i < N; i++) if (kind[i] === 2 && dL[i] > bande) id[i] = nouv[i];
+    return segs;
   }
   function buildHist(st, tr) {
     var m = st.map, S = FOF.HIST_S, gw = tr.w, gh = tr.h, N = gw * gh;
@@ -376,6 +510,7 @@
   }
   function tracerMers(ctx, st, rs) {
     var m = st.map;
+    if (rs.seaSegs) return tracerSegments(ctx, rs);
     if (!m.seaRays || !m.seaRays.length) return;
     ctx.save();
     ctx.lineCap = 'round'; ctx.lineJoin = 'round';
@@ -400,6 +535,20 @@
     ctx.restore();
   }
 
+  // v1.9.19 - segments droits (pixels de trame), tracés seulement sur la mer
+  function tracerSegments(ctx, rs) {
+    var cv = document.createElement('canvas'); cv.width = rs.gw; cv.height = rs.gh;
+    var c = cv.getContext('2d');
+    // lisibilité : trait un peu plus épais que l'ancien (1,6), ombre plus marquée pour détacher le trait de l'eau
+    c.lineCap = 'round'; c.setLineDash([8 * rs.S, 4.4 * rs.S]); c.lineWidth = 2 * rs.S;
+    c.strokeStyle = 'rgba(248,252,255,.97)'; c.shadowColor = 'rgba(6,18,40,.9)'; c.shadowBlur = 2.6 * rs.S;
+    rs.seaSegs.forEach(function (g) { c.beginPath(); c.moveTo(g[0], g[1]); c.lineTo(g[2], g[3]); c.stroke(); });
+    // masque : on efface ce qui tomberait sur la terre ou hors des zones de mer
+    var mk = c.getImageData(0, 0, rs.gw, rs.gh), d = mk.data;
+    for (var i = 0, n = rs.gw * rs.gh; i < n; i++) if (rs.kind[i] !== 2) d[i * 4 + 3] = 0;
+    c.putImageData(mk, 0, 0);
+    ctx.drawImage(cv, 0, 0);
+  }
   function drawBase(st, rs, canvas) {
     var gw = rs.gw, gh = rs.gh, N = gw * gh, S = rs.S, m = st.map;
     canvas.width = gw; canvas.height = gh;
@@ -900,6 +1049,20 @@
       return { x: a.x, y: a.y };
     },
     icons: function () { return []; },
+    // v1.9.19 - contrôle : mers vues sur la trame autour de chaque territoire, et segments droits
+    diag: function () {
+      var rs = cache; if (!rs) return null;
+      var vu = {}, N = rs.gw * rs.gh;
+      for (var i = 0; i < N; i++) {
+        if (rs.kind[i] !== 1) continue;
+        var x = i % rs.gw;
+        [x > 0 ? i - 1 : -1, x < rs.gw - 1 ? i + 1 : -1, i - rs.gw, i + rs.gw].forEach(function (j) {
+          if (j < 0 || j >= N || rs.kind[j] !== 2) return;
+          var k = rs.id[i] + ':' + rs.id[j]; vu[k] = (vu[k] || 0) + 1;
+        });
+      }
+      return { segs: rs.seaSegs ? rs.seaSegs.length : null, contacts: vu };
+    },
     bounds: function () { return cache ? { x: cache.minX, y: cache.minY, w: cache.wU, h: cache.hU } : null; },
     prepare: function (st, baseCanvas, done) {
       // le style fait partie de la clé de cache : changer de style suffit à redessiner le terrain

@@ -16,7 +16,7 @@
       dip: st.players.map(function (p) { return p.dip; }),
       tyran: st.players.map(function (p) { return !!p.tyran; }),
       logN: st.logN || st.log.length,
-      combat: st.lastCombat ? JSON.stringify([st.lastCombat.loc, st.lastCombat.att, st.lastCombat.rolls]) : '',
+      combat: st.lastCombat ? JSON.stringify([st.lastCombat.loc, st.lastCombat.att, st.lastCombat.rolls, st.lastCombat.n]) : '',
       units: st.units.length
     };
   }

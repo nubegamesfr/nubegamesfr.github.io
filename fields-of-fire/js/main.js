@@ -21,13 +21,15 @@
   }
   var DEFAULT_NAMES = ['Aurèle', 'Bérénice', 'Corentin', 'Daphné', 'Élouan', 'Faustine'];
   var LEAD_KEYS = Object.keys(FOF.LEADERS);
-  var TRIAL = ['hugues', 'alienor'];
+  var TRIAL = ['hugues', 'alienor', 'yusuf'];
   /* ---------- dirigeants à débloquer ----------
      Hugues et Alinor ne sont pas jouables tant que le joueur n'a pas laissé son adresse e-mail et
      accepté d'être recontacté. Le déblocage est mémorisé dans le navigateur. Les bots peuvent les
      jouer : c'est ce qui donne envie de les débloquer. */
   var LOCKED = FOF.LOCKED_LEADERS;
   function isLocked(k) { return FOF.leaderLocked(k); }
+  // « Hugues le Bâtisseur, Alinor l’Amirale et Yusuf le Marchand » (v1.9.19 : trois dirigeants)
+  function nomsVerrou() { var n = LOCKED.map(function (k) { return esc(FOF.LEADERS[k].name); }); return n.length > 1 ? n.slice(0, -1).join(', ') + ' et ' + n[n.length - 1] : n.join(''); }
   // Les dirigeants verrouillés sont repoussés en fin de liste : avec 6 sièges au plus pour 8
   // dirigeants, ils ne sont jamais distribués tant qu'ils ne sont pas débloqués - ni au joueur,
   // ni aux autres sièges de la partie locale, qui sont eux aussi des humains.
@@ -41,7 +43,7 @@
     if (!n) return '';
     var nomC = c && c !== 'proc' && FOF.CARTES[c] ? ' (' + FOF.CARTES[c].nom + ')' : '';
     return 'À ' + n + ' joueurs : ' + (7 * n) + ' territoires sur la carte' + nomC + '. Victoire à ' + (8 + n) + ' territoires, '
-      + (6 + n) + ' temples ou ' + (6 + n) + ' de diplomatie.';
+      + (5 + n) + ' temples ou 12 de diplomatie.';
   }
   function setErr(msg) { $('netErr').textContent = msg || ''; }
   /* v1.9.10 - écran « Génération de la carte en cours ». La carte doit respecter strictement la
@@ -242,8 +244,7 @@
     el.hidden = false;
     el.innerHTML = '<div class="modal-bg"><div class="modal" style="max-width:520px">' +
       '<h2>Débloquer ' + esc(nom) + '</h2>' +
-      '<p class="muted">' + esc(nom) + ' et ' + esc(FOF.LEADERS[LOCKED[0] === k ? LOCKED[1] : LOCKED[0]].name) +
-      ' se débloquent ensemble, définitivement, sur ce navigateur.</p>' +
+      '<p class="muted">' + nomsVerrou() + ' se débloquent ensemble, définitivement, sur ce navigateur.</p>' +
       '<label class="fld"><span>Votre adresse e-mail</span>' +
       '<input id="unlockMail" type="email" inputmode="email" autocomplete="email" placeholder="vous@exemple.fr" maxlength="120"></label>' +
       '<label class="chk"><input id="unlockOk" type="checkbox"> <span>J’accepte d’être recontacté par Nube Games au sujet de l’avancée de Fields of Fire (conseils de jeu, statistiques des dirigeants et des cartes, nouvelles versions). Désinscription à tout moment.</span></label>' +
@@ -264,7 +265,7 @@
     function fini() {
       try { localStorage.setItem('fof-heroes', '1'); } catch (e) {}
       $('heroPick').innerHTML = '<div class="modal-bg"><div class="modal" style="max-width:480px;text-align:center">' +
-        '<h2>C’est débloqué</h2><p>' + esc(FOF.LEADERS.hugues.name) + ' et ' + esc(FOF.LEADERS.alienor.name) +
+        '<h2>C’est débloqué</h2><p>' + nomsVerrou() +
         ' sont désormais jouables. Merci, vous serez tenu au courant de la suite.</p>' +
         '<div class="actions" style="justify-content:center"><button class="btn primary" type="button" data-unlockdone="1">Choisir mon dirigeant</button></div></div></div>';
     }
