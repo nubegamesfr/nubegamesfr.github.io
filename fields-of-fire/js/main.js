@@ -86,6 +86,7 @@
   function show(s) {
     step = s;
     $('stepMode').hidden = s !== 'mode'; $('stepLocal').hidden = s !== 'local'; $('stepLobby').hidden = s !== 'lobby';
+    var ian = $('iaNote'); if (ian) ian.hidden = s !== 'mode';
     var cat = $('catalog'); if (cat) { cat.hidden = s !== 'mode'; if (s === 'mode') renderCatalog(); }
     if (s === 'mode') renderMode(); if (s === 'local') renderLocal(); if (s === 'lobby') renderLobby();
   }

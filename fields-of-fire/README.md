@@ -1,6 +1,16 @@
-# Fields of Fire - version web (beta 1.9.21, prototype)
+# Fields of Fire - version web (beta 1.9.23, prototype)
 
 Jeu 100 % statique (HTML/CSS/JS, sans build). Servi par GitHub Pages sur https://nubegames.fr/fields-of-fire/ (dossier `fields-of-fire/` du repo `nubegamesfr.github.io`).
+
+## v1.9.23 - mention des illustrations reformulée (07/10/2026)
+
+- « tiennent la place des vraies » devient « sont des placeholders » (accueil et `notes.html`).
+
+## v1.9.22 - mention des illustrations au-dessus de l'arsenal (07/10/2026)
+
+- L'encadré « Illustrations provisoires » quitte le pied de l'accueil et se place juste au-dessus du
+  catalogue (L'arsenal), visible seulement sur l'écran de choix du mode, comme le catalogue. Il porte un bouton
+  « Notes de mise à jour » (le lien du pied de page reste).
 
 ## v1.9.21 - notes de mise à jour, illustrations provisoires (07/10/2026)
 
