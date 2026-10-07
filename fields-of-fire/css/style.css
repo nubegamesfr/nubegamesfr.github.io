@@ -1125,6 +1125,8 @@ header.bar { position: relative; z-index: 96; }
 .setup-foot p { margin: 0; color: var(--muted); font-size: 13.5px; line-height: 1.5; max-width: none; }
 .setup-foot b { color: var(--bone-dim); font-weight: 700; }
 .setup-legal { margin-top: 4px; }
+.setup-foot p.setup-ia { margin: 10px 0 8px; padding: 10px 14px; border: 1px solid rgba(217,180,95,.45); border-left: 4px solid #d9b45f; border-radius: 8px; background: rgba(217,180,95,.08); color: var(--bone-dim); }
+.setup-foot p.setup-ia b { color: #e0c274; }
 .setup-legal a { color: #b9a77e; text-decoration: none; border-bottom: 1px solid rgba(185,167,126,.35); }
 .setup-legal a:hover, .setup-legal a:focus-visible { color: #e0c274; border-bottom-color: currentColor; }
 /* v1.9.11 - écran « Génération de la carte en cours » : hexagones qui se lèvent en vagues, rose des vents */

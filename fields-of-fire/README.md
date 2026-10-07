@@ -1,6 +1,14 @@
-# Fields of Fire - version web (beta 1.9.20, prototype)
+# Fields of Fire - version web (beta 1.9.21, prototype)
 
 Jeu 100 % statique (HTML/CSS/JS, sans build). Servi par GitHub Pages sur https://nubegames.fr/fields-of-fire/ (dossier `fields-of-fire/` du repo `nubegamesfr.github.io`).
+
+## v1.9.21 - notes de mise à jour, illustrations provisoires (07/10/2026)
+
+- Nouvelle page publique `notes.html` (« Note de mise à jour », lien en bas de l'accueil) : toutes
+  les versions, de la plus récente à la plus ancienne, en langage de joueur. **À compléter à chaque
+  nouvelle version**, en même temps que ce README.
+- Mention mise en évidence sur l'accueil et en tête de `notes.html` : les illustrations générées par
+  IA sont provisoires, ne seront pas reprises, les illustrations définitives viendront plus tard.
 
 ## v1.9.20 - retours du créateur sur la 1.9.19 (07/10/2026)
 

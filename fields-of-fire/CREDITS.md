@@ -6,6 +6,10 @@
 bâtiments appartiennent à Nube Games.** Elles ont été produites pour le jeu, nous en détenons tous
 les droits d'usage, et **personne n'est à créditer**.
 
+**Illustrations provisoires (v1.9.21).** Les illustrations générées par IA sont des images de
+remplacement le temps de la beta. Elles ne seront pas reprises dans la version finale, qui aura ses
+propres illustrations d'artistes. Mention affichée sur l'accueil du jeu et dans `notes.html`.
+
 Cela vaut pour les 39 illustrations d'unités (`assets/units/`, dont la Garde varègue, v1.9.17, et le Chroniqueur, v1.9.20), les 9 portraits de dirigeants (dont Yusuf le Marchand, v1.9.19)
 (`assets/heroes/`), les icônes de bâtiments `bld-*`, les quatre icônes de terrain `biome-*`,
 l'icône de diplomatie `dip` et l'icône de territoires `terr` (`assets/icons/`), chacune dans ses

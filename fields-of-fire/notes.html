@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fields of Fire · Notes de mise à jour</title>
+<meta name="description" content="Toutes les mises à jour de Fields of Fire, version beta, de la première version à aujourd'hui.">
+<link rel="icon" href="assets/icons/favicon.svg" type="image/svg+xml">
+<style>
+@font-face { font-family:'Alegreya Sans'; font-weight:400; font-display:swap; src:url(assets/fonts/alegreya-sans-400.woff2) format('woff2'); }
+@font-face { font-family:'Alegreya Sans'; font-weight:700; font-display:swap; src:url(assets/fonts/alegreya-sans-700.woff2) format('woff2'); }
+@font-face { font-family:'Cinzel'; font-weight:700; font-display:swap; src:url(assets/fonts/cinzel-700.woff2) format('woff2'); }
+:root { --bg:#151417; --panel:#232228; --line:#3b3a42; --bone:#ece3cb; --dim:#b9ad90; --muted:#8b8577; --gold:#d9b45f; }
+* { box-sizing:border-box; }
+html { -webkit-text-size-adjust:100%; }
+body { margin:0; background:var(--bg); color:var(--bone); font-family:'Alegreya Sans',system-ui,sans-serif; font-size:16px; line-height:1.55; }
+main { max-width:820px; margin:0 auto; padding:28px 16px 70px; }
+h1 { font-family:Cinzel,serif; font-size:28px; margin:0 0 6px; line-height:1.2; }
+h2 { font-family:Cinzel,serif; font-size:19px; margin:0 0 2px; color:var(--gold); }
+p.lead { color:var(--dim); margin:0 0 18px; }
+a { color:#e0c274; }
+.top { display:flex; gap:10px; flex-wrap:wrap; margin:0 0 22px; }
+.btn { background:#2c2b31; color:var(--bone); border:1px solid var(--line); border-radius:8px; padding:7px 12px; text-decoration:none; }
+.btn:hover { border-color:var(--gold); }
+.ia { background:#2a2417; border:1px solid #806934; border-left:5px solid var(--gold); border-radius:10px; padding:14px 16px; margin:0 0 28px; }
+.ia b:first-child { display:block; font-family:Cinzel,serif; color:var(--gold); font-size:16px; margin-bottom:4px; }
+.ia p { margin:0; }
+nav.toc { display:flex; flex-wrap:wrap; gap:6px; margin:0 0 26px; }
+nav.toc a { font-size:13px; padding:2px 8px; border:1px solid var(--line); border-radius:10px; text-decoration:none; color:var(--dim); }
+nav.toc a:hover { color:var(--bone); border-color:var(--gold); }
+section { background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:14px 18px 6px; margin:0 0 14px; scroll-margin-top:12px; }
+.date { color:var(--muted); font-size:13.5px; margin:0 0 6px; }
+ul { margin:6px 0 10px; padding-left:20px; }
+li { margin:3px 0; }
+li b { color:#f1e2b8; }
+.old { color:var(--muted); font-style:italic; }
+footer { margin-top:30px; color:var(--muted); font-size:13.5px; }
+@media (max-width:520px) { h1 { font-size:23px; } section { padding:12px 14px 4px; } }
+</style>
+</head>
+<body>
+<main>
+  <h1>Notes de mise à jour</h1>
+  <p class="lead">Fields of Fire est en beta : les règles changent après chaque série de parties d’essai. Voici tout ce qui a bougé depuis la première version web, de la plus récente à la plus ancienne. Cette page est complétée à chaque mise à jour.</p>
+  <div class="top"><a class="btn" href="./">← Retour au jeu</a></div>
+
+  <div class="ia" id="illustrations-ia">
+    <b>À propos des illustrations</b>
+    <p>Les illustrations générées par IA que vous voyez dans le jeu sont des images provisoires. Elles tiennent la place des vraies illustrations le temps de la beta et ne seront pas reprises par la suite. Les illustrations définitives ne sont pas encore là. Nous respectons le travail des artistes et nous savons que l’IA n’a pas sa place dans la version finale d’un jeu comme celui-ci.</p>
+  </div>
+
+  <nav class="toc" aria-label="Versions">
+    <a href="#v1-9-21">1.9.21</a><a href="#v1-9-20">1.9.20</a><a href="#v1-9-19">1.9.19</a><a href="#v1-9-18">1.9.18</a><a href="#v1-9-17">1.9.17</a><a href="#v1-9-16">1.9.16</a><a href="#v1-9-15">1.9.15</a><a href="#v1-9-14">1.9.14</a><a href="#v1-9-13">1.9.13</a><a href="#v1-9-12">1.9.12</a><a href="#v1-9-11">1.9.11</a><a href="#v1-9-10">1.9.10</a><a href="#v1-9-9">1.9.9</a><a href="#v1-9-6">1.9.6 à 1.9.8</a><a href="#v1-9-5">1.9.5</a><a href="#v1-9-0">1.9.0 à 1.9.4</a><a href="#v1-8">1.8</a><a href="#v1-7">1.7</a><a href="#v1-6">1.6</a><a href="#v1-5">1.5</a><a href="#v1-4">1.4</a><a href="#v1-0">1.0 à 1.3</a>
+  </nav>
+
+  <section id="v1-9-21">
+    <h2>Beta 1.9.21</h2>
+    <p class="date">7 octobre 2026</p>
+    <ul>
+      <li>Nouvelle page <b>Notes de mise à jour</b> (celle-ci), accessible depuis le bas de l’accueil.</li>
+      <li>Mention sur l’accueil et ici : les illustrations générées par IA sont provisoires.</li>
+    </ul>
+  </section>
+
+  <section id="v1-9-20">
+    <h2>Beta 1.9.20</h2>
+    <p class="date">7 octobre 2026</p>
+    <ul>
+      <li><b>Cartes générées</b> : les frontières de mer suivent de nouveau la vraie limite des zones, en courbe douce, au lieu de segments droits.</li>
+      <li><b>Musique</b> : cinq morceaux retirés (The Lord’s Court, Merchants and Sea Salt, A Knight’s Challenge, The Woodsman, Crowded Pub). Exploration et Harvest Season reviennent plus souvent.</li>
+      <li>Illustration du Chroniqueur.</li>
+    </ul>
+  </section>
+
+  <section id="v1-9-19">
+    <h2>Beta 1.9.19</h2>
+    <p class="date">7 octobre 2026</p>
+    <ul>
+      <li><b>Victoire</b> : religieuse à 5 + nombre de joueurs temples ; diplomatique à 12, quel que soit le nombre de joueurs.</li>
+      <li><b>Capitale</b> : +3 en défense (au lieu de +2).</li>
+      <li><b>Unités spéciales attaquées seules</b> (ni élite ni dirigeant avec elles) : défaites d’office, sans dé. Un territoire attaqué garde son dé et sa défense.</li>
+      <li>Les pertes de diplomatie (attaque, rupture de pacte, unités spéciales détruites) sont détaillées avant l’assaut et pendant la bataille.</li>
+      <li><b>Collecte réécrite</b> : revenus moins solde vont au trésor. Si le trésor passe sous 0, vous reprenez des pièces sur vos unités (nouvelle fenêtre) et chaque unité touchée déserte. Trésor négatif : ni recrutement ni construction.</li>
+      <li><b>Unités</b> : Exploratrice active dès son arrivée, +3 or ; nouveaux déplacements (Nomades et Partisan 2 ; Bandits, Pillards, Écumeurs, Brigands 1 ; Héraut, Gouverneur, Prélat 0) ; Écumeurs, Brigands, Bandits et Fantassins en 3 exemplaires.</li>
+      <li>Nouvelle unité spéciale <b>Chroniqueur</b> : +1 diplomatie par bataille gagnée, en attaque comme en défense.</li>
+      <li>Nouveau dirigeant <b>Yusuf le Marchand</b> (Caboteurs et Caravaniers plus rapides et plus rentables), à débloquer avec Hugues et Alinor.</li>
+      <li><b>Gustave</b> : +1 défense sur tous ses territoires, cités à 6. <b>Hugues</b> : remise sur les forts et les ports seulement.</li>
+      <li><b>Interface</b> : un clic sur une unité ouvre le même menu circulaire que le dirigeant ; une pile s’ouvre d’abord en pions séparés. Sur la carte historique, pions et menus plus grands et toujours dans le cadre.</li>
+    </ul>
+  </section>
+
+  <section id="v1-9-18">
+    <h2>Beta 1.9.18</h2>
+    <p class="date">4 octobre 2026</p>
+    <ul>
+      <li><b>Statistiques</b> : une partie ne compte que si elle dure au moins 5 minutes, dépasse le tour 1 et réunit au moins un joueur humain. Les tables mêlant humains et bots comptent désormais.</li>
+    </ul>
+  </section>
+
+  <section id="v1-9-17">
+    <h2>Beta 1.9.17</h2>
+    <p class="date">1er octobre 2026</p>
+    <ul>
+      <li><b>Cartes historiques</b> : au salon, choix entre cartes procédurales et cartes historiques. Première carte : <b>Mer de la Manche</b>, une version de 3 à 6 joueurs.</li>
+      <li><b>Cartes générées</b> : un continent ne peut plus contenir autant de cases qu’il en faut pour la victoire militaire.</li>
+      <li><b>Unités</b> : Prêtresse et Cavaliers nomades à 2 d’entretien ; Prélat revu (+2 or par temple) ; Caravanier et Caboteur à +3 or ; Boutefeu bloque tout le revenu de la case ; Gouverneur jouable depuis n’importe quelle case. Nouvelle élite <b>Garde varègue</b>.</li>
+      <li><b>Corrections</b> : le Pèlerin prenait le territoire ; un pion faisait des allers-retours ; le bouton de l’Espion ne répondait plus dès qu’une fenêtre était ouverte.</li>
+    </ul>
+  </section>
+
+  <section id="v1-9-16">
+    <h2>Beta 1.9.16</h2>
+    <p class="date">29 septembre 2026</p>
+    <ul>
+      <li><b>Sept mini-jeux</b> pour patienter pendant le tour des autres : Chausse-trapes, Le Moulin, Trésor, Blasons, Mémoire des armées, Taquin, Réussite de la Cour.</li>
+    </ul>
+  </section>
+
+  <section id="v1-9-15">
+    <h2>Beta 1.9.15</h2>
+    <p class="date">29 septembre 2026</p>
+    <ul>
+      <li><b>Règles</b> : une capitale conquise qui garde 3 aménagements redevient un territoire ordinaire et le vainqueur en rase un.</li>
+      <li><b>Habillages</b> « Encre et braise » et « Feutre et or » au choix.</li>
+      <li>Nouvelles icônes dessinées à la main (aménagements, terrains, diplomatie, territoires).</li>
+      <li><b>Pause</b> en partie locale. Musique de combat seulement pendant le combat, luth à la victoire ou à la défaite.</li>
+      <li>Corrections d’affichage (fiches des joueurs, plateau qui rétrécissait).</li>
+    </ul>
+  </section>
+
+  <section id="v1-9-14">
+    <h2>Beta 1.9.14</h2>
+    <p class="date">28 septembre 2026</p>
+    <ul>
+      <li><b>Règles</b> : fin de la cession volontaire d’aménagement ; dévaster donne le territoire au vainqueur, aménagements rasés ; pacifier convertit un seul aménagement par tour ; Ambassade à 8 or ; Aliénor devient Alinor.</li>
+      <li>Nouvelles unités spéciales <b>Calomniateur</b> et <b>Boutefeu</b>. Quinze cartes passent à 3 exemplaires.</li>
+      <li><b>Carte</b> : une bulle par joueur et par case, avec puissance totale et nombre de pions ; au survol, le détail du groupe.</li>
+      <li>Diplomatie affichée « actuelle / seuil ». Volumes de musique égalisés, nouveau bruit de dés.</li>
+    </ul>
+  </section>
+
+  <section id="v1-9-13">
+    <h2>Beta 1.9.13</h2>
+    <p class="date">27 septembre 2026</p>
+    <ul>
+      <li>Nouvelle table en planches de bois. Restes de gris de l’ancien thème corrigés dans les fenêtres.</li>
+    </ul>
+  </section>
+
+  <section id="v1-9-12">
+    <h2>Beta 1.9.12</h2>
+    <p class="date">27 septembre 2026</p>
+    <ul>
+      <li><b>Bots réécrits</b> : ils suivent un plan, préparent leurs assauts et défendent leur capitale.</li>
+      <li>Nouvelle direction artistique « table de guerre » : bois, cuir, laiton, sceau de cire.</li>
+      <li>Catalogue des dirigeants et des cartes sur l’accueil.</li>
+      <li><b>Règles</b> : Héraut et Prêtresse cumulables ; seuls les aménagements bâtis soi-même peuvent être cédés.</li>
+    </ul>
+  </section>
+
+  <section id="v1-9-11">
+    <h2>Beta 1.9.11</h2>
+    <p class="date">27 septembre 2026</p>
+    <ul>
+      <li><b>Un seul type de mer</b> : toutes les cartes respectent la règle des 4 débarquements.</li>
+      <li><b>Ambassadeur</b> : s’il quitte la capitale de l’autre, quelle qu’en soit la raison, son propriétaire perd 1 diplomatie.</li>
+      <li><b>Trébuchets</b> : un tir compte comme une attaque. <b>Partisan</b> : convertit tout sauf les temples. <b>Espion</b> : gratuit, utilisable à tout moment, même au tour d’un autre.</li>
+      <li><b>Corrections</b> : phase de construction qui se bloquait ; annonce du Tyran qui se perdait ; pions posés hors de la carte en mer.</li>
+    </ul>
+  </section>
+
+  <section id="v1-9-10">
+    <h2>Beta 1.9.10</h2>
+    <p class="date">27 septembre 2026</p>
+    <ul>
+      <li><b>Mers</b> : la règle des 4 débarquements devient stricte. Un écran s’affiche pendant la génération de la carte.</li>
+      <li><b>Ambassadeur</b> : le rappeler coûte 1 diplomatie si le pacte tombe.</li>
+    </ul>
+  </section>
+
+  <section id="v1-9-9">
+    <h2>Beta 1.9.9</h2>
+    <p class="date">25 septembre 2026</p>
+    <ul>
+      <li><b>Illustrations</b> : toutes les cartes, portraits et icônes de bâtiments remplacés par des visuels propres au jeu.</li>
+      <li><b>Accueil</b> entièrement remis en page.</li>
+      <li><b>Ambassadeur</b> : le pacte ne tient que tant qu’un ambassadeur est sur la capitale de l’autre ; recrutement avec 1 ambassade.</li>
+      <li><b>Mers</b> : une mer ne permet pas de débarquer sur plus de 4 territoires.</li>
+      <li>Confirmation avant de remplacer un aménagement. Musique nettement moins forte.</li>
+    </ul>
+  </section>
+
+  <section id="v1-9-6">
+    <h2>Beta 1.9.6 à 1.9.8</h2>
+    <p class="date">24 et 25 septembre 2026</p>
+    <ul>
+      <li>Nouvelles cartes <b>Croisés</b>, <b>Maître d’œuvre</b> et <b>Prélat</b> ; Charpentier retiré. Nombreuses cartes revues (Héraut, Partisan, Gouverneur, Trébuchets, Exploratrice, Prêtresse, Pèlerin…).</li>
+      <li><b>Armée</b> : 4 unités au plus, dont 3 élites et 3 spéciales au maximum.</li>
+      <li><b>Aménagements</b> : 3 emplacements sur la capitale, 2 ailleurs ; le temple et l’ambassade occupent un emplacement. Déplacer sa capitale coûte 8 or.</li>
+      <li>Hugues et Aliénor deviennent des dirigeants à débloquer. Capitales rayées aux couleurs du joueur, icônes d’aménagement dorées.</li>
+      <li class="old">Le détail des versions 1.9.7 et 1.9.8 n’a pas été conservé.</li>
+    </ul>
+  </section>
+
+  <section id="v1-9-5">
+    <h2>Beta 1.9.5</h2>
+    <p class="date">24 septembre 2026</p>
+    <ul>
+      <li><b>Cartes générées</b> : de 2 à 4 continents selon le nombre de joueurs, la mer n’occupant pas plus de la moitié de l’écran environ.</li>
+    </ul>
+  </section>
+
+  <section id="v1-9-0">
+    <h2>Beta 1.9.0 à 1.9.4</h2>
+    <p class="date">23 et 24 septembre 2026</p>
+    <ul>
+      <li>Une terre soulevée contre un Tyran lui est fermée tant qu’un autre joueur ne l’a pas prise.</li>
+      <li>L’Ambassade est détruite quand on déplace sa capitale (avec avertissement).</li>
+      <li>Milice paysanne à 2 d’entretien ; Frondeurs retirés.</li>
+      <li>Option « mer élargie » (supprimée depuis) et bouton pour annuler un déplacement.</li>
+      <li>Fin du clignotement de l’écran pendant le tour des autres ; correction de la fenêtre de construction qui devenait inaccessible.</li>
+      <li class="old">Une règle essayée puis retirée : reprendre sa terre sans perdre de diplomatie.</li>
+    </ul>
+  </section>
+
+  <section id="v1-8">
+    <h2>Version 1.8</h2>
+    <p class="date">23 septembre 2026</p>
+    <ul>
+      <li>Premier rééquilibrage : nouvel aménagement <b>Ambassade</b>, dirigeants revus (Edouard, Mathilde, Odon, Hugues, Gustave, Aliénor), nouveaux seuils de victoire.</li>
+      <li>Marché toujours visible et toujours à l’écran ; jeu jouable sur téléphone (pincement pour zoomer, en-tête compact).</li>
+      <li>Quitter n’est plus abandonner : pause de 48 h possible. Fenêtre de réglages regroupée. Statistiques remises à zéro le 23/09.</li>
+    </ul>
+  </section>
+
+  <section id="v1-7">
+    <h2>Version 1.7</h2>
+    <ul>
+      <li>Salon en ligne avec bouton « prêt ». Bouton d’abandon. Animations pendant que les autres jouent.</li>
+      <li>Trois cartes bon marché à l’essai (Milice paysanne, Frondeurs, Charpentier).</li>
+      <li>Deux styles de carte au choix : Enluminure et Estampe sur bois.</li>
+    </ul>
+  </section>
+
+  <section id="v1-6">
+    <h2>Version 1.6</h2>
+    <ul>
+      <li>Icônes dessinées à la place des émojis. Didacticiel facultatif de 3 tours. Glossaire et deck ouvrables à tout moment.</li>
+      <li>Bilan de fin de partie. Vitesse des bots réglable.</li>
+      <li>Plus de combat en mer ; Aliénor rééquilibrée.</li>
+    </ul>
+  </section>
+
+  <section id="v1-5">
+    <h2>Version 1.5</h2>
+    <ul>
+      <li>Zone de recrutement à 5 cartes. Le dirigeant présent combat d’office.</li>
+      <li>Collecte en fenêtre de début de tour, menu circulaire autour du dirigeant, bataille avec dés en 3D.</li>
+      <li>Nouvel habillage de la carte, tchat en ligne, signalement de bug, <b>bots</b> en local et en ligne.</li>
+    </ul>
+  </section>
+
+  <section id="v1-4">
+    <h2>Version 1.4</h2>
+    <ul>
+      <li>Carte redessinée (terrains illustrés, mer, côtes), territoires aux couleurs de leur propriétaire, zoom.</li>
+      <li>Sons à chaque action, textes agrandis.</li>
+    </ul>
+  </section>
+
+  <section id="v1-0">
+    <h2>Versions 1.0 à 1.3</h2>
+    <ul>
+      <li>Première version web : jeu local de 3 à 6 joueurs sur un écran, jeu en ligne par salon, statistiques anonymes.</li>
+      <li>Environ deux fois plus de zones de mer que sur le prototype en carton.</li>
+      <li>Musique de taverne, bruitages et animations.</li>
+    </ul>
+  </section>
+
+  <footer><a href="./">← Retour au jeu</a> · <a href="/mentions-legales.html">Mentions légales</a></footer>
+</main>
+</body>
+</html>
