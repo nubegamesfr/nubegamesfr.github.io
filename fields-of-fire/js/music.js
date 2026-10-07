@@ -15,7 +15,7 @@
   function g(lufs) { return Math.pow(10, (-16 - lufs) / 20); }
   var LISTS = {
     calm: [
-      { t: 'Exploration', a: 'RandomMind', f: 'exploration.mp3', u: OGA + 'Exploration_0.mp3', x: 1, g: g(-22.0), d: 1.1 },
+      { t: 'Exploration', a: 'RandomMind', f: 'exploration.mp3', u: OGA + 'Exploration_0.mp3', x: 1, fav: 1, g: g(-22.0), d: 1.1 },
       { t: 'Adventurer’s Path', a: 'vitalezzz', f: 'adventurers-path.mp3', u: OGA + 'adventurers_path_0.mp3', x: 1, g: g(-13.6) },
       { t: 'Journey With No Name', a: 'iamoneabe', f: 'journey-with-no-name.mp3', u: OGA + 'cresttest_0.mp3', x: 1, g: g(-17.3) },
       { t: 'The Ancient Legend', a: 'vitalezzz', f: 'the-ancient-legend.mp3', u: OGA + 'the_ancient_legend_2.mp3', x: 1, g: g(-15.7) },
@@ -25,18 +25,14 @@
       { t: 'Minstrel Dance', a: 'RandomMind', f: 'minstrel-dance.mp3', u: OGA + 'Minstrel_Dance_0.mp3', g: g(-12.9) },
       { t: 'King’s Feast', a: 'RandomMind', f: 'kings-feast.mp3', u: OGA + 'Kings_Feast_0.mp3', g: g(-14.1), d: 1.2 },
       { t: 'The Bard’s Tale', a: 'RandomMind', f: 'the-bards-tale.mp3', u: OGA + 'The_Bards_Tale.mp3', g: g(-17.6), d: 2.2 },
-      { t: 'Harvest Season', a: 'RandomMind', f: 'harvest-season.mp3', u: OGA + 'harvestseason_2.mp3', g: g(-11.1), d: 0.5 },
+      { t: 'Harvest Season', a: 'RandomMind', f: 'harvest-season.mp3', u: OGA + 'harvestseason_2.mp3', x: 1, fav: 1, g: g(-11.1), d: 0.5 },
       { t: 'Market Day', a: 'RandomMind', f: 'market-day.mp3', u: OGA + 'Market_Day.mp3', g: g(-8.1) },
       { t: 'Rejoicing', a: 'RandomMind', f: 'rejoicing.mp3', u: OGA + 'Rejoicing_0.mp3', g: g(-12.1), d: 0.5 },
       { t: 'Victory Theme', a: 'RandomMind', f: 'victory-theme.mp3', u: OGA + 'victory_0.mp3', g: g(-10.7) },
       { t: 'Lament for a Warrior’s Soul', a: 'RandomMind', f: 'lament-for-a-warriors-soul.mp3', u: OGA + 'Lament_for_a_Warriors_Soul.mp3', g: g(-17.6), d: 1.6 },
-      // v1.9.19 - six morceaux CC0 de plus (OpenGameArt), sonie mesurée (EBU R128)
-      { t: 'The Woodsman', a: 'Some Weirdo', f: 'the-woodsman.ogg', u: OGA + 'the_woodsman_0.ogg', x: 1, g: g(-18.9) },
-      { t: 'A Knight’s Challenge', a: 'Umplix', f: 'a-knights-challenge.mp3', u: OGA + 'audio_preview/a_knights_challenge.wav.mp3', x: 1, g: g(-13.7) },
-      { t: 'Merchants and Sea Salt', a: 'nbjdlukasabsolute', f: 'merchants-and-sea-salt.mp3', u: OGA + 'audio_preview/merchants_and_sea_salt.wav.mp3', x: 1, g: g(-19.2) },
-      { t: 'The Lord’s Court', a: 'Umplix', f: 'the-lords-court.mp3', u: OGA + 'audio_preview/lords_court.wav.mp3', g: g(-25.1) },
+      // v1.9.19 - morceau CC0 ajouté (OpenGameArt), sonie mesurée (EBU R128). Cinq autres ajoutés en même
+      // temps ont été retirés à la demande du créateur (07/10/2026).
       { t: 'Peasant Theme', a: 'nihilocrat', f: 'peasant-theme.ogg', u: OGA + 'peasantry.ogg', g: g(-15.7) },
-      { t: 'Crowded Pub', a: 'bobjt', f: 'crowded-pub.mp3', u: OGA + 'crowded_pub_2025_2.mp3', g: g(-13.5) }
     ],
     battle: [
       { t: 'Battle Theme A', a: 'cynicmusic', f: 'battle-theme-a.mp3', u: OGA + 'battleThemeA.mp3', g: g(-10.3) },
@@ -66,7 +62,8 @@
   function melange(a) { for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var x = a[i]; a[i] = a[j]; a[j] = x; } return a; }
   Deck.prototype.shuffle = function () {
     var L = this.list(), ex = [], au = [];
-    L.forEach(function (t, i) { (t.x ? ex : au).push(i); });
+    // v1.9.20 - fav : morceaux préférés du créateur (Exploration, Harvest Season), deux fois plus présents encore
+    L.forEach(function (t, i) { (t.x ? ex : au).push(i); if (t.fav) ex.push(i); });
     if (!ex.length || !au.length) { this.order = melange(L.map(function (_, i) { return i; })); this.pos = 0; return; }
     melange(ex); melange(au);
     var o = [], ie = 0, ia = 0, n = ex.length * 2 + au.length;

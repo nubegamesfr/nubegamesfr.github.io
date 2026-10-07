@@ -1,6 +1,15 @@
-# Fields of Fire - version web (beta 1.9.19, prototype)
+# Fields of Fire - version web (beta 1.9.20, prototype)
 
 Jeu 100 % statique (HTML/CSS/JS, sans build). Servi par GitHub Pages sur https://nubegames.fr/fields-of-fire/ (dossier `fields-of-fire/` du repo `nubegamesfr.github.io`).
+
+## v1.9.20 - retours du créateur sur la 1.9.19 (07/10/2026)
+
+- Frontières de mer des cartes générées : plus de segments droits. Le trait suit la vraie limite
+  entre les zones, lissé en courbe douce ; les zones elles-mêmes ne bougent plus.
+- Musiques : retrait de The Lord's Court, Merchants and Sea Salt, A Knight's Challenge, The Woodsman
+  et Crowded Pub. Exploration et Harvest Season, préférées du créateur, passent environ deux fois
+  plus souvent que les autres morceaux d'exploration.
+- Illustration du Chroniqueur.
 
 ## v1.9.19 - retours du créateur du 07/10/2026
 

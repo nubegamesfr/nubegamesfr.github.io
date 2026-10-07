@@ -6,7 +6,7 @@
 bâtiments appartiennent à Nube Games.** Elles ont été produites pour le jeu, nous en détenons tous
 les droits d'usage, et **personne n'est à créditer**.
 
-Cela vaut pour les 38 illustrations d'unités (`assets/units/`, dont la Garde varègue ajoutée en v1.9.17), les 9 portraits de dirigeants (dont Yusuf le Marchand, v1.9.19)
+Cela vaut pour les 39 illustrations d'unités (`assets/units/`, dont la Garde varègue, v1.9.17, et le Chroniqueur, v1.9.20), les 9 portraits de dirigeants (dont Yusuf le Marchand, v1.9.19)
 (`assets/heroes/`), les icônes de bâtiments `bld-*`, les quatre icônes de terrain `biome-*`,
 l'icône de diplomatie `dip` et l'icône de territoires `terr` (`assets/icons/`), chacune dans ses
 deux teintes quand elle apparaît sur fond clair et sur fond sombre.
@@ -72,12 +72,7 @@ Voir `js/music.js` pour les adresses exactes.
 - *The Ancient Legend* - vitalezzz
 - *Adventurer's Path* - vitalezzz
 - *Journey With No Name* - iamoneabe
-- *The Woodsman* - Some Weirdo (v1.9.19)
-- *A Knight's Challenge* - Umplix (v1.9.19)
-- *The Lord's Court* - Umplix (v1.9.19)
-- *Merchants and Sea Salt* - nbjdlukasabsolute (v1.9.19)
 - *Peasant Theme* - nihilocrat (v1.9.19)
-- *Crowded Pub* - bobjt (v1.9.19)
 
 ### Combat
 
