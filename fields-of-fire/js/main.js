@@ -21,7 +21,7 @@
   }
   var DEFAULT_NAMES = ['Aurèle', 'Bérénice', 'Corentin', 'Daphné', 'Élouan', 'Faustine'];
   var LEAD_KEYS = Object.keys(FOF.LEADERS);
-  var TRIAL = ['hugues', 'alienor', 'yusuf'];
+  var TRIAL = ['hugues', 'alienor', 'yusuf', 'zaynab'];
   /* ---------- dirigeants à débloquer ----------
      Hugues et Alinor ne sont pas jouables tant que le joueur n'a pas laissé son adresse e-mail et
      accepté d'être recontacté. Le déblocage est mémorisé dans le navigateur. Les bots peuvent les
@@ -161,7 +161,7 @@
       var mine = i === me, hex = colorHex(s.color);
       var rdy = seatReady(s, row);
       var badge = '<span class="rdy' + (rdy ? ' on' : '') + '">' + FOF.ic(rdy ? 'check' : 'hourglass', 13) + ' ' + (rdy ? 'pr\u00eat' : 'pas pr\u00eat') + '</span>';
-      if (mine && !host) badge = '<button type="button" class="rdy btn-rdy' + (rdy ? ' on' : '') + '" data-oready="' + (rdy ? '0' : '1') + '">' + FOF.ic(rdy ? 'check' : 'hourglass', 13) + ' ' + (rdy ? 'je suis pr\u00eat' : 'se d\u00e9clarer pr\u00eat') + '</button>';
+      if (mine && !host) badge = '<button type="button" class="rdy btn-rdy' + (rdy ? ' on' : '') + '" data-oready="' + (rdy ? '0' : '1') + '">' + FOF.ic(rdy ? 'check' : 'hourglass', 13) + ' ' + (rdy ? 'pr\u00eat' : 'se d\u00e9clarer pr\u00eat') + '</button>';
       h.push('<div class="prow seat' + (mine ? ' mine' : '') + '" style="border-left:4px solid ' + hex + '">' +
         (mine ? '<button type="button" class="swatch" data-oswatch="1" style="background:' + hex + '" aria-label="Changer de couleur"></button>' : '<span class="swatch" style="background:' + hex + '"></span>') +
         (mine ? '<input id="seatName" value="' + esc(s.name) + '" maxlength="16" aria-label="Votre nom">' : '<div class="seat-name"><b>' + esc(s.name) + '</b>' + (s.cid === row.host_id ? '<small>hôte</small>' : s.bot ? '<small>' + FOF.ic('helm', 12) + ' ordinateur' + (host ? ' · <button type="button" class="linkbtn" data-rmbot="' + esc(s.cid) + '">retirer</button>' : '') + '</small>' : '') + '</div>') +

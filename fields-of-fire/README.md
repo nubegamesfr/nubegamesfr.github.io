@@ -1,6 +1,28 @@
-# Fields of Fire - version web (beta 1.9.23, prototype)
+# Fields of Fire - version web (beta 1.9.24, prototype)
 
 Jeu 100 % statique (HTML/CSS/JS, sans build). Servi par GitHub Pages sur https://nubegames.fr/fields-of-fire/ (dossier `fields-of-fire/` du repo `nubegamesfr.github.io`).
+
+## v1.9.24 - retours du créateur du 08/10/2026 (09/10/2026)
+
+- **Règles** : attaque de base 3 pour tous les dirigeants ; Édouard jusqu'à 5 de diplomatie ; Yusuf :
+  une fois par partie, 3 achats au marché pendant un recrutement (prix normal, plafonds maintenus) ;
+  nouvelle dirigeante Zaynab la Vagabonde (spéciales +1 déplacement, à débloquer) ; nouvelle spéciale
+  Cartographe (0 / solde 3 / 3 ports, 2 exemplaires : passage de port à port pour tous les points de
+  déplacement, ports du joueur sur ses territoires, 1 point minimum) ; l'Ambassade relaie même après
+  un combat. Deck : 95 cartes. Manche à 6 : pas de départ sur les îles ; « Île de Wight ».
+- **Interface** : pause sans fenêtre (« Jeu en pause » sous le bouton) ; relance au clic sur le dé
+  (égalité, Prêtresse) ; Tyran annoncé après la bataille ; halo et annonce entre deux tours pour un
+  dirigeant à 2 du seuil ; sons de victoire par type ; bilan : cases parcourues et % de batailles
+  gagnées ; « Annuler la dernière action » (tout sauf combat, achat, défausse au marché, Espion) ;
+  étoiles de puissance du bleu (0) au rouge (6) ; boutons carte / marché dorés au même endroit ;
+  croix rouges ; « entretien » devient « solde » ; chronique : carte défaussée nommée.
+- **Carte** : pions et pastilles ne se chevauchent plus d'une case à l'autre (placement en évitant les
+  boîtes déjà posées) ; frontières de mer simplifiées (Douglas-Peucker 4,5 unités près des côtes, 11 au
+  large), traits courts et traits le long du cadre supprimés ; style « Carte ancienne » (encre et lavis)
+  à la place d'« Estampe sur bois » (décision du créateur, 09/10) ; un ancien choix « estampe » bascule
+  sur « Carte ancienne » ; le style par défaut reste « Enluminure ».
+- **Textes** : corrections du créateur (document « textes à relire ») sur le jeu, la page d'accueil
+  nubegames.fr, les pages légales ; page d'accueil remise à jour (seuils, dirigeants, deck).
 
 ## v1.9.23 - mention des illustrations reformulée (07/10/2026)
 

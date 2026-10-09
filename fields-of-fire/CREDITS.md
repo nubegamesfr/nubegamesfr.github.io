@@ -10,7 +10,7 @@ les droits d'usage, et **personne n'est à créditer**.
 remplacement le temps de la beta. Elles ne seront pas reprises dans la version finale, qui aura ses
 propres illustrations d'artistes. Mention affichée sur l'accueil du jeu et dans `notes.html`.
 
-Cela vaut pour les 39 illustrations d'unités (`assets/units/`, dont la Garde varègue, v1.9.17, et le Chroniqueur, v1.9.20), les 9 portraits de dirigeants (dont Yusuf le Marchand, v1.9.19)
+Cela vaut pour les 40 illustrations d'unités (`assets/units/`, dont la Garde varègue, v1.9.17, le Chroniqueur, v1.9.20, et le Cartographe, v1.9.24), les 10 portraits de dirigeants (dont Yusuf le Marchand, v1.9.19, et Zaynab la Vagabonde, v1.9.24)
 (`assets/heroes/`), les icônes de bâtiments `bld-*`, les quatre icônes de terrain `biome-*`,
 l'icône de diplomatie `dip` et l'icône de territoires `terr` (`assets/icons/`), chacune dans ses
 deux teintes quand elle apparaît sur fond clair et sur fond sombre.
@@ -87,3 +87,19 @@ Voir `js/music.js` pour les adresses exactes.
 - *Orcs Victorious* - bobjt
 - *Hope* - MintoDog
 - *Prepare Your Swords* - bojidar-bg (v1.9.19)
+
+
+## Sons de victoire (v1.9.24)
+
+Trois sons de 4,9 secondes, montés pour le jeu à partir d'enregistrements publiés sous licence
+**Creative Commons 0** (domaine public) sur Freesound. Aucune attribution n'est exigée ; les sources
+sont notées ici pour la traçabilité.
+
+| Fichier | Sources (identifiant Freesound, auteur) |
+|---|---|
+| `assets/sons/victoire-militaire.mp3` | 521831 et 521830 « Middle Ages War Cry » (joelcarrsound), 621352 « Male Yelling out a War Cry 3 » (WelvynZPorterSamples), 182112 « Shield / sword hits » (PixelsphereStudios), 376646 « Vikings in battle » (DeadVDI) |
+| `assets/sons/victoire-religieuse.mp3` | 869841 « CHOIR_Serbian_Orthodox_Ambience_9 » (SignatureSoundsOrg) |
+| `assets/sons/victoire-diplomatique.mp3` | 855457 « Real Trumpet Fanfare 1 » (qubodup) |
+
+Montage : extraits, mixage, fondus, sonie ramenée à -15 LUFS. Choisis d'après leur titre, leur
+licence et leur spectrogramme : ils n'ont pas été écoutés avant la mise en ligne.

@@ -51,6 +51,9 @@ img { max-width: 100%; }
 .star { --sc: var(--star-gold); width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center; background: var(--sc); color: #fff; font-family: var(--f-card); font-weight: 700; font-size: 19.5px; text-shadow: 0 1px 0 rgba(0,0,0,.45);
   clip-path: polygon(50% 0, 63% 17%, 85% 15%, 83% 37%, 100% 50%, 83% 63%, 85% 85%, 63% 83%, 50% 100%, 37% 83%, 15% 85%, 17% 63%, 0 50%, 17% 37%, 15% 15%, 37% 17%); flex: none; }
 .star.hi { --sc: var(--star-red); } .star.lo { --sc: var(--star-blue); } .star.gold { color: #3a2a05; text-shadow: 0 1px 0 rgba(255,255,255,.35); }
+/* v1.9.24 - puissance des unités : du bleu (0) au rouge (6), par les violets */
+.star.v0 { --sc: #2f62d8; } .star.v1 { --sc: #4a4fcf; } .star.v2 { --sc: #6a40c2; } .star.v3 { --sc: #8b35b1; }
+.star.v4 { --sc: #aa2e98; } .star.v5 { --sc: #c52c6a; } .star.v6 { --sc: #d62a2a; }
 .arrow { display: inline-flex; align-items: center; justify-content: center; background: var(--arrow); color: #fff; font-weight: 800; font-size: 16px; height: 24px; min-width: 34px; padding: 0 12px 0 7px; clip-path: polygon(0 0, 72% 0, 100% 50%, 72% 100%, 0 100%, 18% 50%); flex: none; }
 .coins { display: inline-flex; gap: 2px; } .coins i { width: 12px; height: 12px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #ffc84a, #f09a0d); border: 1px solid #c77d06; display: inline-block; }
 .coin { width: 18px; height: 18px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #ffd35c, #ee950b); border: 1px solid #b97308; display: inline-block; flex: none; }
@@ -1581,3 +1584,55 @@ html[data-theme] .setup-music { background: var(--t-surf2); border-color: var(--
 #radial.grand .rbtn.pick { width: 70px; height: 70px; } #radial.grand .rbtn.pick .rimg { width: 60px; height: 60px; }
 #radial.grand .rhint { top: -168px; font-size: 15px; }
 .popover.grand { width: 348px; font-size: 1.12em; }
+
+/* v1.9.24 - pause sans fenêtre : libellé sous le bouton pause / marche */
+.pause-wrap { position: relative; display: inline-flex; }
+.pause-lbl { position: absolute; top: calc(100% + 2px); left: 50%; transform: translateX(-50%); white-space: nowrap; font-size: 11.5px; font-weight: 700; letter-spacing: .04em; color: #e0c274; background: rgba(18,17,20,.92); border: 1px solid rgba(217,180,95,.5); border-radius: 6px; padding: 1px 7px; pointer-events: none; z-index: 30; }
+
+/* v1.9.24 - relance au clic : dé immobile (déjà tiré) et dé à cliquer */
+.die3d.still .cube { animation: none; }
+.die3d.clic { cursor: pointer; border-radius: 12px; animation: deClic 1.1s ease-in-out infinite; }
+.die3d.clic:hover .face { border-color: #e0c274; }
+@keyframes deClic { 0%, 100% { filter: drop-shadow(0 0 0 rgba(224,194,116,0)); } 50% { filter: drop-shadow(0 0 10px rgba(224,194,116,.95)); } }
+.reroll-msg { margin-top: 6px; font-size: 13px; font-weight: 700; color: #e0c274; text-align: center; }
+.modal.battle.pending .duel { margin-bottom: 6px; }
+
+/* v1.9.24 - dirigeant proche de la victoire : halo animé autour du portrait */
+.opp.proche .portrait, .me.proche .pwrap .portrait { animation: halo 1.8s ease-in-out infinite; }
+@keyframes halo { 0%, 100% { box-shadow: 0 0 6px 1px rgba(255,214,110,.55), 0 0 0 2px rgba(255,214,110,.7); } 50% { box-shadow: 0 0 22px 7px rgba(255,214,110,.95), 0 0 0 3px #ffd66e; } }
+body.no-anim .opp.proche .portrait, body.no-anim .me.proche .pwrap .portrait { animation: none; box-shadow: 0 0 14px 4px rgba(255,214,110,.85), 0 0 0 3px #ffd66e; }
+/* annonce entre deux tours */
+.modal.proche-v { text-align: center; max-width: 420px; border-color: var(--pc); }
+.modal.proche-v .pv-portrait { width: 132px; margin: 0 auto 10px; }
+.modal.proche-v .pv-portrait .portrait { width: 132px; height: 140px; border-radius: 12px; border: 3px solid var(--pc); animation: halo 1.8s ease-in-out infinite; }
+.modal.proche-v h2 { margin: 6px 0 8px; }
+.modal.proche-v .pv-type { margin: 4px 0; font-size: 16px; }
+.modal.proche-v .actions { justify-content: center; }
+
+/* v1.9.24 - bouton carte / marché : en doré, au même endroit de l'écran que le marché soit ouvert ou
+   réduit (coin bas gauche du marché, qui est toujours collé au bas du plateau). La pile du deck remonte
+   pour lui laisser la place. Écrans étroits et paliers resserrés : le bouton reste dans le titre. */
+.market h3 .mk-h3t .btn { white-space: nowrap; font-size: 12.5px; padding: 5px 10px; }
+@media (min-width: 1151px) {
+  .market:not(.tight):not(.row1) h3 .mk-h3t { position: absolute; left: 22px; bottom: calc(8px - var(--mkgap, 0px)); z-index: 2; }
+  .market:not(.tight):not(.row1):not(.compact) .deckpile { padding-bottom: 34px; }
+  .market.compact h3 { min-width: 150px; min-height: 30px; }
+}
+.market .mk-toggle.btn, html[data-theme] .market .mk-toggle.btn { background: linear-gradient(180deg, #f0d27a, #c69b3c); color: #2a1d05; border: 1px solid #8a6a24; text-shadow: 0 1px 0 rgba(255,255,255,.35); box-shadow: 0 2px 8px -2px rgba(0,0,0,.6); }
+.market .mk-toggle.btn:hover { background: linear-gradient(180deg, #f7dd8f, #d4a947); }
+
+/* v1.9.24 - croix de fermeture en rouge, un peu plus grandes (créateur, 08/10/2026) */
+.popover .x { color: #e0463c; font-size: 27px; font-weight: 700; line-height: 1; right: 6px; top: 2px; }
+.popover .x:hover { color: #ff6a5e; }
+#radial .rbtn.close { width: 46px; height: 46px; border-color: #b8322a; background: #3a1512; }
+#radial .rbtn.close b { color: #ff5a4e; }
+#radial .rbtn.close b svg { width: 22px; height: 22px; }
+#radial .rbtn.close:hover { background: #5a1c17; }
+.tuto-x { color: #e0463c !important; }
+.tuto-x svg { width: 18px; height: 18px; }
+
+/* v1.9.24 - légende des terrains en style « Carte ancienne » */
+html[data-mapstyle="ancienne"] .legend .chip-P { background: #e6d8a0 !important; }
+html[data-mapstyle="ancienne"] .legend .chip-F { background: #96ac6e !important; }
+html[data-mapstyle="ancienne"] .legend .chip-M { background: #c8baa4 !important; }
+html[data-mapstyle="ancienne"] .legend .chip-Ma { background: #9eb2a4 !important; }

@@ -22,7 +22,7 @@
   // à appeler une fois à la création de la partie
   FOF.statsInit = function (st, mode, room) {
     if (st.meta) return;
-    if (!humainsSeuls(st)) return;                     // une IA à la table : aucune trace
+    if (!humainsSeuls(st)) return;                     // table 100 % bots : aucune trace (v1.9.18)
     st.meta = { gid: uuid(), mode: mode, room: room || null, startedAt: new Date().toISOString(), lastTurn: 0, gold: st.players.map(function () { return [0, 0]; }), maxTerr: st.players.map(function () { return 0; }) };
   };
   function sample(st) {

@@ -87,8 +87,8 @@
     <div class="faits">
       <div class="fait"><b>3 to 6</b><span>players</span></div>
       <div class="fait"><b>7</b><span>territories per player on the map</span></div>
-      <div class="fait"><b>8</b><span>lords with distinct powers</span></div>
-      <div class="fait"><b>85</b><span>unit cards in the deck</span></div>
+      <div class="fait"><b>10</b><span>lords with distinct powers</span></div>
+      <div class="fait"><b>95</b><span>unit cards in the deck</span></div>
       <div class="fait"><b>Free</b><span>and no sign-up</span></div>
     </div>
 
@@ -116,12 +116,12 @@
       <article class="voie voie-foi">
         <div class="voie-nom"><h3>Raise the temples</h3><p>Religious, in temples</p></div>
         <p class="voie-texte">Build enough temples, foreign soil included, or gain them by conversion. A temple costs 7 gold, and razing one is never free.</p>
-        <ol class="seuils" aria-label="Victory threshold by player count"><li><span class="sr">with 3 players </span><b>9</b></li><li><span class="sr">with 4 players </span><b>10</b></li><li><span class="sr">with 5 players </span><b>11</b></li><li><span class="sr">with 6 players </span><b>12</b></li></ol>
+        <ol class="seuils" aria-label="Victory threshold by player count"><li><span class="sr">with 3 players </span><b>8</b></li><li><span class="sr">with 4 players </span><b>9</b></li><li><span class="sr">with 5 players </span><b>10</b></li><li><span class="sr">with 6 players </span><b>11</b></li></ol>
       </article>
       <article class="voie voie-dip">
         <div class="voie-nom"><h3>Make a name</h3><p>Diplomatic, in points</p></div>
-        <p class="voie-texte">Reach the diplomacy threshold by playing envoys and keeping the peace. An Embassy in your capital amplifies every gain, as long as no one attacks you.</p>
-        <ol class="seuils" aria-label="Victory threshold by player count"><li><span class="sr">with 3 players </span><b>9</b></li><li><span class="sr">with 4 players </span><b>10</b></li><li><span class="sr">with 5 players </span><b>11</b></li><li><span class="sr">with 6 players </span><b>12</b></li></ol>
+        <p class="voie-texte">Reach 12 diplomacy by recruiting the special units that bring it. An Embassy in your capital amplifies some card effects, while other cards require you to deter others from attacking you.</p>
+        <ol class="seuils" aria-label="Victory threshold by player count"><li><span class="sr">with 3 players </span><b>12</b></li><li><span class="sr">with 4 players </span><b>12</b></li><li><span class="sr">with 5 players </span><b>12</b></li><li><span class="sr">with 6 players </span><b>12</b></li></ol>
       </article>
     </div>
     <p class="tiny voies-note">These numbers are still moving: they are tuned playtest after playtest.</p>
@@ -134,7 +134,7 @@
       <h2 id="t-turn">Four phases, always in the same order</h2>
     </div>
     <div class="etapes">
-      <div class="etape"><b>Collect</b><p>1 gold per territory, 1 more per city, minus your units’ upkeep. The breakdown is shown line by line.</p></div>
+      <div class="etape"><b>Collect</b><p>1 gold per territory, 1 more per city, minus your units’ pay. The breakdown is shown line by line.</p></div>
       <div class="etape"><b>Recruit</b><p>Five cards sit face up. You may buy one and discard one, in whichever order you like.</p></div>
       <div class="etape"><b>Military</b><p>Move your pieces, claim a neutral territory, or attack - at the price of one diplomacy point.</p></div>
       <div class="etape"><b>Build</b><p>Camp, fort, port, city, temple, embassy. Two buildings per tile, and as many builds as your gold allows.</p></div>
@@ -167,9 +167,9 @@
         <figcaption><b>Illumination</b> - lapis sea, gold rule, manuscript tones. The default look.</figcaption>
       </figure>
       <figure class="style-fig">
-        <img src="../assets/images/fof-carte-estampe.webp" width="1300" height="630" loading="lazy" decoding="async"
-             alt="The same map in the Woodcut style: reduced palette, ink-dark sea, terrains in engraved flats.">
-        <figcaption><b>Woodcut</b> - seven tones, ink sea, instant reading. Switchable in the settings.</figcaption>
+        <img src="../assets/images/fof-carte-ancienne.webp" width="1300" height="630" loading="lazy" decoding="async"
+             alt="The same map in the Old map style: watercolour terrains, ink motifs, grey-blue sea.">
+        <figcaption><b>Old map</b> - watercolour and ink. Switchable in the settings.</figcaption>
       </figure>
     </div>
   </div>
@@ -179,11 +179,11 @@
   <div class="wrap">
     <div class="sec-head">
       <h2 id="t-units">You don’t recruit what you want, you recruit what turns up</h2>
-      <p class="lead">Five cards face up, one buy and one discard per turn. Elite units fight - their strength shifts with the terrain. Special units never fight: they convert a temple, carry word to a foreign court, scout the map or shore up a defence. Every card requires a building before it can be recruited, and draws upkeep at each collection.</p>
+      <p class="lead">Five cards face up, one buy and one discard per turn. Elite units fight - their strength shifts with the terrain. Special units never fight: they convert a temple, carry word to a foreign court, scout the map or shore up a defence. Every card requires a building before it can be recruited, and draws pay at each collection.</p>
     </div>
     <figure class="fig reveal">
       <img src="../assets/images/fof-cartes.webp" width="1200" height="400" loading="lazy" decoding="async"
-           alt="Five unit cards with artwork, strength per terrain, upkeep, recruitment requirement and number of copies in the deck.">
+           alt="Five unit cards with artwork, strength per terrain, pay, recruitment requirement and number of copies in the deck.">
     </figure>
     <p class="fig-cap">A few cards from the deck. The number in the top corner is how many copies it holds.</p>
   </div>
@@ -192,18 +192,20 @@
 <section class="section" id="lords" aria-labelledby="t-lords">
   <div class="wrap">
     <div class="sec-head">
-      <h2 id="t-lords">Eight lords, eight ways to play</h2>
+      <h2 id="t-lords">Lords</h2>
       <p class="lead">Your lord is a piece like any other: it moves, it claims, it can lead an assault and lose a territory doing so. Its power, though, shapes the whole game.</p>
     </div>
     <ul class="seigneurs">
       <li class="seigneur"><img src="../assets/images/dirigeants/odon.webp" width="96" height="102" loading="lazy" decoding="async" alt=""><div><b>Odon the Brave</b><p>Each of his elite units in an assault gives him +1, whether or not he leads it.</p></div></li>
-      <li class="seigneur"><img src="../assets/images/dirigeants/gustave.webp" width="96" height="102" loading="lazy" decoding="async" alt=""><div><b>Gustave the Irascible</b><p>His camps, forts and ports gain +1 defence. His cities cost 6 gold.</p></div></li>
-      <li class="seigneur"><img src="../assets/images/dirigeants/edouard.webp" width="96" height="102" loading="lazy" decoding="async" alt=""><div><b>Edward the Wise</b><p>Once per game, in peacetime: 1 gold for 1 diplomacy point.</p></div></li>
-      <li class="seigneur"><img src="../assets/images/dirigeants/mathilde.webp" width="96" height="102" loading="lazy" decoding="async" alt=""><div><b>Mathilda the Beloved</b><p>Her first city costs 4 gold; the rest are full price.</p></div></li>
+      <li class="seigneur"><img src="../assets/images/dirigeants/gustave.webp" width="96" height="102" loading="lazy" decoding="async" alt=""><div><b>Gustave the Irascible</b><p>All his territories: +1 defence. His cities cost 6 gold.</p></div></li>
+      <li class="seigneur"><img src="../assets/images/dirigeants/edouard.webp" width="96" height="102" loading="lazy" decoding="async" alt=""><div><b>Edward the Wise</b><p>Once per game, in peacetime, with 5 diplomacy or less: 1 gold for 1 diplomacy point.</p></div></li>
+      <li class="seigneur"><img src="../assets/images/dirigeants/mathilde.webp" width="96" height="102" loading="lazy" decoding="async" alt=""><div><b>Mathilda the Beloved</b><p>Her first city costs 4 gold.</p></div></li>
       <li class="seigneur"><img src="../assets/images/dirigeants/adele.webp" width="96" height="102" loading="lazy" decoding="async" alt=""><div><b>Adele the Pious</b><p>Her temples cost 6 gold and give +1 defence.</p></div></li>
       <li class="seigneur"><img src="../assets/images/dirigeants/henri.webp" width="96" height="102" loading="lazy" decoding="async" alt=""><div><b>Henry the Strategist</b><p>All his elite units move one tile further.</p></div></li>
-      <li class="seigneur"><img src="../assets/images/dirigeants/hugues.webp" width="96" height="102" loading="lazy" decoding="async" alt=""><div><b>Hugh the Builder</b><p>His camps, forts and ports cost 1 gold less.</p></div></li>
-      <li class="seigneur"><img src="../assets/images/dirigeants/alienor.webp" width="96" height="102" loading="lazy" decoding="async" alt=""><div><b>Alinor the Admiral</b><p>Her ports cost 2 gold and gain +2 defence.</p></div></li>
+      <li class="seigneur"><img src="../assets/images/dirigeants/hugues.webp" width="96" height="102" loading="lazy" decoding="async" alt=""><div><b>Hugh the Builder</b><p>His forts and ports cost 1 gold less.</p></div></li>
+      <li class="seigneur"><img src="../assets/images/dirigeants/alienor.webp" width="96" height="102" loading="lazy" decoding="async" alt=""><div><b>Alinor the Admiral</b><p>Her ports cost 2 gold and have +2 defence.</p></div></li>
+      <li class="seigneur"><img src="../assets/images/dirigeants/yusuf.webp" width="96" height="102" loading="lazy" decoding="async" alt=""><div><b>Yusuf the Merchant</b><p>Once per game, he can buy 3 cards from the market.</p></div></li>
+      <li class="seigneur"><img src="../assets/images/dirigeants/zaynab.webp" width="96" height="102" loading="lazy" decoding="async" alt=""><div><b>Zaynab the Wanderer</b><p>All her special units move one tile further.</p></div></li>
     </ul>
   </div>
 </section>
@@ -234,7 +236,7 @@
         <ol>
           <li>Pick the number of lords, from 3 to 6.</li>
           <li>Everyone takes a lord and a colour.</li>
-          <li>Pass the device each turn. Empty seats are played by bots.</li>
+          <li>Empty seats are played by bots.</li>
         </ol>
         <a class="btn" href="/fields-of-fire/">Start a local game</a>
       </article>

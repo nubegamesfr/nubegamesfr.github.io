@@ -141,6 +141,15 @@
   var last = {};
   var UI = { charge: 1, click: 1, tap: 1, select: 1, march: 1, page: 1, bell: 1, coins: 1, card: 1, mallet: 1, flag: 1, magic: 1, draw: 1, dip: 1, spend: 1 };
   FOF.sfxLast = 0;
+  /* v1.9.24 - sons de victoire (créateur, 08/10/2026), 5 s au plus, enregistrements CC0 de Freesound
+     montés pour le jeu (détail dans CREDITS.md) : militaire = cri de guerre et boucliers, religieuse =
+     chœur, diplomatique = trompette. Ils remplacent l'ancien arpège de victoire / défaite. Volume : celui
+     des bruitages. */
+  var VICT = { mil: 'victoire-militaire', rel: 'victoire-religieuse', dip: 'victoire-diplomatique' };
+  FOF.sonVictoire = function (type) {
+    var f = VICT[type]; if (!f || !on) return;
+    try { var a = new Audio('assets/sons/' + f + '.mp3'); a.volume = Math.max(0, Math.min(1, vol)); var pr = a.play(); if (pr && pr.catch) pr.catch(function () {}); } catch (e) {}
+  };
   FOF.sfx = function (name) {
     if (UI[name]) FOF.sfxLast = Date.now();
     if (!on || !S[name]) return;

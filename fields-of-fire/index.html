@@ -21,7 +21,7 @@
 <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
 <link rel="preload" href="assets/fonts/cinzel-700.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="assets/fonts/alegreya-sans-400.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="css/style.css?v=beta-1.9.23">
+<link rel="stylesheet" href="css/style.css?v=beta-1.9.24">
 <script>try{document.documentElement.dataset.theme=localStorage.getItem('fof-theme')==='feutre'?'feutre':'braise'}catch(e){document.documentElement.dataset.theme='braise'}</script>
 </head>
 <body>
@@ -39,7 +39,7 @@
       <div id="stepMode">
         <p class="eyebrow">Prototype jouable · 3 à 6 joueurs</p>
         <h2>Prenez la tête d’un royaume</h2>
-        <p class="lead">Chacun part d’une capitale sur son propre continent : conquérez, bâtissez, et choisissez votre voie - l’épée, la foi ou la diplomatie.</p>
+        <p class="lead">Chacun part de sa capitale : conquérez, bâtissez, et choisissez votre voie - l’épée, la foi ou la politique.</p>
         <div class="mode-grid">
           <button class="mode-card" type="button" data-mode="local">
             <span class="mc-ico" data-ic="dice"></span>
@@ -61,7 +61,7 @@
         <p class="note" id="onlineNote" hidden>Le jeu en ligne n’est pas encore activé sur ce site.</p>
         <div class="setup-actions" id="resumeBox"></div>
         <footer class="setup-foot">
-          <p><b>Version beta 1.9.23</b> · prototype. Les parties sont enregistrées de façon anonyme (durée, tours, dirigeants, type de victoire) pour équilibrer le jeu. Hugues le Bâtisseur, Alinor l’Amirale et Yusuf le Marchand se débloquent en laissant votre adresse e-mail.</p>
+          <p><b>Version beta 1.9.24</b> · prototype. Les parties sont enregistrées de façon anonyme (durée, tours, dirigeants, type de victoire) pour équilibrer le jeu. Hugues le Bâtisseur, Alinor l’Amirale, Yusuf le Marchand et Zaynab la Vagabonde se débloquent en laissant votre adresse e-mail.</p>
           <p>Illustrations, portraits et icônes : Nube Games. Musique : domaine public (CC0) d’OpenGameArt, détail dans CREDITS. Polices sous licence SIL OFL 1.1, hébergées sur notre serveur.</p>
           <p class="setup-legal"><a href="/">Nube Games</a> · <a href="/mentions-legales.html">Mentions légales</a> · <a href="/confidentialite.html">Confidentialité</a> · <a href="/conditions.html">CGU</a> · <a href="notes.html">Note de mise à jour</a></p>
         </footer>
@@ -102,7 +102,7 @@
     <button class="btn ghost" id="glossBtn" type="button" title="Glossaire"><span data-ic="book"></span> Glossaire</button>
     <button class="btn ghost icon-btn theme-btn" id="themeBtn" type="button" data-theme-toggle aria-label="Changer d’habillage"></button>
     <button class="btn ghost icon-btn" id="setBtn" type="button" title="Réglages" aria-label="Réglages" data-ic="gear"></button>
-    <button class="btn ghost icon-btn" id="pauseBtn" type="button" title="Mettre la partie en pause" aria-label="Mettre la partie en pause" data-ic="pause" hidden></button>
+    <span class="pause-wrap"><button class="btn ghost icon-btn" id="pauseBtn" type="button" title="Mettre la partie en pause" aria-label="Mettre la partie en pause" data-ic="pause" hidden></button><span id="pauseLbl" class="pause-lbl" hidden>Jeu en pause</span></span>
     <button class="btn ghost icon-btn hdr-flag" id="flagBtn" type="button" title="Quitter la partie (pause 48 h ou abandon)" aria-label="Quitter la partie" data-ic="flag"></button>
     <button class="btn ghost" id="helpBtn" type="button" title="Règles"><span data-ic="help"></span> Règles</button>
     <button class="btn ghost icon-btn" id="bugBtn" type="button" title="Signaler un bug" aria-label="Signaler un bug" data-ic="bug"></button>
@@ -112,7 +112,7 @@
   <main id="board">
     <div class="banner" id="banner" hidden></div>
     <div id="boardWrap"><canvas id="baseCv"></canvas><canvas id="amCv"></canvas><canvas id="ovCv"></canvas><canvas id="rcCv"></canvas><svg id="tokens"></svg><div class="popover" id="popover" hidden></div><div id="radial" hidden></div></div>
-    <div class="legend"><span><i class="chip" style="background:#b3d65a"></i><img src="assets/icons/biome-P.png" alt="">Plaines</span><span><i class="chip" style="background:#2d6b2f"></i><img src="assets/icons/biome-F.png" alt="">Forêt</span><span><i class="chip" style="background:#aca596"></i><img src="assets/icons/biome-M.png" alt="">Montagnes</span><span><i class="chip" style="background:#526043"></i><img src="assets/icons/biome-Ma.png" alt="">Marécage</span></div>
+    <div class="legend"><span><i class="chip chip-P" style="background:#b3d65a"></i><img src="assets/icons/biome-P.png" alt="">Plaines</span><span><i class="chip chip-F" style="background:#2d6b2f"></i><img src="assets/icons/biome-F.png" alt="">Forêt</span><span><i class="chip chip-M" style="background:#aca596"></i><img src="assets/icons/biome-M.png" alt="">Montagnes</span><span><i class="chip chip-Ma" style="background:#526043"></i><img src="assets/icons/biome-Ma.png" alt="">Marécage</span></div>
     <div class="board-tools"><button class="btn small" id="zoomOut" type="button" aria-label="Dézoomer">−</button><button class="btn small" id="zoomIn" type="button" aria-label="Zoomer">+</button></div>
     <div class="market" id="market" hidden></div>
   </main>
@@ -126,32 +126,32 @@
 <div id="bugModal" hidden></div>
 <div id="chatPanel" hidden><div class="chat-head"><b><span data-ic="chat"></span> Tchat de la partie</b><button class="btn small ghost" data-chatclose="1" aria-label="Fermer">✕</button></div><div id="chatList"></div><div class="chat-in"><input id="chatInput" maxlength="300" placeholder="Votre message…" autocomplete="off"><button class="btn small primary" data-chatsend="1">Envoyer</button></div></div>
 
-<script src="js/config.js?v=beta-1.9.23"></script>
-<script src="js/icons.js?v=beta-1.9.23"></script>
-<script src="js/data.js?v=beta-1.9.23"></script>
-<script src="js/map.js?v=beta-1.9.23"></script>
-<script src="js/cartes.js?v=beta-1.9.23"></script>
-<script src="js/engine.js?v=beta-1.9.23"></script>
-<script src="js/cards.js?v=beta-1.9.23"></script>
-<script src="js/board.js?v=beta-1.9.23"></script>
-<script src="js/net.js?v=beta-1.9.23"></script>
-<script src="js/stats.js?v=beta-1.9.23"></script>
-<script src="js/sfx.js?v=beta-1.9.23"></script>
-<script src="js/fx.js?v=beta-1.9.23"></script>
-<script src="js/music.js?v=beta-1.9.23"></script>
-<script src="js/bot.js?v=beta-1.9.23"></script>
-<script src="js/tutorial.js?v=beta-1.9.23"></script>
-<script src="js/extras.js?v=beta-1.9.23"></script>
-<script src="js/minijeu.js?v=beta-1.9.23"></script>
-<script src="js/mjchausse.js?v=beta-1.9.23"></script>
-<script src="js/mjmoulin.js?v=beta-1.9.23"></script>
-<script src="js/mjtresor.js?v=beta-1.9.23"></script>
-<script src="js/mjblasons.js?v=beta-1.9.23"></script>
-<script src="js/mjmemoire.js?v=beta-1.9.23"></script>
-<script src="js/mjtaquin.js?v=beta-1.9.23"></script>
-<script src="js/mjreussite.js?v=beta-1.9.23"></script>
-<script src="js/ui.js?v=beta-1.9.23"></script>
-<script src="js/main.js?v=beta-1.9.23"></script>
+<script src="js/config.js?v=beta-1.9.24"></script>
+<script src="js/icons.js?v=beta-1.9.24"></script>
+<script src="js/data.js?v=beta-1.9.24"></script>
+<script src="js/map.js?v=beta-1.9.24"></script>
+<script src="js/cartes.js?v=beta-1.9.24"></script>
+<script src="js/engine.js?v=beta-1.9.24"></script>
+<script src="js/cards.js?v=beta-1.9.24"></script>
+<script src="js/board.js?v=beta-1.9.24"></script>
+<script src="js/net.js?v=beta-1.9.24"></script>
+<script src="js/stats.js?v=beta-1.9.24"></script>
+<script src="js/sfx.js?v=beta-1.9.24"></script>
+<script src="js/fx.js?v=beta-1.9.24"></script>
+<script src="js/music.js?v=beta-1.9.24"></script>
+<script src="js/bot.js?v=beta-1.9.24"></script>
+<script src="js/tutorial.js?v=beta-1.9.24"></script>
+<script src="js/extras.js?v=beta-1.9.24"></script>
+<script src="js/minijeu.js?v=beta-1.9.24"></script>
+<script src="js/mjchausse.js?v=beta-1.9.24"></script>
+<script src="js/mjmoulin.js?v=beta-1.9.24"></script>
+<script src="js/mjtresor.js?v=beta-1.9.24"></script>
+<script src="js/mjblasons.js?v=beta-1.9.24"></script>
+<script src="js/mjmemoire.js?v=beta-1.9.24"></script>
+<script src="js/mjtaquin.js?v=beta-1.9.24"></script>
+<script src="js/mjreussite.js?v=beta-1.9.24"></script>
+<script src="js/ui.js?v=beta-1.9.24"></script>
+<script src="js/main.js?v=beta-1.9.24"></script>
 
 </body>
 </html>

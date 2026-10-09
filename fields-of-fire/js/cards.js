@@ -2,15 +2,18 @@
 (function (FOF) {
   'use strict';
   var esc = FOF.esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
-  var HAS_ART = ['corbeau','partisan','predicateur','colonie','emissaire','caboteur','caravanier','trebuchets','exploratrice','gouverneur','pretresse','pillards','ecumeurs','brigands','bandits','nomades','fantassins','cuirassiers','archmontes','inflourde','arbaletriers','archers','garde','chevaliers','piquiers','espion','heraut','ambassadeur','pelerin','milice','maitre','croises','prelat','calomniateur','boutefeu','varegues','chroniqueur'];
-  var HERO_ART = ['odon','gustave','edouard','mathilde','adele','henri','hugues','alienor','yusuf'];
+  var HAS_ART = ['corbeau','partisan','predicateur','colonie','emissaire','caboteur','caravanier','trebuchets','exploratrice','gouverneur','pretresse','pillards','ecumeurs','brigands','bandits','nomades','fantassins','cuirassiers','archmontes','inflourde','arbaletriers','archers','garde','chevaliers','piquiers','espion','heraut','ambassadeur','pelerin','milice','maitre','croises','prelat','calomniateur','boutefeu','varegues','chroniqueur','cartographe'];
+  var HERO_ART = ['odon','gustave','edouard','mathilde','adele','henri','hugues','alienor','yusuf','zaynab'];
   FOF.unitArt = function (key) { return HAS_ART.indexOf(key) >= 0 ? 'assets/units/' + key + '.jpg' : null; };
   FOF.heroArt = function (key) { return HERO_ART.indexOf(key) >= 0 ? 'assets/heroes/' + key + '.jpg' : null; };
   FOF.heroImg = function (key, cls) {
     var a = FOF.heroArt(key);
     return a ? '<img class="' + (cls || 'portrait') + '" src="' + a + '" alt="">' : '<div class="' + (cls || 'portrait') + ' none"><img src="assets/icons/crown.png" alt=""></div>';
   };
-  FOF.starClass = function (v, arr) { var mx = Math.max.apply(null, arr), mn = Math.min.apply(null, arr); if (mx === mn) return 'gold'; return v === mx ? 'hi' : v === mn ? 'lo' : 'gold'; };
+  // v1.9.24 - couleur de l'étoile selon la valeur, du bleu (0) au rouge (6) en passant par les
+  // violets, une teinte distincte par valeur (créateur, 08/10/2026). Avant : rouge = meilleur
+  // terrain de la carte, bleu = pire, or sinon.
+  FOF.starClass = function (v) { return 'v' + Math.max(0, Math.min(6, v | 0)); };
 
   FOF.cardHTML = function (key, opts) {
     opts = opts || {};
@@ -24,7 +27,7 @@
       }).join('') + '</div>';
     } else h += '<div class="txt">' + esc(d.text) + '</div>';
     var cond = d.req[0] === 'D' ? '<span class="cond">' + d.req[1] + ' <small>diplo.</small></span>' : '<span class="cond">' + d.req[1] + ' <img src="assets/icons/bld-' + d.req[0] + '.png" alt="' + FOF.BUILDINGS[d.req[0]].name + '"></span>';
-    h += '<div class="ft"><div><small>Entretien</small><span class="coins">' + new Array(d.upkeep + 1).join('<i></i>') + '</span></div><div style="text-align:right"><small>Condition</small>' + cond + '</div></div>';
+    h += '<div class="ft"><div><small>Solde</small><span class="coins">' + new Array(d.upkeep + 1).join('<i></i>') + '</span></div><div style="text-align:right"><small>Condition</small>' + cond + '</div></div>';
     if (opts.actions) h += opts.actions;
     return h + '</div>';
   };

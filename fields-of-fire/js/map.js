@@ -950,7 +950,8 @@
     var S = FOF.HIST_S;
     return {
       hist: cle, n: n, px: v.px.slice(), W: 0, H: 0, nCont: 1 + Math.max.apply(null, v.terr.map(function (t) { return t.cont; })),
-      terr: v.terr.map(function (t, i) { return { id: i, hex: null, cont: t.cont, biome: t.biome, ctrl: null, blds: [], adj: t.adj.slice(), seas: t.seas.slice(), name: t.name }; }),
+      // v1.9.24 : noCap = jamais case de départ d'un dirigeant (Île de Wight, îles anglo-normandes, créateur 08/10/2026)
+      terr: v.terr.map(function (t, i) { var o = { id: i, hex: null, cont: t.cont, biome: t.biome, ctrl: null, blds: [], adj: t.adj.slice(), seas: t.seas.slice(), name: t.name }; if (t.noCap) o.noCap = 1; return o; }),
       seas: v.seas.map(function (z, i) { return { id: i, name: z.name, adjT: z.adjT.slice(), adjS: z.adjS.slice(), anchor: null }; }),
       seaRays: v.rays.map(function (r) { return { pts: [{ x: r[0] / S, y: r[1] / S }, { x: r[2] / S, y: r[3] / S }] }; })
     };

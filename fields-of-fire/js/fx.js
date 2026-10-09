@@ -86,7 +86,7 @@
     if (!p) return;
     var el = document.createElement('div'); el.className = 'fx-tyran' + (fixe ? ' still' : '');
     el.setAttribute('role', 'alert');
-    el.innerHTML = '<div class="ty-crown">' + FOF.ic('crown', 84) + '</div><div class="ty-t">TYRAN</div><div class="ty-n">' + FOF.esc(p.name) + ' a renié toute parole donnée.</div><div class="ty-s">Tous peuvent désormais l’attaquer sans perdre de diplomatie, et ses terres se révolteront à chaque tour.</div><div class="ty-x">Cliquez pour fermer</div>';
+    el.innerHTML = '<div class="ty-crown">' + FOF.ic('crown', 84) + '</div><div class="ty-t">TYRAN</div><div class="ty-n">' + FOF.esc(p.name) + ' est devenu un tyran.</div><div class="ty-s">Tous peuvent désormais l’attaquer sans perdre de diplomatie, et ses terres se révolteront à chaque tour.</div><div class="ty-x">Cliquez pour fermer</div>';
     var fini = false;
     function fermer() { if (fini) return; fini = true; el.classList.add('out'); setTimeout(function () { el.remove(); }, 600); }
     el.addEventListener('click', fermer);
@@ -98,7 +98,7 @@
     var m = document.getElementById('modal');
     if (m && !m.hidden && m.querySelector('.pass')) { pendingGold += n; return; }
     var el = document.createElement('div'); el.className = 'fx-gold' + (n < 0 ? ' loss' : '');
-    el.innerHTML = '<i class="coin"></i><div>' + (n > 0 ? '+' : '') + n + ' or<small>' + (n > 0 ? 'Collecte' : 'Entretien') + '</small></div>';
+    el.innerHTML = '<i class="coin"></i><div>' + (n > 0 ? '+' : '') + n + ' or<small>' + (n > 0 ? 'Collecte' : 'Solde') + '</small></div>';
     if (n > 0) for (var k = 0; k < 10; k++) { var s = document.createElement('i'); s.className = 'spark'; var ang = k / 10 * Math.PI * 2; s.style.setProperty('--dx', Math.round(Math.cos(ang) * 120) + 'px'); s.style.setProperty('--dy', Math.round(Math.sin(ang) * 70) + 'px'); s.style.animationDelay = (0.15 + Math.random() * 0.2) + 's'; el.appendChild(s); }
     document.body.appendChild(el); setTimeout(function () { el.remove(); }, 2500);
     setTimeout(function () { FOF.sfx(n > 0 ? 'coins' : 'spend'); }, 150);
@@ -114,13 +114,22 @@
     });
   }
 
+  var tyransAttente = [];
+  // un combat dont les dés se montrent en plusieurs fois (égalité, Prêtresse) : le son de victoire ou
+  // de défaite part au dernier jet (voir ui.js), pas au premier
+  FOF.combatEnPlusieursFois = function (c) { return !!c && !c.auto && !!c.rolls && (c.rolls.length > 1 || c.rolls.some(function (r) { return r.pa || r.pd; })); };
   FOF.FX = {
     before: function () { return { pos: tokPos() }; },
     after: function (st, before, o) {
       var cur = snap(st);
+      // v1.9.24 - l'annonce du Tyran attend la fin de la bataille (fenêtre de combat fermée), au lieu
+      // de la recouvrir pendant que les dés roulent (créateur, 08/10/2026)
       if (prev && prev.seed === cur.seed && prev.tyran) cur.tyran.forEach(function (t, i) {
-        if (t && !prev.tyran[i]) { tyranPop(st.players[i], reduce || FOF.animOn === false); FOF.sfx && FOF.sfx('tyran'); }
+        if (t && !prev.tyran[i] && tyransAttente.indexOf(i) < 0) tyransAttente.push(i);
       });
+      if (tyransAttente.length && !(FOF.combatOuvert && FOF.combatOuvert())) {
+        tyransAttente.splice(0).forEach(function (i) { tyranPop(st.players[i], reduce || FOF.animOn === false); FOF.sfx && FOF.sfx('tyran'); });
+      }
       if (reduce || !prev || prev.seed !== cur.seed) { prev = cur; return; }
       var anim = FOF.animOn !== false;
       // 1) les pions glissent vers leur nouvelle case
@@ -187,9 +196,10 @@
       });
       if (cur.combat && cur.combat !== prev.combat) {
         var c = st.lastCombat, mine = o.online ? (o.seat === c.att ? c.win : o.seat === c.def ? !c.win : null) : c.win;
-        FOF.sfx('dice3d'); if (mine !== null) setTimeout(function () { FOF.sfx(mine ? 'win' : 'loss'); }, 1350);   // v1.9.15 : plus de fracas d'épées, seulement les dés puis cor ou luth
+        FOF.sfx('dice3d'); if (mine !== null && !FOF.combatEnPlusieursFois(c)) setTimeout(function () { FOF.sfx(mine ? 'win' : 'loss'); }, 1350);   // v1.9.15 : plus de fracas d'épées, seulement les dés puis cor ou luth
       } else if (cur.winner && !prev.winner) {
-        FOF.sfx(!o.online || o.seat === st.winner.pid ? 'victory' : 'defeat');
+        // v1.9.24 : un son propre à chaque victoire (militaire, religieuse, diplomatique), pour tous
+        if (FOF.sonVictoire) FOF.sonVictoire(st.winner.type);
       } else if (Date.now() - (FOF.sfxLast || 0) < 700) { /* le clic a déjà fait son bruit */ }
       else if (snd.length) FOF.sfx(snd[0]);
       else if (cur.turnNo !== prev.turnNo) FOF.sfx(o.online && o.seat === st.cur ? 'turn' : 'phase');
@@ -199,7 +209,7 @@
       else if (cur.gold[st.cur] < prev.gold[st.cur]) FOF.sfx('spend');
       prev = cur;
     },
-    reset: function () { prev = null; }
+    reset: function () { prev = null; tyransAttente.length = 0; }
   };
   // cartes du marché : animation « distribuée » quand une nouvelle carte arrive dans un emplacement
   var seenSlots = {};

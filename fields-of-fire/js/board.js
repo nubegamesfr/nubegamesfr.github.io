@@ -132,6 +132,11 @@
       front[i] = paires[cle];
     }
     if (!nP) return null;
+    // v1.9.24 - distance à la terre (en pixels de trame) : loin des côtes, le trait peut être plus droit
+    var dTerre = new Int32Array(N).fill(1 << 20), fq = new Int32Array(N), fh = 0, ft = 0;
+    for (i = 0; i < N; i++) if (kind[i] === 1) { dTerre[i] = 0; fq[ft++] = i; }
+    while (fh < ft) { var uq = fq[fh++], xq = uq % gw, dq = dTerre[uq] + 1; [xq > 0 ? uq - 1 : -1, xq < gw - 1 ? uq + 1 : -1, uq - gw, uq + gw].forEach(function (j) { if (j >= 0 && j < N && dTerre[j] > dq) { dTerre[j] = dq; fq[ft++] = j; } }); }
+    function tolerance(pt) { var j = Math.min(gh - 1, Math.max(0, pt[1] | 0)) * gw + Math.min(gw - 1, Math.max(0, pt[0] | 0)); return dTerre[j] > 14 * S ? 11 * S : 4.5 * S; }
     // 2. composantes (8-connexité) de chaque frontière, ordonnées puis lissées
     var vu = new Uint8Array(N), segs = [], file = new Int32Array(N), dist = new Int32Array(N);
     function voisins8(k, f) { var kx = k % gw; for (var dy = -1; dy <= 1; dy++) for (var dx = -1; dx <= 1; dx++) { if (!dx && !dy) continue; var nx = kx + dx, j = k + dy * gw + dx; if (nx < 0 || nx >= gw || j < 0 || j >= N) continue; f(j); } }
@@ -161,9 +166,13 @@
           lisse.push([sx / (2 * r + 1), sy / (2 * r + 1)]);
         }
       }
-      // un point sur deux suffit au tracé
-      var poly = lisse.filter(function (p0, ix) { return ix % 2 === 0 || ix === lisse.length - 1; });
-      segs.push(poly);
+      // v1.9.24 - « un peu plus droit » (créateur, 08/10/2026) : la courbe lissée est simplifiée
+      // (Douglas-Peucker, écart maximal de 4,5 unités à la vraie limite près des côtes, 11 au large) ; les traits de moins de
+      // 10 unités, ou qui suivent le bord du cadre, sont des restes de découpage : on ne les trace pas.
+      var poly = simplifier(lisse, tolerance), lg = 0;
+      for (kc = 1; kc < poly.length; kc++) lg += Math.hypot(poly[kc][0] - poly[kc - 1][0], poly[kc][1] - poly[kc - 1][1]);
+      var marge = 3 * S, surBord = poly.every(function (p0) { return p0[0] < marge || p0[1] < marge || p0[0] > gw - marge || p0[1] > gh - marge; });
+      if (lg >= 10 * S && !surBord) segs.push(poly);
 
       function parcours(dep) {   // parcours limité à la composante
         membres.forEach(function (k) { dist[k] = -1; });
@@ -174,6 +183,19 @@
     }
     if (!segs.length) return null;
     return segs;
+  }
+  // Douglas-Peucker : garde les points qui s'écartent de la corde de plus que tol(point)
+  function simplifier(pts, tol) {
+    if (pts.length < 3) return pts.slice();
+    var garder = new Uint8Array(pts.length); garder[0] = garder[pts.length - 1] = 1;
+    var pile = [[0, pts.length - 1]];
+    while (pile.length) {
+      var seg = pile.pop(), i0 = seg[0], i1 = seg[1], ax = pts[i0][0], ay = pts[i0][1], bx = pts[i1][0], by = pts[i1][1];
+      var dx = bx - ax, dy = by - ay, L = Math.hypot(dx, dy) || 1e-9, dmax = -1, imax = -1;
+      for (var i = i0 + 1; i < i1; i++) { var d = Math.abs(dy * (pts[i][0] - ax) - dx * (pts[i][1] - ay)) / L; if (d > dmax) { dmax = d; imax = i; } }
+      if (imax > 0 && dmax > tol(pts[imax])) { garder[imax] = 1; pile.push([i0, imax], [imax, i1]); }
+    }
+    return pts.filter(function (p0, i) { return garder[i]; });
   }
   function buildHist(st, tr) {
     var m = st.map, S = FOF.HIST_S, gw = tr.w, gh = tr.h, N = gw * gh;
@@ -345,24 +367,67 @@
     }
   };
 
+  /* v1.9.24 - proposition « Carte ancienne » : motifs à l'encre sur lavis, façon carte gravée.
+     Montagnes en triangles hachurés, forêts en houppiers cerclés d'encre, plaines en touffes et
+     sillons, marais en roseaux et traits d'eau. Rien de pixelisé : tout est tracé au trait. */
+  var INK = '#3b2a1c';
+  var VEC_ANC = {
+    M: function (c, x, y, k, r) {
+      var h = (6.5 + r * 3.5) * k, w = (4.2 + r * 1.6) * k, tx = x + (hash(x, y, 3) - 0.5) * w * 0.25, ty = y - h;
+      c.fillStyle = 'rgba(240,228,200,.9)'; c.beginPath(); c.moveTo(x - w, y); c.lineTo(tx, ty); c.lineTo(x + w, y); c.closePath(); c.fill();
+      c.strokeStyle = INK; c.lineWidth = 0.75 * k;
+      c.beginPath(); c.moveTo(x - w, y); c.lineTo(tx, ty); c.lineTo(x + w, y); c.stroke();
+      c.lineWidth = 0.42 * k; c.strokeStyle = 'rgba(59,42,28,.8)';
+      for (var q = 1; q <= 4; q++) { var f = q / 5, ax = tx + (x + w - tx) * f, ay = ty + (y - ty) * f; c.beginPath(); c.moveTo(ax, ay); c.lineTo(ax - w * 0.32 * (1 - f * 0.4), ay + h * 0.12); c.stroke(); }
+    },
+    F: function (c, x, y, k, r) {
+      var s2 = (1.7 + r * 0.7) * k;
+      c.strokeStyle = INK; c.lineWidth = 0.45 * k; c.beginPath(); c.moveTo(x, y); c.lineTo(x, y - s2 * 0.9); c.stroke();
+      c.fillStyle = r > 0.5 ? '#8ea46a' : '#7a945c'; c.beginPath(); c.arc(x, y - s2 * 1.55, s2, 0, 7); c.fill();
+      c.lineWidth = 0.6 * k; c.beginPath(); c.arc(x, y - s2 * 1.55, s2, 0, 7); c.stroke();
+      c.strokeStyle = 'rgba(59,42,28,.55)'; c.lineWidth = 0.35 * k; c.beginPath(); c.arc(x + s2 * 0.15, y - s2 * 1.5, s2 * 0.62, 0.2, 1.9); c.stroke();
+    },
+    P: function (c, x, y, k, r) {
+      c.strokeStyle = 'rgba(80,62,34,.85)'; c.lineWidth = 0.45 * k;
+      if (r < 0.35) {   // sillons d'un champ
+        c.save(); c.translate(x, y); c.rotate((r - 0.18) * 2);
+        for (var q = -2; q <= 2; q++) { c.beginPath(); c.moveTo(-3 * k, q * 0.9 * k); c.lineTo(3 * k, q * 0.9 * k); c.stroke(); }
+        c.restore(); return;
+      }
+      [-1.2, 0, 1.2].forEach(function (dx, i) { c.beginPath(); c.moveTo(x + dx * k, y); c.lineTo(x + dx * k + (i - 1) * 0.5 * k, y - (1.4 + (i === 1 ? 0.6 : 0)) * k); c.stroke(); });
+    },
+    Ma: function (c, x, y, k, r) {
+      c.strokeStyle = 'rgba(52,74,70,.85)'; c.lineWidth = 0.42 * k;
+      for (var q = 0; q < 2; q++) { var yy = y + q * 1.1 * k; c.beginPath(); c.moveTo(x - 2.6 * k, yy); c.quadraticCurveTo(x - 1.3 * k, yy - 0.5 * k, x, yy); c.quadraticCurveTo(x + 1.3 * k, yy + 0.5 * k, x + 2.6 * k, yy); c.stroke(); }
+      c.strokeStyle = INK; c.lineWidth = 0.4 * k;
+      [-1.4, -0.4, 0.7, 1.6].forEach(function (dx, i) { var h2 = (2 + (i % 2) * 0.9 + r) * k; c.beginPath(); c.moveTo(x + dx * k, y - 0.3 * k); c.lineTo(x + dx * k + (i - 1.5) * 0.25 * k, y - h2); c.stroke(); });
+    }
+  };
+  var ANC_LAND = { P: [230, 216, 160], F: [150, 172, 110], M: [200, 186, 164], Ma: [158, 178, 164] };
+
   var SEA3 = [[92, 206, 222], [52, 150, 214], [34, 104, 190], [26, 78, 162]];
   function mix3(p, v) { var n = p.length - 1, f = Math.max(0, Math.min(n, v * n)), k = Math.min(n - 1, Math.floor(f)), t = f - k, a = p[k], b = p[k + 1]; return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t]; }
   /* ---------- styles de carte (v1.8) ----------
      Traitement appliqué au calque du terrain seulement, une fois par carte.
      Les couleurs des joueurs sont peintes sur un autre calque (overlay) : elles ne sont pas touchées. */
-  var STYLES = ['enluminure', 'estampe'];
+  var STYLES = ['enluminure', 'ancienne'];
   FOF.MAP_STYLES = [
     { id: 'enluminure', name: 'Enluminure' },
-    { id: 'estampe', name: 'Estampe sur bois' }
+    // v1.9.24 : « Carte ancienne » remplace « Estampe sur bois » (créateur, 09/10/2026)
+    { id: 'ancienne', name: 'Carte ancienne' }
   ];
   FOF.mapStyle = function () {
     var v; try { v = localStorage.getItem('fof-mapstyle'); } catch (e) {}
+    if (v === 'estampe') v = 'ancienne';                      // ancien choix « Estampe sur bois » : on bascule sur son remplaçant
     return STYLES.indexOf(v) >= 0 ? v : 'enluminure';        // enluminure par défaut
   };
   FOF.setMapStyle = function (s) {
     if (STYLES.indexOf(s) < 0) return;
     try { localStorage.setItem('fof-mapstyle', s); } catch (e) {}
+    document.documentElement.setAttribute('data-mapstyle', s);
   };
+  // v1.9.24 : la légende des terrains suit le style de carte (couleurs de « Carte ancienne »)
+  try { document.documentElement.setAttribute('data-mapstyle', FOF.mapStyle()); } catch (e) {}
 
   function clamp8(v) { return v < 0 ? 0 : v > 255 ? 255 : v; }
   function lum8(r, g, b) { return 0.299 * r + 0.587 * g + 0.114 * b; }
@@ -380,7 +445,6 @@
     g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, col);
     ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
   }
-  var EST_PAL = [[228, 218, 198], [196, 168, 110], [122, 140, 86], [48, 78, 58], [92, 88, 80], [28, 36, 48], [20, 16, 12]];
 
   // couleur exacte écrite par le rendu de base pour la limite entre deux zones de mer
   function isSeaBorder(r, g, b) { return Math.abs(r - 170) < 9 && Math.abs(g - 214) < 9 && Math.abs(b - 245) < 9; }
@@ -390,30 +454,17 @@
     var ctx = canvas.getContext('2d'), d;
     try { d = ctx.getImageData(0, 0, w, h); } catch (e) { return; }   // canvas « teinté » : on laisse tel quel
     var a = d.data, i, r, g, b, L;
-    if (style === 'estampe') {
-      for (i = 0; i < a.length; i += 4) {
-        if (!a[i + 3]) continue;
-        // le test du pointillé passe AVANT killGlow, qui modifie la couleur
-        if (isSeaBorder(a[i], a[i + 1], a[i + 2])) { a[i] = 168; a[i + 1] = 186; a[i + 2] = 204; continue; }
-        killGlow(a, i);
-        r = a[i]; g = a[i + 1]; b = a[i + 2];
-        if (isSea8(r, g, b)) { a[i] = 28; a[i + 1] = 36; a[i + 2] = 48; continue; }
-        r = clamp8((r - 128) * 1.3 + 128); g = clamp8((g - 128) * 1.3 + 128); b = clamp8((b - 128) * 1.3 + 128);
-        var best = 0, bd = 1e9;
-        for (var k = 0; k < EST_PAL.length; k++) {
-          var dr = r - EST_PAL[k][0], dg = g - EST_PAL[k][1], db = b - EST_PAL[k][2];
-          var dd = dr * dr + dg * dg + db * db;
-          if (dd < bd) { bd = dd; best = k; }
-        }
-        a[i] = EST_PAL[best][0]; a[i + 1] = EST_PAL[best][1]; a[i + 2] = EST_PAL[best][2];
-      }
-      ctx.putImageData(d, 0, 0);
-      ctx.save();
-      ctx.globalCompositeOperation = 'lighten';
-      ctx.strokeStyle = 'rgba(228,218,198,.22)'; ctx.lineWidth = 1.1;
-      for (var x = -h; x < w; x += 9) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x + h, h); ctx.stroke(); }
-      ctx.restore();
-      vignette(ctx, w, h, 'rgba(20,16,12,.34)');
+    /* v1.9.24 - proposition « Carte ancienne » : couleurs adoucies, terres tirées vers le parchemin
+       (chaque terrain garde sa teinte, moins criarde), mer gris-bleu passé, grain de papier, bords
+       assombris comme un vieux document, filet sépia. Le style par défaut ne change pas. */
+    if (style === 'ancienne') {
+      // la base est déjà peinte au lavis (drawBase) : on n'ajoute que le vieillissement et le cadre
+      vignette(ctx, w, h, 'rgba(92,62,30,.42)');
+      ctx.strokeStyle = '#4a3420'; ctx.lineWidth = Math.max(4, Math.round(Math.min(w, h) * 0.006));
+      ctx.strokeRect(ctx.lineWidth / 2, ctx.lineWidth / 2, w - ctx.lineWidth, h - ctx.lineWidth);
+      ctx.strokeStyle = 'rgba(74,52,32,.6)'; ctx.lineWidth = Math.max(1, ctx.lineWidth / 3);
+      var ins = Math.max(8, Math.round(Math.min(w, h) * 0.014));
+      ctx.strokeRect(ins, ins, w - 2 * ins, h - 2 * ins);
       return;
     }
     // enluminure : mer de lapis, terres en pierres précieuses, filet d'or
@@ -467,6 +518,7 @@
     ctx.lineWidth = 1.6 * rs.S;
     ctx.strokeStyle = 'rgba(246,252,255,.96)';
     ctx.shadowColor = 'rgba(8,24,50,.75)'; ctx.shadowBlur = 2 * rs.S;
+    if (FOF.mapStyle && FOF.mapStyle() === 'ancienne') { ctx.strokeStyle = 'rgba(59,42,28,.82)'; ctx.shadowBlur = 0; }
     m.seaRays.forEach(function (ray) {
       ctx.beginPath();
       var premier = true;
@@ -491,6 +543,7 @@
     // lisibilité : trait un peu plus épais que l'ancien (1,6), ombre plus marquée pour détacher le trait de l'eau
     c.lineCap = 'round'; c.lineJoin = 'round'; c.setLineDash([8 * rs.S, 4.4 * rs.S]); c.lineWidth = 2 * rs.S;
     c.strokeStyle = 'rgba(248,252,255,.97)'; c.shadowColor = 'rgba(6,18,40,.9)'; c.shadowBlur = 2.6 * rs.S;
+    if (FOF.mapStyle && FOF.mapStyle() === 'ancienne') { c.strokeStyle = 'rgba(59,42,28,.82)'; c.shadowBlur = 0; c.lineWidth = 1.5 * rs.S; c.setLineDash([6 * rs.S, 4 * rs.S]); }
     rs.seaSegs.forEach(function (g) { c.beginPath(); c.moveTo(g[0][0], g[0][1]); for (var k = 1; k < g.length; k++) c.lineTo(g[k][0], g[k][1]); c.stroke(); });
     // masque : on efface ce qui tomberait sur la terre ou hors des zones de mer
     var mk = c.getImageData(0, 0, rs.gw, rs.gh), d = mk.data;
@@ -503,6 +556,7 @@
     canvas.width = gw; canvas.height = gh;
     var kind = rs.kind, id = rs.id, dist = rs.dist, shore = rs.shore, coastD = rs.coastD;
     var biomeOf = m.terr.map(function (t) { return t.biome; });
+    var ANC = FOF.mapStyle && FOF.mapStyle() === 'ancienne';   // v1.9.24 : proposition « Carte ancienne »
     var P = 1, lw = Math.ceil(gw / P), lh = Math.ceil(gh / P), u = S / P; // u = pixels bas-déf par unité
     var low = document.createElement('canvas'); low.width = lw; low.height = lh;
     var lc = low.getContext('2d'), img = lc.createImageData(lw, lh), d = img.data;
@@ -517,6 +571,24 @@
     for (ly = 0; ly < lh; ly++) for (lx = 0; lx < lw; lx++) {
       j = ly * lw + lx; i = at(lx, ly);
       var k = LK[j], col;
+      if (ANC) {
+        // lavis : teinte plate par terrain, très légère variation, côte et frontières à l'encre
+        var gr = vnoise(lx / (9 * u), ly / (9 * u), 31) * 10 + (hash(lx, ly, 7) - 0.5) * 7;
+        if (k === 1) {
+          var bmA = biomeOf[LI[j]], base = ANC_LAND[bmA], cdA = coastD[i] / S, diA = dist[i] / S;
+          col = [base[0] + gr, base[1] + gr, base[2] + gr * 0.8];
+          if (cdA < 0.8) col = [59, 42, 28];
+          else if (cdA < 2.2) col = [col[0] * 0.9, col[1] * 0.88, col[2] * 0.84];
+          else if (diA < 0.42) col = [92, 70, 48];
+        } else {
+          var sA = shore[i] / S, dpA = Math.min(1, Math.max(0, (sA - 1) / 16));
+          col = [184 - dpA * 52 + gr * 0.6, 204 - dpA * 44 + gr * 0.6, 196 - dpA * 30 + gr * 0.5];
+          // lignes d'eau parallèles à la côte, comme sur une gravure
+          if (sA > 1.4 && sA < 9 && Math.abs(((sA - 1.4) % 2.6) - 1.3) < 0.22) col = [col[0] * 0.8, col[1] * 0.83, col[2] * 0.86];
+        }
+        var oA = j * 4; d[oA] = clamp8(col[0]); d[oA + 1] = clamp8(col[1]); d[oA + 2] = clamp8(col[2]); d[oA + 3] = 255;
+        continue;
+      }
       if (k === 1) {
         var bm = biomeOf[LI[j]], cd = coastD[i] / S, di = dist[i] / S;
         var sl = (lx > 0 && ly > 0) ? (hg[j - 1] - hg[j] + hg[j - lw] - hg[j]) : 0;
@@ -578,7 +650,7 @@
       var ax = (a.x - rs.minX) * u, ay = (a.y - rs.minY) * u;
       var x0 = Math.floor(bx.x0 / P), x1 = Math.ceil(bx.x1 / P), y0 = Math.floor(bx.y0 / P), y1 = Math.ceil(bx.y1 / P);
       // grille régulière décalée, faible jitter : motifs espacés et répartis sur toute la case
-      var step = { F: 5.2, M: 9, P: 6.2, Ma: 7 }[t.biome] * u, row = 0, n = 0;
+      var step = { F: 5.2, M: 9, P: 6.2, Ma: 7 }[t.biome] * u * (ANC ? { F: 1.15, M: 1.05, P: 1.55, Ma: 1.35 }[t.biome] : 1), row = 0, n = 0;
       for (var yy = y0 + step * 0.3; yy <= y1; yy += step * 0.82, row++) for (var xx = x0 + ((row & 1) ? step / 2 : 0); xx <= x1; xx += step) {
         n++;
         var px = Math.round(xx + (hash(n, t.id, 21) - 0.5) * step * 0.3), py = Math.round(yy + (hash(n, t.id, 22) - 0.5) * step * 0.3), r = hash(n, t.id, 23);
@@ -595,7 +667,7 @@
       var bx = rs.box['t' + tid]; if (!bx) return;
       var w = bx.x1 - bx.x0 + 1, h = bx.y1 - bx.y0 + 1, lay = document.createElement('canvas'); lay.width = w; lay.height = h;
       var c = lay.getContext('2d'); c.lineCap = 'round'; c.lineJoin = 'round'; c.translate(-bx.x0, -bx.y0);
-      byT[tid].forEach(function (e) { VEC[e[1]](c, e[2], e[0], S, e[3]); });
+      byT[tid].forEach(function (e) { (ANC ? VEC_ANC : VEC)[e[1]](c, e[2], e[0], S, e[3]); });
       c.setTransform(1, 0, 0, 1, 0, 0);
       var mk = c.createImageData(w, h), md = mk.data, v = +tid, inB = 0.8 * S, inC = 1.6 * S;
       for (var yy = 0; yy < h; yy++) for (var xx = 0; xx < w; xx++) {
@@ -606,6 +678,7 @@
       c.globalCompositeOperation = 'destination-in'; c.drawImage(mc, 0, 0);
       ctx.drawImage(lay, bx.x0, bx.y0);
     });
+    if (ANC) { tracerMers(ctx, st, rs); return; }   // pas de vagues ni de voile bleu : le style ancien finit ici
     // petites vagues dessinées au large, espacées régulièrement
     ctx.strokeStyle = 'rgba(210,235,255,.33)'; ctx.lineWidth = 0.45 * S; ctx.lineCap = 'round';
     var wsx = 22 * S, wsy = 13 * S, wr = 0;
@@ -968,6 +1041,8 @@
       var i = gy * rs.gw + gx; return rs.kind[i] === 1 ? 't' + rs.id[i] : rs.kind[i] === 2 ? 's' + rs.id[i] : null;
     },
     anchor: function (loc) { return cache ? cache.anchor[loc] || null : { x: 0, y: 0 }; },
+    // v1.9.24 : surface approximative d'une case (boîte englobante), pour placer d'abord les plus petites
+    taille: function (loc) { var b = cache && cache.box[loc]; return b ? (b.x1 - b.x0 + 1) * (b.y1 - b.y0 + 1) : 1e9; },
     // vrai si le point (unités) appartient à la région demandée
     inside: function (loc, ux, uy) {
       var rs = cache; if (!rs) return false;
@@ -977,18 +1052,39 @@
       return rs.kind[i] === k && rs.id[i] === +loc.slice(1);
     },
     // cherche autour de l'ancre une position où le rectangle (largeur w, de -up à +down) tient dans la case
-    place: function (loc, w, up, down) {
+    // v1.9.24 - avoid : rectangles déjà occupés (pions, aménagements d'autres cases) à ne pas chevaucher.
+    // Les points du milieu des bords sont aussi vérifiés : une île au milieu d'une mer ne passe plus
+    // entre les quatre coins (Golfe de Saint-Malo et îles anglo-normandes, créateur 08/10/2026).
+    place: function (loc, w, up, down, avoid) {
       var rs = cache, a = rs && rs.anchor[loc]; if (!a) return null;
       var self = FOF.Board, hw = w / 2;
-      function fits(x, y) {
-        return self.inside(loc, x, y) && self.inside(loc, x - hw, y - up) && self.inside(loc, x + hw, y - up) &&
-          self.inside(loc, x - hw, y + down) && self.inside(loc, x + hw, y + down);
+      function libre(x, y) {
+        if (!avoid || !avoid.length) return true;
+        for (var k = 0; k < avoid.length; k++) { var b = avoid[k]; if (x - hw < b.x1 && x + hw > b.x0 && y - up < b.y1 && y + down > b.y0) return false; }
+        return true;
       }
+      function dedans(x, y) {
+        return self.inside(loc, x, y) && self.inside(loc, x - hw, y - up) && self.inside(loc, x + hw, y - up) &&
+          self.inside(loc, x - hw, y + down) && self.inside(loc, x + hw, y + down) &&
+          self.inside(loc, x, y - up) && self.inside(loc, x, y + down) && self.inside(loc, x - hw, y) && self.inside(loc, x + hw, y);
+      }
+      function fits(x, y) { return dedans(x, y) && libre(x, y); }
       if (fits(a.x, a.y)) return { x: a.x, y: a.y };
-      var steps = [0, 3, -3, 6, -6, 9, -9, 13, -13, 17, -17, 22, -22];
+      var steps = [0]; for (var st0 = 3; st0 <= (avoid && avoid.length ? 96 : 22); st0 += st0 < 24 ? 3 : 5) steps.push(st0, -st0);
       for (var r = 1; r < steps.length; r++) for (var i = 0; i <= r; i++) {
         var cand = [[steps[r], steps[i]], [steps[i], steps[r]]];
         for (var c = 0; c < 2; c++) { var x = a.x + cand[c][0], y = a.y + cand[c][1]; if (fits(x, y)) return { x: x, y: y }; }
+      }
+      // aucune place libre en entier dans la case : on accepte que les coins débordent un peu
+      // (centre et milieux des bords toujours dans la case), toujours sans chevaucher les voisins
+      if (avoid && avoid.length) {
+        var lache = function (x, y) { return self.inside(loc, x, y) && self.inside(loc, x, y - up * 0.7) && self.inside(loc, x, y + down * 0.7) && self.inside(loc, x - hw * 0.7, y) && self.inside(loc, x + hw * 0.7, y) && libre(x, y); };
+        for (var r2 = 0; r2 < steps.length; r2++) for (var i2 = 0; i2 <= r2; i2++) {
+          var cd2 = [[steps[r2], steps[i2]], [steps[i2], steps[r2]]];
+          for (var c2 = 0; c2 < 2; c2++) { var x2 = a.x + cd2[c2][0], y2 = a.y + cd2[c2][1]; if (lache(x2, y2)) return { x: x2, y: y2 }; }
+        }
+        // toujours rien : on garde la règle d'avant (dans la case, sans tenir compte des voisins)
+        return self.place(loc, w, up, down);
       }
       // rien ne tient : on réduit la marge et on se contente du centre de la case
       for (var k2 = 0.8; k2 >= 0.2; k2 -= 0.2) {

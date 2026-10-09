@@ -18,7 +18,7 @@
     st.players = cfg.players.map(function (p, i) {
       return { id: i, name: p.name, color: p.color, leader: p.leader, bot: !!p.bot, mod: FOF.LEADERS[p.leader].mod, gold: 3, dip: 3, tyran: false, tyranStamp: null,
         alive: true, capital: null, lpos: null, lArr: 0, lMoved: false, lConq: false, lFought: false, pact: null,
-        tally: { gold: 3, recruit: 0, build: 0, battles: 0, wins: 0, losses: 0, conquest: 0, lost: 0, peak: 1 },
+        tally: { gold: 3, recruit: 0, build: 0, battles: 0, wins: 0, losses: 0, conquest: 0, lost: 0, peak: 1, cases: 0 },
         attackedLast: false, attackedNow: false, raidedLast: false, raidedNow: false, edouardUsed: false, flags: {} };
     });
     // v1.5 : dirigeants placés au hasard n'importe où, jamais sur deux cases voisines
@@ -26,8 +26,10 @@
     // v1.9.17 - FOF.terrDistance : distance en cases sur une carte générée (inchangé), en pas sur une
     // carte historique (voir map.js).
     var TT = st.map.terr, best = null, bestD = -1;
+    // v1.9.24 - certaines cases ne peuvent pas servir de départ (îles de la Manche à 6 joueurs)
+    var depart = range(TT.length).filter(function (i) { return !TT[i].noCap; });
     for (var tr = 0; tr < 60; tr++) {
-      var pick = FOF.shuffle(st, range(TT.length)).slice(0, st.players.length), md = 99;
+      var pick = FOF.shuffle(st, depart.slice()).slice(0, st.players.length), md = 99;
       for (var i1 = 0; i1 < pick.length; i1++) for (var i2 = i1 + 1; i2 < pick.length; i2++) md = Math.min(md, FOF.terrDistance(st.map, pick[i1], pick[i2]));
       if (md >= 2 && md > bestD) { bestD = md; best = pick; }
     }
@@ -121,8 +123,8 @@
       if ((u.key === 'caboteur' || u.key === 'caravanier') && u.pos[0] === 't') {
         var typ = u.key === 'caboteur' ? 'P' : 'Ci', tid = +u.pos.slice(1);
         // v1.9.17 : 3 or au lieu de 2
-        // v1.9.19 : 5 or pour Yusuf le Marchand
-        var gainC = p.leader === 'yusuf' ? 5 : 3;
+        // v1.9.24 : le bonus de Yusuf (5 or) disparaît avec son nouveau pouvoir (créateur, 08/10/2026)
+        var gainC = 3;
         if (T(st, tid).blds.some(function (b) { return b.t === typ && b.o !== p.id; })) { if (bloquees[tid]) inc.boutefeu += gainC; else inc.trade += gainC; }
       }
     });
@@ -139,7 +141,9 @@
   FOF.unitMove = function (st, u) {
     var d = FOF.unitDef(u.key).move;
     if (FOF.isElite(u.key) && st.players[u.owner].leader === 'henri') d += 1;
-    if ((u.key === 'caboteur' || u.key === 'caravanier') && st.players[u.owner].leader === 'yusuf') d += 1;   // v1.9.19
+    // v1.9.24 - Zaynab la Vagabonde : toutes ses unités spéciales +1 (créateur, 08/10/2026).
+    // Le +1 de Yusuf sur Caboteurs et Caravaniers disparaît avec son nouveau pouvoir.
+    if (!FOF.isElite(u.key) && st.players[u.owner].leader === 'zaynab') d += 1;
     return d;
   };
 
@@ -175,6 +179,18 @@
     delete dist[from];
     return dist;
   };
+  /* v1.9.24 - Cartographe (créateur, 08/10/2026) : tant qu'il est en jeu, les unités et le dirigeant de
+     son propriétaire passent directement d'un de ses ports à un autre de ses ports, pour tous leurs
+     points de déplacement. Réponses du 08/10 : départ et arrivée sur un territoire que le joueur
+     contrôle et qui porte SON port ; le pion doit avoir encore au moins 1 point de déplacement.
+     Le pouvoir disparaît avec le Cartographe (défaussé, déserté, détruit). */
+  function sonPort(st, p, t) { return t && t.ctrl === p.id && t.blds.some(function (b) { return b.t === 'P' && b.o === p.id; }); }
+  FOF.portHops = function (st, p, from, budget) {
+    if (!from || from[0] !== 't' || !(budget > 0)) return [];
+    if (!st.units.some(function (u) { return u.owner === p.id && u.key === 'cartographe'; })) return [];
+    if (!sonPort(st, p, T(st, +from.slice(1)))) return [];
+    return st.map.terr.filter(function (t) { return 't' + t.id !== from && sonPort(st, p, t); }).map(function (t) { return 't' + t.id; });
+  };
 
   /* ---------- diplomatie ---------- */
   function loseDip(st, p, n, why) {
@@ -189,7 +205,7 @@
         breakPactQuiet(st, p);
         if (chasse) loseDip(st, partenaire, 1, 'ambassadeur chassé par le tyran ' + p.name);
       }
-      log(st, p.name + ' renie toute parole donnée : le voici TYRAN, honni de tous !', p.id, 'tyran');
+      log(st, p.name + ' est devenu un tyran !', p.id, 'tyran');
     } else { p.dip -= n; }
     if (why) log(st, p.name + ' perd ' + n + ' de diplomatie (' + why + ') ; les cours voisines murmurent.', p.id, 'dip-');
   }
@@ -200,7 +216,9 @@
     // et seulement si le joueur n'a ni attaqué ni été attaqué depuis son dernier tour.
     // v1.9.11 - « ni attaqué ni été attaqué DEPUIS votre tour précédent » : l'attaque menée plus tôt
     // dans le tour en cours comptait pas (attaquer puis livrer un Émissaire gardait le +1).
-    if (!sansRelais && !p.attackedLast && !p.raidedLast && !p.attackedNow && !p.raidedNow && FOF.countBld(st, p.id, 'A')) { n += 1; why += ' + Ambassade'; }
+    // v1.9.24 - l'Ambassade relaie même si l'on a combattu : seules certaines cartes (le Héraut)
+    // demandent la paix (créateur, 08/10/2026). Avant : ni attaqué ni été attaqué depuis son tour.
+    if (!sansRelais && FOF.countBld(st, p.id, 'A')) { n += 1; why += ' + Ambassade'; }
     // le plafond suivait la valeur figée 10 : tout seuil au-dessus était inatteignable.
     var g = Math.min(st.victory.dip, p.dip + n) - p.dip; p.dip += g;
     if (g) log(st, p.name + ' gagne ' + g + ' de diplomatie (' + why + ') ; son nom s’élève dans les cours.', p.id, 'dip+');
@@ -212,10 +230,10 @@
     q.pact = null; p.pact = null;
   }
   function breakPact(st, att, def) {
-    log(st, att.name + ' trahit le pacte juré à ' + def.name + ' !', att.id, 'pactbreak');
+    log(st, att.name + ' trahit le pacte qui le liait à ' + def.name + ' !', att.id, 'pactbreak');
     breakPactQuiet(st, att);
     loseDip(st, att, 2, 'rupture de pacte');
-    gainDip(st, def, 1, 'trahi par un pacte');
+    gainDip(st, def, 1, 'trahi');
   }
 
   /* v1.9.9 - un pacte ne vaut QUE tant qu'un ambassadeur se tient sur la capitale de l'autre,
@@ -387,7 +405,7 @@
       if (FOF.countBld(st, p.id, 'T') >= st.victory.rel) { st.winner = { pid: p.id, type: 'rel' }; break; }
       if (p.dip >= st.victory.dip) { st.winner = { pid: p.id, type: 'dip' }; break; }
     }
-    if (st.winner) log(st, '★ Gloire à ' + st.players[st.winner.pid].name + ', qui l’emporte ! Les ménestrels chanteront son nom.', st.winner.pid, 'win');
+    if (st.winner) log(st, '★ Gloire à ' + st.players[st.winner.pid].name + ', qui l’emporte ! Son nom entre dans la légende.', st.winner.pid, 'win');
   }
   FOF.checkWin = checkWin;
   function eliminate(st, p) {
@@ -401,7 +419,7 @@
     FOF.army(st, p.id).slice().forEach(function (u) { discardUnit(st, u); });
     p.lpos = null;
     st.pending = st.pending.filter(function (x) { return x.pid !== p.id; });
-    log(st, 'La maison de ' + p.name + ' s’éteint : ses terres retournent à la friche.', p.id, 'elim');
+    log(st, 'La maison de ' + p.name + ' s’éteint.', p.id, 'elim');
     checkWin(st);
     if (!st.winner && st.cur === p.id) nextPlayer(st);
   }
@@ -477,9 +495,11 @@
     var rolls = [], ra = 0, rd = 0;
     for (; !auto;) {
       ra = d6(st); rd = d6(st);
-      var r = { a: ra, d: rd, notes: [] };
-      if (pv.A + ra < pv.D + rd && aPr > 0) { aPr--; ra = d6(st); r.notes.push('Prêtresse : l’attaquant relance (' + ra + ')'); r.a = ra; }
-      if (pv.D + rd < pv.A + ra && dPr > 0) { dPr--; rd = d6(st); r.notes.push('Prêtresse : le défenseur relance (' + rd + ')'); r.d = rd; }
+      // v1.9.24 : a0 / d0 gardent le premier jet, pa / pd disent qui a relancé grâce à une Prêtresse
+      // (l'interface montre chaque relance au clic sur le dé). Le tirage lui-même ne change pas.
+      var r = { a: ra, d: rd, a0: ra, d0: rd, notes: [] };
+      if (pv.A + ra < pv.D + rd && aPr > 0) { aPr--; ra = d6(st); r.notes.push('Prêtresse : l’attaquant relance (' + ra + ')'); r.a = ra; r.pa = 1; }
+      if (pv.D + rd < pv.A + ra && dPr > 0) { dPr--; rd = d6(st); r.notes.push('Prêtresse : le défenseur relance (' + rd + ')'); r.d = rd; r.pd = 1; }
       rolls.push(r);
       if (pv.A + ra !== pv.D + rd) break;
     }
@@ -554,7 +574,7 @@
       // v1.9.19 - l'Exploratrice agit dès son arrivée, en phase militaire, comme la Colonie (créateur, 07/10/2026)
       case 'exploratrice': return t.ctrl === null && t.revoltFrom !== p.id && t.cont !== T(st, p.capital).cont ? 'Revendiquer ce territoire' : null;
       // v1.9.11 - le Partisan convertit tout SAUF les temples (décision du créateur, 27/09/2026)
-      case 'partisan': return t.ctrl !== null && t.ctrl !== p.id && t.blds.some(function (b) { return b.o !== p.id && b.t !== 'T'; }) ? 'Soulever les aménagements (sauf temples)' : null;
+      case 'partisan': return t.ctrl !== null && t.ctrl !== p.id && t.blds.some(function (b) { return b.o !== p.id && b.t !== 'T'; }) ? 'Soulever les aménagements' : null;
       case 'predicateur': return t.ctrl !== null && t.ctrl !== p.id && t.blds.some(function (b) { return b.t === 'T' && b.o !== p.id; }) ? 'Convertir le temple' : null;
       // v1.9.6 - le Gouverneur agit sur TOUS vos territoires, où qu'il se trouve, temples exclus.
       case 'gouverneur': return FOF.terrOf(st, p.id).some(function (x) { return x.blds.some(function (b) { return b.o !== p.id && b.t !== 'T'; }); }) ? 'Convertir les aménagements adverses' : null;
@@ -577,25 +597,25 @@
       case 'calomniateur': {
         var vic = st.players[t.ctrl], perte = Math.min(2, vic.dip);
         vic.dip -= perte;   // jusqu'à 0 : la calomnie ne fait jamais basculer en Tyran
-        log(st, 'Le Calomniateur de ' + p.name + ' répand le fiel à ' + t.name + ' : ' + vic.name + ' perd ' + perte + ' de diplomatie.', p.id, 'dip-');
+        log(st, 'Le Calomniateur de ' + p.name + ' répand des rumeurs à ' + t.name + ' : ' + vic.name + ' perd ' + perte + ' de diplomatie.', p.id, 'dip-');
         discardUnit(st, u); break;
       }
       case 'pelerin':
         var tb = t.blds.filter(function (b) { return b.t === 'T' && b.o !== p.id; })[0];
-        gainDip(st, p, 1, name); gainDip(st, st.players[tb.o], 1, 'pèlerinage reçu', true);   // v1.9.12 : l'Ambassade ne relaie pas un gain reçu
+        gainDip(st, p, 1, name); gainDip(st, st.players[tb.o], 1, 'pèlerin accueilli', true);   // v1.9.12 : l'Ambassade ne relaie pas un gain reçu
         // v1.9.17 - la défausse et le break étaient restés dans le commentaire ci-dessus : l'effet
         // enchaînait sur celui de la Colonie et le Pèlerin prenait le territoire (playtest du 30/09).
         discardUnit(st, u); break;
       case 'colonie':
         if (t.revoltFrom === p.id) throw new Error('Ce territoire s\u2019est soulevé contre vous : vous ne pouvez plus vous y établir.');
         t.ctrl = p.id; t.conqStamp = st.turnNo; t.revoltFrom = null; t.takenFrom = null; if (t.blds.length < FOF.slotsOf(st, p, t.id)) t.blds.push({ t: 'C', o: p.id, b: p.id });
-        log(st, 'Des colons de ' + p.name + ' fondent un établissement à ' + t.name + '.', p.id, 'land'); discardUnit(st, u); break;
+        log(st, 'Des colons de ' + p.name + ' établissent un campement à ' + t.name + '.', p.id, 'land'); discardUnit(st, u); break;
       case 'exploratrice':
         t.ctrl = p.id; t.conqStamp = st.turnNo; t.revoltFrom = null; t.takenFrom = null; p.gold += 3; log(st, 'L’exploratrice de ' + p.name + ' plante sa bannière à ' + t.name + ' (+3 écus).', p.id, 'land'); discardUnit(st, u); break;
       case 'partisan': {
         var rp = convertir(st, t, p.id, true);
-        log(st, 'Le Partisan de ' + p.name + ' soulève les bâtisses de ' + t.name + ' en sa faveur (les temples restent fidèles).', p.id, 'convert');
-        if (rp.rasees) log(st, 'L’ambassade de ' + t.name + ' est mise à sac : une cour ne change pas de camp.', p.id, 'bad');
+        log(st, 'Le partisan de ' + p.name + ' fait se joindre les aménagements de ' + t.name + ' à sa cause.', p.id, 'convert');
+        if (rp.rasees) log(st, 'L’ambassade de ' + t.name + ' est mise à sac.', p.id, 'bad');
         discardUnit(st, u); break;
       }
       case 'predicateur':
@@ -639,7 +659,9 @@
   FOF.canBuy = function (st, key) {
     var p = FOF.cur(st), def = FOF.unitDef(key), army = FOF.army(st, p.id);
     if (st.phase !== 'recruit') return 'Pas en phase de recrutement.';
-    if (p.flags.bought) return 'Vous avez déjà acheté une unité ce tour.';
+    // v1.9.24 : 3 achats le tour où Yusuf active son pouvoir, 1 sinon
+    var achats = p.flags.buys || (p.flags.bought ? 1 : 0), maxAchats = p.flags.yusuf ? 3 : 1;
+    if (achats >= maxAchats) return maxAchats > 1 ? 'Vous avez déjà fait vos ' + maxAchats + ' achats ce tour.' : 'Vous avez déjà acheté une unité ce tour.';
     if (army.length >= 4) return 'Armée complète (4 unités).';
     var el = army.filter(function (u) { return FOF.isElite(u.key); }).length;
     if (FOF.isElite(key) && el >= 3) return 'Déjà 3 unités d’élite.';
@@ -728,15 +750,25 @@
         break;
       }
       case 'edouard':
-        if (p.leader !== 'edouard' || st.phase !== 'collect' || p.edouardUsed || p.dip > 3 || p.gold < FOF.EDOUARD_COUT || p.tyran) throw new Error('Pouvoir indisponible.');
-        if (p.attackedLast || p.raidedLast) throw new Error('Les cours étrangères se ferment après les armes : ni attaque ni agression depuis votre dernier tour.');
-        p.gold -= FOF.EDOUARD_COUT; p.flags.edouard = true; p.edouardUsed = true; gainDip(st, p, 1, 'Edouard le Sage'); checkWin(st); break;
+        // v1.9.24 : tant qu'il a 5 de diplomatie ou moins (avant : 3), créateur 08/10/2026
+        if (p.leader !== 'edouard' || st.phase !== 'collect' || p.edouardUsed || p.dip > FOF.EDOUARD_MAX || p.gold < FOF.EDOUARD_COUT || p.tyran) throw new Error('Pouvoir indisponible.');
+        if (p.attackedLast || p.raidedLast) throw new Error('Les cours étrangères se ferment.');
+        p.gold -= FOF.EDOUARD_COUT; p.flags.edouard = true; p.edouardUsed = true; gainDip(st, p, 1, 'Édouard le Sage'); checkWin(st); break;
+      /* v1.9.24 - Yusuf le Marchand (créateur, 08/10/2026) : une fois par partie, pendant son recrutement,
+         il peut acheter jusqu'à 3 cartes au lieu d'1, au prix normal, plafonds d'armée maintenus
+         (réponse du 08/10). Les achats déjà faits ce tour comptent dans les 3. */
+      case 'yusuf':
+        if (p.leader !== 'yusuf' || st.phase !== 'recruit' || p.yusufUsed) throw new Error('Pouvoir indisponible.');
+        p.yusufUsed = true; p.flags.yusuf = true;
+        log(st, p.name + ' ouvre ses coffres : jusqu’à 3 achats au marché ce tour-ci.', p.id, 'card'); break;
       case 'discardZone':
         // v1.6 : l'achat et la défausse sont indépendants (1 de chaque par tour) - avant, acheter bloquait la défausse.
         if (st.phase !== 'recruit' || p.flags.discarded) throw new Error('Vous avez déjà défaussé une carte ce tour-ci.');
         if (!st.zone[a.slot]) throw new Error('Cet emplacement du marché est vide.');
-        st.discard.push(st.zone[a.slot]); st.zone[a.slot] = draw(st); p.flags.discarded = true;
-        log(st, p.name + ' congédie un mercenaire du marché.', p.id, 'card'); break;
+        var defausse = st.zone[a.slot];
+        st.discard.push(defausse); st.zone[a.slot] = draw(st); p.flags.discarded = true;
+        // v1.9.24 : la chronique nomme la carte défaussée (créateur, 08/10/2026)
+        log(st, p.name + ' défausse « ' + FOF.unitDef(defausse).name + ' » du marché.', p.id, 'card'); break;
       /* v1.9.11 - Espion (décision du créateur, 27/09/2026) : gratuit à l'achat, sans entretien.
          Usage UNIQUE, à tout moment, y compris pendant le tour d'un autre joueur : 1 or, on regarde
          en secret la carte du dessus du deck, puis on choisit de la défausser ou non ('spyDecide').
@@ -753,7 +785,7 @@
         if (!st.deck.length) throw new Error('Le deck est vide.');
         sp.gold -= 1; discardUnit(st, eu);
         st.spies[sp.id] = { key: st.deck[st.deck.length - 1], n: st.deck.length };
-        log(st, 'L’Espion de ' + sp.name + ' se glisse jusqu’au deck et soulève la première carte.', sp.id, 'card');
+        log(st, 'L’Espion de ' + sp.name + ' soulève la première carte du deck.', sp.id, 'card');
         break;
       }
       case 'spyDecide': {
@@ -762,7 +794,8 @@
         delete st.spies[sd.id];
         // la carte a pu être piochée entre-temps : la décision ne vaut que si elle est toujours dessus
         var encore = st.deck.length === vu.n && st.deck[st.deck.length - 1] === vu.key;
-        if (a.discard && encore) { st.discard.push(st.deck.pop()); log(st, sd.name + ' fait disparaître la carte du dessus du deck.', sd.id, 'card'); }
+        // v1.9.24 : la carte défaussée est nommée (elle est de toute façon visible dans la défausse)
+        if (a.discard && encore) { var kSpy = st.deck.pop(); st.discard.push(kSpy); log(st, sd.name + ' défausse « ' + FOF.unitDef(kSpy).name + ' », la carte du dessus du deck.', sd.id, 'card'); }
         break;
       }
       case 'buy': {
@@ -773,7 +806,7 @@
         p.gold -= def.upkeep;
         var nu = { uid: st.uid++, key: key, owner: p.id, pos: 't' + a.tid, gold: def.upkeep, arr: st.turnNo, moved: 0, fought: false, pacif: false };
         nu.movesLeft = FOF.unitMove(st, nu);
-        st.units.push(nu); st.zone[a.slot] = draw(st); p.flags.bought = true; p.tally.recruit++;
+        st.units.push(nu); st.zone[a.slot] = draw(st); p.flags.bought = true; p.flags.buys = (p.flags.buys || 0) + 1; p.tally.recruit++;
         log(st, p.name + ' enrôle des ' + def.name + ' à ' + T(st, a.tid).name + '.', p.id, 'recruit'); break;
       }
       case 'release': {
@@ -788,21 +821,26 @@
         if (st.phase !== 'military') throw new Error('Déplacements en phase militaire.');
         if (a.piece === 'L') {
           if (p.lConq || p.lFought || p.lMovesLeft <= 0) throw new Error('Votre dirigeant ne peut plus bouger.');
-          var rl = FOF.reach(st, p.lpos, 'L', p, p.lMovesLeft);
-          if (rl[a.to] === undefined) throw new Error('Case hors de portée.');
-          p.lMovesLeft -= rl[a.to]; p.lFromSea = p.lpos[0] === 's'; p.lpos = a.to; p.lArr = st.turnNo; p.lMoved = true;
+          var rl = FOF.reach(st, p.lpos, 'L', p, p.lMovesLeft), hopL = rl[a.to] === undefined && FOF.portHops(st, p, p.lpos, p.lMovesLeft).indexOf(a.to) >= 0;
+          if (rl[a.to] === undefined && !hopL) throw new Error('Case hors de portée.');
+          if (hopL) log(st, 'Guidé par le Cartographe, le dirigeant de ' + p.name + ' passe par la mer jusqu’au port de ' + T(st, +a.to.slice(1)).name + '.', p.id, 'move');
+          // v1.9.24 - bilan : cases parcourues (un passage de port à port compte pour 1)
+          p.tally.cases = (p.tally.cases || 0) + (hopL ? 1 : rl[a.to]);
+          p.lMovesLeft = hopL ? 0 : p.lMovesLeft - rl[a.to]; p.lFromSea = p.lpos[0] === 's'; p.lpos = a.to; p.lArr = st.turnNo; p.lMoved = true;
         } else {
           var mu = st.units.filter(function (x) { return x.uid === a.piece && x.owner === p.id; })[0];
           if (!mu || mu.fought || mu.pacif || mu.movesLeft <= 0) throw new Error('Cette unité ne peut plus bouger.');
-          var ru = FOF.reach(st, mu.pos, mu, p, mu.movesLeft);
-          if (ru[a.to] === undefined) throw new Error('Case hors de portée.');
-          mu.movesLeft -= ru[a.to]; mu.fromSea = mu.pos[0] === 's'; mu.pos = a.to; mu.arr = st.turnNo; mu.moved++;
+          var ru = FOF.reach(st, mu.pos, mu, p, mu.movesLeft), hopU = ru[a.to] === undefined && FOF.portHops(st, p, mu.pos, mu.movesLeft).indexOf(a.to) >= 0;
+          if (ru[a.to] === undefined && !hopU) throw new Error('Case hors de portée.');
+          if (hopU) log(st, 'Guidés par le Cartographe, les ' + FOF.unitDef(mu.key).name + ' de ' + p.name + ' gagnent le port de ' + T(st, +a.to.slice(1)).name + '.', p.id, 'move');
+          p.tally.cases = (p.tally.cases || 0) + (hopU ? 1 : ru[a.to]);
+          mu.movesLeft = hopU ? 0 : mu.movesLeft - ru[a.to]; mu.fromSea = mu.pos[0] === 's'; mu.pos = a.to; mu.arr = st.turnNo; mu.moved++;
         }
         break;
       }
       case 'conquer': {
         var lt = p.lpos && p.lpos[0] === 't' ? T(st, +p.lpos.slice(1)) : null;
-        if (st.phase !== 'military' || !lt || lt.ctrl !== null || p.lArr >= st.turnNo || p.lMoved || p.lFought) throw new Error('Conquête impossible : le dirigeant doit être sur ce territoire neutre depuis votre tour précédent, sans bouger.');
+        if (st.phase !== 'military' || !lt || lt.ctrl !== null || p.lArr >= st.turnNo || p.lMoved || p.lFought) throw new Error('Conquête impossible : le dirigeant doit être sur ce territoire neutre depuis votre tour précédent.');
         if (lt.revoltFrom === p.id) throw new Error('Ce territoire s\u2019est soulevé contre vous : ses habitants ne vous reconnaîtront plus. Un autre joueur doit le reprendre avant vous.');
         lt.ctrl = p.id; lt.conqStamp = st.turnNo; lt.revoltFrom = null; lt.takenFrom = null; p.lConq = true; p.lMovesLeft = 0; p.tally.conquest++;
         log(st, p.name + ' plante sa bannière sur ' + lt.name + '.', p.id, 'conquer'); checkWin(st); break;
@@ -811,7 +849,7 @@
       case 'pacify': {
         var pt = T(st, a.tid), el2 = st.units.filter(function (x) { return x.uid === a.uid && x.owner === p.id; })[0];
         if (st.phase !== 'military' || pt.ctrl !== p.id || !(pt.conqStamp < st.turnNo) || !el2 || !FOF.isElite(el2.key) || el2.pos !== 't' + pt.id || el2.arr >= st.turnNo || el2.moved || el2.fought || !pt.blds.some(function (b) { return b.o !== p.id; }))
-          throw new Error('Pacification impossible : une élite doit être en garnison ici depuis votre tour précédent.');
+          throw new Error('Pacification impossible : une unité d’élite doit être ici depuis votre tour précédent.');
         // v1.9.14 - une seule pacification par tour, et elle convertit l'aménagement étranger le MOINS
         // CHER de la case (décision du créateur, 28/09/2026). Plus de choix du joueur.
         if (p.flags.pacified) throw new Error('Vous avez déjà pacifié un aménagement ce tour-ci.');
@@ -820,7 +858,7 @@
         if (cible.t === 'A') {
           // une ambassade ne se rallie pas : elle est rasée (voir convertir()).
           pt.blds.splice(pt.blds.indexOf(cible), 1);
-          log(st, p.name + ' fait fermer l’ambassade de ' + pt.name + ' : une cour ne change pas de camp.', p.id, 'bad');
+          log(st, p.name + ' fait fermer l’ambassade de ' + pt.name + '.', p.id, 'bad');
         } else {
           cible.o = p.id;
           log(st, p.name + ' pacifie ' + B[cible.t].name.toLowerCase() + ' à ' + pt.name + ' : ses habitants se rallient.', p.id, 'convert');
@@ -873,7 +911,7 @@
       case 'surrender': {
         var sp = a.pid === undefined ? p : st.players[a.pid];
         if (!sp || !sp.alive || st.winner) throw new Error('Abandon impossible.');
-        log(st, sp.name + ' hisse le drapeau blanc et quitte la guerre.', sp.id, 'elim');
+        log(st, sp.name + ' quitte la guerre.', sp.id, 'elim');
         eliminate(st, sp);
         if (!st.winner && sp.id === st.cur) nextPlayer(st);   // on passe au joueur suivant
         break;
@@ -896,7 +934,7 @@
         // v1.9.14 - le territoire dévasté ne redevient plus neutre : il revient au vainqueur,
         // tous ses aménagements rasés (le coût en diplomatie ne change pas).
         t.ctrl = att.id; t.conqStamp = st.turnNo; t.revoltFrom = null; t.blds = []; t.takenFrom = null;
-        log(st, att.name + ' met ' + t.name + ' à sac et s’en empare : il n’en reste que cendres.', att.id, 'devastate');
+        log(st, att.name + ' met ' + t.name + ' à sac et s’en empare.', att.id, 'devastate');
       } else {
         t.ctrl = att.id; t.conqStamp = st.turnNo; t.revoltFrom = null;
         log(st, att.name + ' s’empare de ' + t.name + '.', att.id, 'conquer');
@@ -920,7 +958,7 @@
       if (t3.ctrl !== ty.id || t3.id === ty.capital) throw new Error('Choisissez un territoire hors capitale.');
       st.pending.shift();
       t3.ctrl = null; t3.blds = []; t3.takenFrom = null; t3.revoltFrom = ty.id;   // le tyran ne peut plus la reprendre
-      log(st, 'Le peuple de ' + t3.name + ' se soulève contre le tyran ' + ty.name + ' et chasse ses baillis.', ty.id, 'revolt');
+      log(st, 'Le peuple de ' + t3.name + ' se soulève contre le tyran ' + ty.name + '.', ty.id, 'revolt');
       nextPlayer(st);
     } else if (pend.type === 'razeSlot') {
       var rp = st.players[pend.pid], rt = T(st, pend.tid), ri2 = a.idx;

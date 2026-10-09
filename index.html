@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <title>Fields of Fire · Nube Games, studio indépendant de jeux de société</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="description" content="Fields of Fire, jeu de société de conquête de 3 à 6 joueurs par Nube Games. Trois voies de victoire : l’épée, la foi ou la diplomatie. Le prototype se joue gratuitement dans le navigateur, sur un même écran ou à distance.">
+<meta name="description" content="Fields of Fire, jeu de plateau stratégique de 3 à 6 joueurs par Nube Games. Trois voies de victoire : l’épée, la foi ou la diplomatie. Le prototype se joue gratuitement dans le navigateur, sur un même écran ou à distance.">
 <meta name="theme-color" content="#0c0710">
 <meta name="color-scheme" content="dark">
 <meta name="robots" content="index, follow, max-image-preview:large">
@@ -61,10 +61,10 @@
     <img src="assets/images/nube-games-lockup.svg" alt="Nube Games" width="132" height="32">
   </a>
   <nav class="nav-links" aria-label="Sections">
-    <a href="#le-jeu">Le jeu</a>
-    <a href="#victoires">Victoires</a>
-    <a href="#tour">Le tour</a>
-    <a href="#carte">La carte</a>
+    <a href="#le-jeu">Principe de jeu</a>
+    <a href="#victoires">Conditions de victoire</a>
+    <a href="#tour">Déroulement d’un tour</a>
+    <a href="#carte">Carte</a>
     <a href="#dirigeants">Dirigeants</a>
     <a href="#jouer">Jouer</a>
   </nav>
@@ -88,7 +88,7 @@
          fetchpriority="high" aria-hidden="true">
     <h1 class="jeu-titre" id="jeu-titre"><span>Fields</span><span>of Fire</span></h1>
     <div class="jeu-filet" aria-hidden="true"></div>
-    <p class="jeu-accroche">L’épée, la foi ou la diplomatie. Trois façons de l’emporter, une seule partie pour choisir.</p>
+    <p class="jeu-accroche">L’épée, la foi ou la politique. Quelle voie choisirez-vous pour inscrire votre nom dans la légende ?</p>
     <div class="jeu-cta">
       <a class="btn" href="/fields-of-fire/">Jouer gratuitement</a>
       <a class="btn btn-ghost" href="#le-jeu">Découvrir le jeu</a>
@@ -99,20 +99,20 @@
 <section class="section" id="le-jeu" aria-labelledby="t-jeu">
   <div class="wrap">
     <div class="sec-head">
-      <h2 id="t-jeu">Trois façons de l’emporter, une seule partie pour choisir</h2>
-      <p class="lead">Chaque joueur incarne un dirigeant et part d’une capitale posée sur un archipel généré à neuf à chaque partie. On lève l’impôt, on recrute, on manœuvre, on bâtit. Attaquer coûte de la diplomatie ; bâtir coûte de l’or ; tout le monde regarde qui s’approche le plus vite de sa condition de victoire.</p>
+      <h2 id="t-jeu">Principe de jeu</h2>
+      <p class="lead">Dans Fields of Fire, chaque joueur incarne un dirigeant au pouvoir unique. Chaque tour, il lève l’impôt, recrute des unités, manœuvre sur le terrain et construit des aménagements. Pour gagner la partie, trois voies sont possibles. Mais prenez garde : la soif de pouvoir peut faire sombrer dans la tyrannie.</p>
     </div>
     <div class="faits">
       <div class="fait"><b>3 à 6</b><span>joueurs</span></div>
       <div class="fait"><b>7</b><span>territoires par joueur sur la carte</span></div>
-      <div class="fait"><b>8</b><span>dirigeants aux pouvoirs distincts</span></div>
-      <div class="fait"><b>85</b><span>cartes d’unités dans le deck</span></div>
+      <div class="fait"><b>10</b><span>dirigeants aux pouvoirs distincts</span></div>
+      <div class="fait"><b>95</b><span>cartes d’unités dans le deck</span></div>
       <div class="fait"><b>0 €</b><span>et sans inscription</span></div>
     </div>
 
     <figure class="fig reveal" style="margin-top:clamp(34px,4.4vw,60px)">
       <img src="assets/images/fof-partie.webp" srcset="assets/images/fof-partie-800.webp 800w, assets/images/fof-partie.webp 1600w" sizes="(max-width: 1260px) 92vw, 1200px" width="1600" height="950" loading="lazy" decoding="async"
-           alt="Une partie de Fields of Fire à quatre joueurs : la carte d’archipel au centre, les dirigeants à gauche, la zone de recrutement et ses cinq cartes d’unités au centre.">
+           alt="Une partie de Fields of Fire à quatre joueurs : la carte d’archipel au centre, les dirigeants à gauche, le marché et ses cinq cartes d’unités au centre.">
     </figure>
     <p class="fig-cap">Une partie à quatre dirigeants, en cours dans le navigateur.</p>
   </div>
@@ -121,25 +121,25 @@
 <section class="section" id="victoires" aria-labelledby="t-vic">
   <div class="wrap">
     <div class="sec-head">
-      <h2 id="t-vic">L’épée, la foi, la diplomatie</h2>
-      <p class="lead">Les trois voies sont ouvertes à tous dès le premier tour, et leurs seuils montent avec le nombre de joueurs. Rien n’oblige à en choisir une tôt : beaucoup de parties se décident quand quelqu’un bascule.</p>
+      <h2 id="t-vic">Conditions de victoire</h2>
+      <p class="lead">Trois types de victoires existent dans le jeu : la victoire militaire, la victoire religieuse et la victoire diplomatique.</p>
     </div>
     <div class="voies">
       <div class="voies-tete" aria-hidden="true"><span>Seuil selon le nombre de joueurs</span><ol class="seuils"><li>3</li><li>4</li><li>5</li><li>6</li></ol></div>
       <article class="voie voie-epee">
-        <div class="voie-nom"><h3>Prendre les terres</h3><p>Militaire, en territoires</p></div>
-        <p class="voie-texte">Contrôler assez de territoires, capitale comprise. Chaque assaut coûte de la diplomatie, sauf contre un Tyran : conquérir vous isole autant que cela vous agrandit.</p>
+        <div class="voie-nom"><h3>Victoire militaire</h3><p>Contrôlez un nombre défini de territoires.</p></div>
+        <p class="voie-texte">Contrôlez le nombre de territoires indiqué dans le tableau ci-dessous. Votre dirigeant conquiert des territoires neutres et peut se battre à l’aide d’unités d’élite pour conquérir les territoires adverses. Chaque assaut coûte cependant de la diplomatie, et les aménagements adverses doivent être pacifiés pour être contrôlés.</p>
         <ol class="seuils" aria-label="Seuil de victoire selon le nombre de joueurs"><li><span class="sr">à 3 joueurs </span><b>11</b></li><li><span class="sr">à 4 joueurs </span><b>12</b></li><li><span class="sr">à 5 joueurs </span><b>13</b></li><li><span class="sr">à 6 joueurs </span><b>14</b></li></ol>
       </article>
       <article class="voie voie-foi">
-        <div class="voie-nom"><h3>Élever les temples</h3><p>Religieuse, en temples</p></div>
-        <p class="voie-texte">Bâtir assez de temples, y compris en terre étrangère, ou les obtenir par conversion. Un temple coûte 7 or, occupe un emplacement, et ne se détruit pas sans perdre la face.</p>
-        <ol class="seuils" aria-label="Seuil de victoire selon le nombre de joueurs"><li><span class="sr">à 3 joueurs </span><b>9</b></li><li><span class="sr">à 4 joueurs </span><b>10</b></li><li><span class="sr">à 5 joueurs </span><b>11</b></li><li><span class="sr">à 6 joueurs </span><b>12</b></li></ol>
+        <div class="voie-nom"><h3>Victoire religieuse</h3><p>Contrôlez un nombre défini de temples.</p></div>
+        <p class="voie-texte">Contrôlez le nombre de temples indiqué dans le tableau ci-dessous. Un temple coûte 7 or, occupe un emplacement et ne confère pas de bonus direct. Mais il donne accès à des unités spécifiques, et ne peut être détruit sans sacrifier de la diplomatie.</p>
+        <ol class="seuils" aria-label="Seuil de victoire selon le nombre de joueurs"><li><span class="sr">à 3 joueurs </span><b>8</b></li><li><span class="sr">à 4 joueurs </span><b>9</b></li><li><span class="sr">à 5 joueurs </span><b>10</b></li><li><span class="sr">à 6 joueurs </span><b>11</b></li></ol>
       </article>
       <article class="voie voie-dip">
-        <div class="voie-nom"><h3>Se faire un nom</h3><p>Diplomatique, en points</p></div>
-        <p class="voie-texte">Atteindre le seuil de diplomatie, en jouant des émissaires et en tenant la paix. Une Ambassade dans votre capitale amplifie chaque gain, tant que personne ne vous attaque.</p>
-        <ol class="seuils" aria-label="Seuil de victoire selon le nombre de joueurs"><li><span class="sr">à 3 joueurs </span><b>9</b></li><li><span class="sr">à 4 joueurs </span><b>10</b></li><li><span class="sr">à 5 joueurs </span><b>11</b></li><li><span class="sr">à 6 joueurs </span><b>12</b></li></ol>
+        <div class="voie-nom"><h3>Victoire diplomatique</h3><p>Obtenez 12 de diplomatie.</p></div>
+        <p class="voie-texte">Atteignez la valeur maximale de diplomatie, en recrutant des unités spéciales qui vous en procurent. Une Ambassade dans votre capitale amplifie certains effets de carte, tandis que d’autres cartes exigent que vous dissuadiez les autres de vous attaquer.</p>
+        <ol class="seuils" aria-label="Seuil de victoire selon le nombre de joueurs"><li><span class="sr">à 3 joueurs </span><b>12</b></li><li><span class="sr">à 4 joueurs </span><b>12</b></li><li><span class="sr">à 5 joueurs </span><b>12</b></li><li><span class="sr">à 6 joueurs </span><b>12</b></li></ol>
       </article>
     </div>
     <p class="tiny voies-note">Ces seuils évoluent encore : ils sont ajustés playtest après playtest.</p>
@@ -149,13 +149,13 @@
 <section class="section" id="tour" aria-labelledby="t-tour">
   <div class="wrap">
     <div class="sec-head">
-      <h2 id="t-tour">Quatre phases, toujours dans le même ordre</h2>
+      <h2 id="t-tour">Déroulement d’un tour</h2>
     </div>
     <div class="etapes">
-      <div class="etape"><b>Collecte</b><p>1 or par territoire, 1 de plus par cité, moins la solde de vos unités. Le détail est affiché ligne par ligne.</p></div>
-      <div class="etape"><b>Recrutement</b><p>Cinq cartes sont en vitrine. Vous pouvez en acheter une et en défausser une, dans l’ordre que vous voulez.</p></div>
-      <div class="etape"><b>Militaire</b><p>Vous déplacez vos pions, vous conquérez un territoire neutre, ou vous attaquez - au prix d’un point de diplomatie.</p></div>
-      <div class="etape"><b>Construction</b><p>Campement, fort, port, cité, temple, ambassade. Trois emplacements sur votre capitale, deux sur les autres territoires.</p></div>
+      <div class="etape"><b>Collecte</b><p>Récupérez 1 or par territoire, 1 de plus par cité, auxquels peuvent s’ajouter les effets d’unités spéciales. Enlevez à cela la solde totale de vos unités.</p></div>
+      <div class="etape"><b>Recrutement</b><p>Cinq cartes sont proposées. Vous pouvez en acheter une et en défausser une par tour, dans l’ordre que vous voulez. Tous les joueurs partagent ces cartes.</p></div>
+      <div class="etape"><b>Militaire</b><p>Vous déplacez vos pions sur le plateau, conquérez un territoire neutre, attaquez, pacifiez et activez l’effet de vos unités.</p></div>
+      <div class="etape"><b>Construction</b><p>Vous disposez de trois emplacements sur votre capitale, deux sur les autres territoires. Vous pouvez y construire campements, forts, ports, cités, temples et ambassade. Un même aménagement ne peut pas figurer deux fois sur un territoire, sauf le campement. Les aménagements sont remplaçables.</p></div>
     </div>
   </div>
 </section>
@@ -163,8 +163,8 @@
 <section class="section" id="carte" aria-labelledby="t-carte">
   <div class="wrap">
     <div class="sec-head">
-      <h2 id="t-carte">Un archipel différent à chaque partie</h2>
-      <p class="lead">La carte est tirée au sort à chaque nouvelle partie : sept territoires par joueur, quatre terrains - plaines, forêt, montagnes, marécage - et des zones de mer qui séparent les continents. Le terrain compte : chaque unité d’élite a une puissance différente selon l’endroit où elle combat.</p>
+      <h2 id="t-carte">Carte</h2>
+      <p class="lead">Deux types de cartes sont jouables : les cartes aléatoires et les cartes historiques. Les cartes aléatoires sont générées automatiquement, contrairement aux cartes historiques. Quatre types de terrain existent (plaine, forêt, montagne, marécage), et chacun modifie la force des unités d’élite.</p>
     </div>
     <div class="duo">
       <figure class="fig reveal">
@@ -173,8 +173,8 @@
       </figure>
       <div>
         <h3 style="font-size:24px;margin-bottom:14px">Franchir la mer</h3>
-        <p class="lead" style="margin-bottom:10px">La mer est découpée en zones, et aucune ne donne accès à plus de quatre territoires : on ne débarque pas n’importe où depuis n’importe quelle côte.</p>
-        <p class="lead">Les zones de mer ne se traversent pas à pied. Il faut un port, ou l’une des unités qui prennent le large sans en avoir besoin. Un archipel bien lu vaut une armée : on choisit ses voisins, et on choisit ceux qu’on ne verra jamais arriver.</p>
+        <p class="lead" style="margin-bottom:10px">La mer est découpée en zones, et aucune ne donne accès à plus de quatre territoires.</p>
+        <p class="lead">Les zones de mer ne se traversent pas à pied. Il faut un port, ou l’une des unités qui prennent le large sans en avoir besoin.</p>
       </div>
     </div>
 
@@ -182,12 +182,12 @@
       <figure class="style-fig">
         <img src="assets/images/fof-carte-enluminure.webp" width="1300" height="630" loading="lazy" decoding="async"
              alt="La carte du jeu dans le style Enluminure : mer bleu lapis profond, terres en tons de pierres précieuses, capitales cerclées d’un ruban rayé à la couleur de chaque joueur.">
-        <figcaption><b>Enluminure</b> - mer de lapis, filet d’or, tons de manuscrit. Le rendu par défaut.</figcaption>
+        <figcaption>Rendu <b>Enluminure</b></figcaption>
       </figure>
       <figure class="style-fig">
-        <img src="assets/images/fof-carte-estampe.webp" width="1300" height="630" loading="lazy" decoding="async"
-             alt="La même carte dans le style Estampe sur bois : palette réduite, mer d’encre sombre, terrains en aplats gravés.">
-        <figcaption><b>Estampe sur bois</b> - sept teintes, mer d’encre, lecture immédiate. Au choix dans les réglages.</figcaption>
+        <img src="assets/images/fof-carte-ancienne.webp" width="1300" height="630" loading="lazy" decoding="async"
+             alt="La même carte dans le style Carte ancienne : terrains au lavis, motifs à l’encre, mer gris-bleu.">
+        <figcaption>Rendu <b>Carte ancienne</b></figcaption>
       </figure>
     </div>
   </div>
@@ -196,32 +196,34 @@
 <section class="section" id="unites" aria-labelledby="t-unites">
   <div class="wrap">
     <div class="sec-head">
-      <h2 id="t-unites">On ne recrute pas ce qu’on veut, on recrute ce qui passe</h2>
-      <p class="lead">Cinq cartes face visible, un achat et une défausse par tour. Les unités d’élite se battent - leur puissance change selon le terrain. Les unités spéciales ne combattent pas : elles convertissent un temple, portent un message à une cour étrangère, éclairent la carte ou rasent un aménagement. Chaque carte exige un aménagement pour être recrutée, et coûte une solde à chaque collecte.</p>
+      <h2 id="t-unites">Le Marché</h2>
+      <p class="lead">Lors du marché, cinq cartes sont face visible. Vous pouvez réaliser un achat et une défausse par tour. Les unités d’élite se battent - leur puissance change selon le terrain. Les unités spéciales ne combattent pas : elles convertissent un temple, portent un message à une cour étrangère, éclairent la carte ou rasent un aménagement. Chaque carte exige un aménagement pour être recrutée, et coûte une solde à chaque collecte. Le marché est partagé par tous les joueurs : gardez un œil sur la stratégie de chacun pour la contrer. Vous pouvez consulter le deck et la défausse pendant la partie.</p>
     </div>
     <figure class="fig reveal">
       <img src="assets/images/fof-cartes.webp" width="1200" height="400" loading="lazy" decoding="async"
-           alt="Cinq cartes d’unités avec leur illustration peinte, leur puissance par terrain, leur entretien, leur condition de recrutement et leur nombre d’exemplaires dans le deck.">
+           alt="Cinq cartes d’unités avec leur illustration peinte, leur puissance par terrain, leur solde, leur condition de recrutement et leur nombre d’exemplaires dans le deck.">
     </figure>
-    <p class="fig-cap">Quelques cartes du deck. Le chiffre en haut à droite indique le nombre d’exemplaires.</p>
+    <p class="fig-cap">Quelques cartes du deck. Le liseré indique le type de carte (jaune : spéciale, rouge : élite). Le chiffre dans le cadre vert indique la vitesse de déplacement. La solde est en bas à gauche, la condition d’aménagement en bas à droite.</p>
   </div>
 </section>
 
 <section class="section" id="dirigeants" aria-labelledby="t-dir">
   <div class="wrap">
     <div class="sec-head">
-      <h2 id="t-dir">Huit dirigeants, huit façons de jouer</h2>
-      <p class="lead">Votre dirigeant est un pion comme un autre : il se déplace, il conquiert, il peut mener un assaut et y perdre un territoire. Son pouvoir, lui, oriente toute la partie.</p>
+      <h2 id="t-dir">Dirigeants</h2>
+      <p class="lead">Votre dirigeant est un pion très spécial. Son pouvoir unique peut grandement influencer vos décisions. Il est également le seul pion à pouvoir conquérir un territoire neutre. Quand il est défait au combat, il doit céder un territoire supplémentaire.</p>
     </div>
     <ul class="seigneurs">
       <li class="seigneur"><img src="assets/images/dirigeants/odon.webp" width="96" height="102" loading="lazy" decoding="async" alt=""><div><b>Odon le Brave</b><p>Chacune de ses unités d’élite engagée dans un assaut lui donne +1, qu’il mène l’assaut ou non.</p></div></li>
-      <li class="seigneur"><img src="assets/images/dirigeants/gustave.webp" width="96" height="102" loading="lazy" decoding="async" alt=""><div><b>Gustave l’Irascible</b><p>Ses campements, forts et ports gagnent +1 en défense. Ses cités coûtent 6 or.</p></div></li>
-      <li class="seigneur"><img src="assets/images/dirigeants/edouard.webp" width="96" height="102" loading="lazy" decoding="async" alt=""><div><b>Édouard le Sage</b><p>Une fois par partie, en temps de paix : 1 or contre 1 point de diplomatie.</p></div></li>
-      <li class="seigneur"><img src="assets/images/dirigeants/mathilde.webp" width="96" height="102" loading="lazy" decoding="async" alt=""><div><b>Mathilde la Bien-Aimée</b><p>Sa première cité coûte 4 or ; les suivantes sont au prix normal.</p></div></li>
+      <li class="seigneur"><img src="assets/images/dirigeants/gustave.webp" width="96" height="102" loading="lazy" decoding="async" alt=""><div><b>Gustave l’Irascible</b><p>Tous ses territoires : +1 défense. Ses cités coûtent 6 or.</p></div></li>
+      <li class="seigneur"><img src="assets/images/dirigeants/edouard.webp" width="96" height="102" loading="lazy" decoding="async" alt=""><div><b>Édouard le Sage</b><p>Une fois par partie, en temps de paix, s’il a 5 de diplomatie ou moins : 1 or contre 1 point de diplomatie.</p></div></li>
+      <li class="seigneur"><img src="assets/images/dirigeants/mathilde.webp" width="96" height="102" loading="lazy" decoding="async" alt=""><div><b>Mathilde la Bien-Aimée</b><p>Sa première cité coûte 4 or.</p></div></li>
       <li class="seigneur"><img src="assets/images/dirigeants/adele.webp" width="96" height="102" loading="lazy" decoding="async" alt=""><div><b>Adèle la Pieuse</b><p>Ses temples coûtent 6 or et donnent +1 en défense.</p></div></li>
       <li class="seigneur"><img src="assets/images/dirigeants/henri.webp" width="96" height="102" loading="lazy" decoding="async" alt=""><div><b>Henri le Stratège</b><p>Toutes ses unités d’élite se déplacent d’une case de plus.</p></div></li>
-      <li class="seigneur"><img src="assets/images/dirigeants/hugues.webp" width="96" height="102" loading="lazy" decoding="async" alt=""><div><b>Hugues le Bâtisseur</b><p>Ses campements, forts et ports coûtent 1 or de moins.</p></div></li>
-      <li class="seigneur"><img src="assets/images/dirigeants/alienor.webp" width="96" height="102" loading="lazy" decoding="async" alt=""><div><b>Alinor l’Amirale</b><p>Ses ports coûtent 2 or et gagnent +2 en défense.</p></div></li>
+      <li class="seigneur"><img src="assets/images/dirigeants/hugues.webp" width="96" height="102" loading="lazy" decoding="async" alt=""><div><b>Hugues le Bâtisseur</b><p>Ses forts et ses ports coûtent 1 or de moins.</p></div></li>
+      <li class="seigneur"><img src="assets/images/dirigeants/alienor.webp" width="96" height="102" loading="lazy" decoding="async" alt=""><div><b>Alinor l’Amirale</b><p>Ses ports coûtent 2 or et ont +2 en défense.</p></div></li>
+      <li class="seigneur"><img src="assets/images/dirigeants/yusuf.webp" width="96" height="102" loading="lazy" decoding="async" alt=""><div><b>Yusuf le Marchand</b><p>Une fois par partie, il peut acheter 3 cartes dans le marché.</p></div></li>
+      <li class="seigneur"><img src="assets/images/dirigeants/zaynab.webp" width="96" height="102" loading="lazy" decoding="async" alt=""><div><b>Zaynab la Vagabonde</b><p>Toutes ses unités spéciales se déplacent d’une case de plus.</p></div></li>
     </ul>
   </div>
 </section>
@@ -229,12 +231,12 @@
 <section class="section" id="tyrannie" aria-labelledby="t-tyr">
   <div class="wrap split">
     <div class="sec-head">
-      <h2 id="t-tyr">Une réputation qu’on dépense</h2>
-      <p class="lead">La diplomatie n’est pas qu’une voie de victoire, c’est la monnaie de la guerre. Chaque attaque en coûte un point, y compris pour reprendre une terre qu’on vous avait prise. Un émissaire envoyé dans une capitale étrangère en rapporte, un calomniateur peut en faire perdre à un rival.</p>
+      <h2 id="t-tyr">Focus sur la diplomatie</h2>
+      <p class="lead">La diplomatie n’est pas qu’une voie de victoire, c’est la monnaie de la guerre. Chaque assaut en coûte un point, et un de plus par unité spéciale détruite. Un émissaire envoyé dans une capitale étrangère en rapporte, un calomniateur peut en faire perdre à un rival.</p>
     </div>
     <ol class="chute">
-      <li><h3>Tomber à zéro</h3><p>À court de diplomatie, un joueur qui veut encore attaquer doit devenir <b>Tyran</b>. Il gagne le droit de frapper sans compter.</p></li>
-      <li><h3>Ce que coûte la couronne</h3><p>Un Tyran ne gagne plus jamais de diplomatie : la voie diplomatique lui est fermée pour la partie. Il ne lui reste que l’épée ou la foi.</p></li>
+      <li><h3>Tomber à zéro</h3><p>À court de diplomatie, un joueur qui lance un assaut devient un <b>Tyran</b>.</p></li>
+      <li><h3>Ce que coûte la couronne</h3><p>Un Tyran ne gagne plus jamais de diplomatie : la voie diplomatique lui est fermée pour la partie. Il ne lui reste que la victoire militaire ou religieuse.</p></li>
       <li><h3>Tous contre un</h3><p>Attaquer un Tyran ne coûte rien à personne. Détruire ses temples non plus. Chaque tour, une de ses terres se soulève, et celle-là ne le reconnaîtra plus jamais : il ne peut plus la reprendre.</p></li>
     </ol>
   </div>
@@ -252,7 +254,7 @@
         <ol>
           <li>Choisissez le nombre de dirigeants, de 3 à 6.</li>
           <li>Chacun prend un dirigeant et une couleur.</li>
-          <li>On se passe la main à chaque tour. Les places vides sont tenues par des bots.</li>
+          <li>Les places vides sont tenues par des bots.</li>
         </ol>
         <a class="btn btn-violet" href="/fields-of-fire/">Lancer une partie locale</a>
       </article>
@@ -273,8 +275,8 @@
 <section class="section" id="playtests" aria-labelledby="t-pt">
   <div class="wrap">
     <div class="sec-head">
-      <h2 id="t-pt">Le jeu n’est pas fini, et c’est le moment d’en profiter</h2>
-      <p class="lead">Fields of Fire est en prototype : les règles bougent d’une semaine à l’autre, les cartes sont à l’essai, les seuils sont mesurés partie après partie. Ce qui nous aide le plus : une carte qui vous paraît trop forte ou inutile, un dirigeant injouable, et le nombre de joueurs autour de la table.</p>
+      <h2 id="t-pt">Retour d’expérience</h2>
+      <p class="lead">Fields of Fire est en prototype, nous avons besoin de votre avis ! N’hésitez pas à nous faire un retour ci-dessous, ou en jeu avec le petit insecte qui permet de signaler un bug.</p>
     </div>
 
     <form class="form" id="contact" novalidate>
@@ -295,7 +297,7 @@
         <input id="f-email" name="email" type="email" autocomplete="email" required>
       </div>
       <div class="champ">
-        <label for="f-msg">Message (facultatif)</label>
+        <label for="f-msg">Message</label>
         <textarea id="f-msg" name="message"></textarea>
       </div>
       <input class="hp" type="text" name="_honey" tabindex="-1" autocomplete="off" aria-hidden="true">
@@ -303,7 +305,7 @@
         <button class="btn" type="submit">Envoyer</button>
       </div>
       <p class="form-msg" id="form-msg" role="status" aria-live="polite"></p>
-      <p class="form-note">Vos informations servent uniquement à vous répondre. Aucun suivi, aucune revente. Voir la <a href="/confidentialite.html">politique de confidentialité</a>.</p>
+      <p class="form-note">Vos informations servent uniquement à vous répondre. Aucun suivi, aucune revente de vos données. Voir la <a href="/confidentialite.html">politique de confidentialité</a>.</p>
     </form>
   </div>
 </section>

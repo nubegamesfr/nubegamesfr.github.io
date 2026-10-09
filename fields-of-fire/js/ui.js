@@ -1,10 +1,15 @@
 /* Fields of Fire - interface (hot-seat, 3 à 6 joueurs sur le même écran) */
 (function (FOF) {
   'use strict';
+  var curPrec = null, annonceTour = 0, procheT = null;
   var calmT = null, radial = null, st = null, sel = null, mode = null, pop = null, err = '', modal = null, lastTurnShown = 0, zoom = 1, marketOpen = true, net = null, combatSig = '';
-  // pile d'annulation : uniquement les déplacements de la phase militaire, tant qu'aucune action
-  // irréversible (combat, conquête, effet, changement de phase) n'a été jouée depuis.
-  var undoStack = [];
+  /* v1.9.24 - « Annuler la dernière action » (créateur, 08/10/2026) : un seul bouton, qui rend l'état
+     d'avant la dernière action du joueur, et ainsi de suite tant qu'on reste dans son tour. Réponse du
+     08/10 : tout s'annule SAUF ce qui révèle du hasard - un combat (les dés), un achat ou une défausse
+     au marché (la carte piochée), l'Espion (la carte regardée). Ces actions vident la pile, comme la fin
+     du tour ou une action d'un autre joueur reçue en ligne. Remplace « Annuler le déplacement » et
+     « Phase précédente ». */
+  var undoStack = [], NON_ANNULABLE = { attack: 1, buy: 1, discardZone: 1, spy: 1, spyDecide: 1, surrender: 1 };
   // taille retenue du plateau (voir renderBoard) : évite que la carte saute à chaque rendu
   var fitBox = null;
   var SAVE = 'fof-save-v1';
@@ -51,6 +56,8 @@
       net.on(function (row) {
         if (!row.state || !st) return;
         var mine = myTurn();
+        // une écriture venue d'ailleurs (autre joueur, Espion) rend la pile d'annulation caduque
+        try { if (JSON.stringify(row.state) !== JSON.stringify(st)) undoStack.length = 0; } catch (eU) { undoStack.length = 0; }
         st = row.state;
         if (!myTurn()) { mode = null; if (modal && modal.kind === 'attack') modal = null; }
         var s2 = sig(st.lastCombat);
@@ -79,27 +86,28 @@
   FOF.currentState = function () { return st; };
   FOF.rerender = function () { if (st) render(); };
 
-  function canUndo() { return !!(undoStack.length && st && st.phase === 'military' && !st.pending.length && !st.winner && myTurn()); }
+  function canUndo() { return !!(undoStack.length && st && !st.winner && myTurn() && !(mode && mode.kind === 'deploy')); }
   function undoMove() {
     if (!canUndo()) return;
     var snap = undoStack.pop();
     try { st = JSON.parse(snap); } catch (e) { undoStack.length = 0; return; }
-    mode = null; pop = null; err = ''; sel = null;
+    mode = null; pop = null; err = ''; sel = null; radial = null; modal = null;
     if (FOF.FX) FOF.FX.reset();
     if (net) net.pushState(st).then(function (ok) { if (!ok) { err = 'Synchronisation : l’état a été rechargé.'; render(); } }, function (e) { err = 'Connexion perdue : ' + e.message; render(); });
-    if (FOF.sfx) FOF.sfx('move');
+    if (FOF.sfx) FOF.sfx('page');
+    FOF.statsTick(st);
     render(); save();
   }
   function dispatch(a, keepPop, force) {
     if (!force && !myTurn()) { err = isBotActor() ? 'L’ordinateur est en train de jouer…' : 'Ce n’est pas à vous de jouer.'; return render(); }
-    // un déplacement est annulable ; tout le reste vide la pile
-    var pushed = false;
-    if (a.type === 'move' && st.phase === 'military' && !st.pending.length) {
+    var pushed = false, curAvant = st.cur;
+    if (!force && !NON_ANNULABLE[a.type]) {
       try { undoStack.push(JSON.stringify(st)); pushed = true; } catch (e) {}
-      while (undoStack.length > 20) undoStack.shift();
+      while (undoStack.length > 40) undoStack.shift();
     } else undoStack.length = 0;
     try { FOF.act(st, a); err = ''; }
     catch (e) { err = e.message; if (pushed) undoStack.pop(); if (FOF.sfx && !force) FOF.sfx('error'); }
+    if (st.cur !== curAvant || st.winner) undoStack.length = 0;   // tour fini : on ne revient plus en arrière
     if (!err) {
       FOF.statsTick(st);
       if (a.type === 'attack') combatSig = sig(st.lastCombat);
@@ -128,11 +136,21 @@
   /* ================= rendu ================= */
   function render() {
     if (!st) return;
-    var viewModal = modal && (modal.kind === 'gloss' || modal.kind === 'deck' || modal.kind === 'help' || modal.kind === 'endstats' || modal.kind === 'hero' || modal.kind === 'edouardc' || modal.kind === 'settings' || modal.kind === 'capitalc' || modal.kind === 'replacec' || modal.kind === 'killc' || modal.kind === 'stack' || modal.kind === 'spy');
-    if (st.turnNo !== lastTurnShown && !st.winner && !viewModal && !modal) { lastTurnShown = st.turnNo; if ((!net || net.seatIndex() === st.cur) && !st.players[st.cur].bot) modal = { kind: 'turn' }; }
+    var viewModal = modal && (modal.kind === 'gloss' || modal.kind === 'deck' || modal.kind === 'help' || modal.kind === 'endstats' || modal.kind === 'hero' || modal.kind === 'edouardc' || modal.kind === 'yusufc' || modal.kind === 'settings' || modal.kind === 'capitalc' || modal.kind === 'replacec' || modal.kind === 'killc' || modal.kind === 'stack' || modal.kind === 'spy');
+    // v1.9.24 - entre la fin du tour d'un joueur proche de la victoire et le début du tour suivant :
+    // une annonce avec son portrait (créateur, 08/10/2026). Elle se ferme d'un clic ou seule après 4,5 s.
+    if (st.turnNo !== lastTurnShown && !st.winner && !viewModal && !modal) {
+      var pp = curPrec !== null && curPrec !== st.cur ? st.players[curPrec] : null, pres = pp ? FOF.procheVictoire(st, pp) : [];
+      if (pres.length && annonceTour !== st.turnNo) {
+        annonceTour = st.turnNo; modal = { kind: 'proche', pid: pp.id, types: pres };
+        if (procheT) clearTimeout(procheT);
+        procheT = setTimeout(function () { procheT = null; if (modal && modal.kind === 'proche') { modal = null; render(); } }, 4500);
+      } else { lastTurnShown = st.turnNo; if ((!net || net.seatIndex() === st.cur) && !st.players[st.cur].bot) modal = { kind: 'turn' }; }
+    }
+    curPrec = st.cur;
     if (st.winner && !viewModal) modal = { kind: 'victory' };
-    if (paused && !modal && !st.winner) modal = { kind: 'pause' };
     var pbtn = $('pauseBtn'); if (pbtn) pbtn.hidden = !!net || !!st.winner;
+    var plbl = $('pauseLbl'); if (plbl) plbl.hidden = !paused || !!net || !!st.winner;
     var before = FOF.FX ? FOF.FX.before() : null;
     renderHeader(); renderOpponents(); renderBoard(); renderMat(); renderRight(); renderModal(); renderEspionFlottant();
     var waiting = !st.winner && !myTurn();
@@ -179,10 +197,13 @@
   }
   function setPause(on) {
     paused = !!on;
-    if (paused) { if (botT) { clearTimeout(botT); botT = null; } modal = { kind: 'pause' }; }
-    else if (modal && modal.kind === 'pause') modal = null;
+    // v1.9.24 - plus de fenêtre de pause : le plateau reste visible et utilisable, seuls les bots
+    // s'arrêtent ; « Jeu en pause » s'affiche sous le bouton (créateur, 08/10/2026)
+    if (paused) { if (botT) { clearTimeout(botT); botT = null; } }
+    if (modal && modal.kind === 'pause') modal = null;
     document.body.classList.toggle('paused', paused);
-    var pb = $('pauseBtn'); if (pb) { pb.setAttribute('aria-pressed', paused); pb.title = paused ? 'Reprendre la partie' : 'Mettre la partie en pause'; }
+    var pb = $('pauseBtn'); if (pb) { pb.setAttribute('aria-pressed', paused); pb.title = paused ? 'Reprendre la partie' : 'Mettre la partie en pause'; pb.setAttribute('aria-label', pb.title); pb.innerHTML = FOF.ic(paused ? 'play' : 'pause', 16); }
+    var pl = $('pauseLbl'); if (pl) pl.hidden = !paused;
     if (FOF.musicDuck) FOF.musicDuck(paused);
     render();
   }
@@ -192,6 +213,9 @@
     if (modal && modal.kind === 'combat') delay = Math.max(1600, delay * 2.6);
     botT = setTimeout(function () {
       botT = null; if (!botActive()) return;
+      // v1.9.24 : le bot attend que tous les jets (égalités, Prêtresses) soient montrés
+      if (modal && modal.kind === 'combat' && !FOF.combatRevele()) return;
+      if (modal && modal.kind === 'proche') return;
       if (modal && modal.kind === 'combat') { modal = null; if (FOF.FX_flushGold) FOF.FX_flushGold(); }
       var a = FOF.botAct(st); if (!a) return;
       dispatch(a, false, true);
@@ -200,7 +224,7 @@
   }
 
   var PHASES = [['collect', 'Collecte'], ['recruit', 'Recrutement'], ['military', 'Militaire'], ['build', 'Construction']];
-  var PHASE_ING = { collect: 'compte ses revenus', recruit: 'parcourt le marché', military: 'manœuvre ses troupes', build: 'bâtit son royaume' };
+  var PHASE_ING = { collect: 'compte ses revenus', recruit: 'parcourt le marché', military: 'manœuvre ses troupes', build: 'construit des bâtiments' };
   var PHASE_SHORT = { collect: 'compte', recruit: 'recrute', military: 'manœuvre', build: 'bâtit' };
 
   /* horloge d'attente : rafra\u00eechit les « depuis X » sans re-rendre toute l'interface */
@@ -254,12 +278,22 @@
     var inc = FOF.income(st, p), n = inc.total - inc.upkeep;
     return '<small class="rev">' + (n >= 0 ? '+' : '') + n + '/t</small>';
   }
+  /* v1.9.24 - proche de la victoire (créateur, 08/10/2026) : à 2 territoires, 2 temples ou 2 points de
+     diplomatie du seuil, ou moins. Sert au halo du portrait et à l'annonce entre deux tours. */
+  FOF.procheVictoire = function (st, p) {
+    if (!p || !p.alive || st.winner) return [];
+    var v = st.victory, out = [];
+    if (v.mil - FOF.terrOf(st, p.id).length <= 2) out.push({ t: 'mil', reste: v.mil - FOF.terrOf(st, p.id).length });
+    if (v.rel - FOF.countBld(st, p.id, 'T') <= 2) out.push({ t: 'rel', reste: v.rel - FOF.countBld(st, p.id, 'T') });
+    if (!p.tyran && v.dip - p.dip <= 2) out.push({ t: 'dip', reste: v.dip - p.dip });
+    return out;
+  };
   function renderOpponents() {
     setHTML($('players'), '<div class="section-title">Dirigeants</div>' + st.players.map(function (p) {
       var terr = FOF.terrOf(st, p.id).length, tem = FOF.countBld(st, p.id, 'T');
       var pills = (p.tyran ? '<span class="pill tyran">Tyran</span>' : '') + (p.pact !== null ? '<span class="pill pact">Pacte</span>' : '') + (!p.alive ? '<span class="pill">Éliminé</span>' : '');
       var busy = p.id === actor() && p.alive && !st.winner && !myTurn();
-      return '<div class="opp ' + (p.id === st.cur ? 'active ' : '') + (busy ? 'thinking ' : '') + (!p.alive ? 'dead' : '') + '" data-heroinfo="' + p.id + '" title="Voir la fiche de ' + esc(FOF.LEADERS[p.leader].name) + '" style="--pc:' + color(p.id) + '">' + FOF.heroImg(p.leader) +
+      return '<div class="opp ' + (p.id === st.cur ? 'active ' : '') + (busy ? 'thinking ' : '') + (!p.alive ? 'dead' : '') + (FOF.procheVictoire(st, p).length ? ' proche' : '') + '" data-heroinfo="' + p.id + '" title="Voir la fiche de ' + esc(FOF.LEADERS[p.leader].name) + '" style="--pc:' + color(p.id) + '">' + FOF.heroImg(p.leader) +
         '<div><div class="nm"><span>' + esc(p.name) + (p.bot ? ' <small title="Ordinateur" class="botmark">' + FOF.ic('helm', 13) + '</small>' : '') + '</span>' + pills + '</div><div class="ld">' + esc(FOF.LEADERS[p.leader].name) + '</div>' +
         '<div class="st"><span title="Or (revenu net par tour entre parenthèses)"><span class="coin" style="width:11px;height:11px;vertical-align:-1px"></span> <b>' + p.gold + '</b>' + revenuNet(p) + '</span>' +
         '<span title="Diplomatie (victoire à ' + st.victory.dip + ')">' + dipIcon(13) + ' <b>' + (p.tyran ? '-' : p.dip + '/' + st.victory.dip) + '</b></span>' +
@@ -328,18 +362,27 @@
     var spot = {};
     // v1.9.19 - carte historique : pions, pastilles et marteaux 20 % plus grands (créateur, 07/10/2026)
     var K = m.hist ? 1.2 : 1, bb0 = FOF.Board.bounds();
+    // v1.9.24 - boîtes déjà posées : les groupes suivants les évitent (aucun chevauchement entre cases)
+    var occupe = [];
     function anchorOf(loc, nb, isCap, hasMallet) {
       if (spot[loc]) return spot[loc];
-      var list = byLoc[loc] || [], n = Math.min(list.length, 5);
-      var topW = (isCap ? 16 : 0) + nb * 17 + (hasMallet ? 24 : 0), tokW = n ? (n - 1) * 24 + 30 : 0;
-      var W = Math.max(topW, tokW, 20) * K, up = ((nb || isCap) ? 25 : 14) * K, down = (n ? 20 : 6) * K;
-      var a = FOF.Board.place(loc, W, up, down) || FOF.Board.anchor(loc);
+      var list = byLoc[loc] || [], owners = {}; list.forEach(function (it) { owners[it.owner] = 1; });
+      var n = Math.min(Object.keys(owners).length, 5);
+      // boîte réelle : pastilles 15 px au-dessus de l'ancre (16 avec le bord), pions de 25 px (badges
+      // compris : 31) centrés 13 px sous l'ancre, à 25 px d'écart, le tout à l'échelle K
+      var topW = (isCap ? 16 : 0) + nb * 17 + (hasMallet ? 24 : 0), tokW = n ? (n - 1) * 25 + 31 : 0;
+      var W = Math.max(topW, tokW, 16) * K + 2, up = ((nb || isCap || hasMallet) ? 18 : 4) * K, down = (n ? 29 : 2) * K;
+      if (!nb && !n && !hasMallet) return (spot[loc] = FOF.Board.anchor(loc));
+      var a = FOF.Board.place(loc, W, up, down, occupe) || FOF.Board.anchor(loc);
       // v1.9.19 - tout le groupe (pastilles au-dessus, pions en dessous) reste dans le cadre de la carte :
       // sur la carte historique, les cases touchent le bord et des pastilles sortaient du plateau.
       if (bb0 && a) a = { x: Math.max(bb0.x + W / 2 + 3, Math.min(bb0.x + bb0.w - W / 2 - 3, a.x)), y: Math.max(bb0.y + up + 3, Math.min(bb0.y + bb0.h - down - 14 * K, a.y)) };
+      if (a) occupe.push({ x0: a.x - W / 2 - 1, x1: a.x + W / 2 + 1, y0: a.y - up - 1, y1: a.y + down + 1 });
       return (spot[loc] = a);
     }
-    m.terr.forEach(function (t) {
+    // v1.9.24 : les cases les plus petites se placent d'abord (elles ont le moins de choix)
+    var ordreT = m.terr.slice().sort(function (x, y) { var bx = FOF.Board.taille ? FOF.Board.taille('t' + x.id) : 0, by = FOF.Board.taille ? FOF.Board.taille('t' + y.id) : 0; return bx - by; });
+    ordreT.forEach(function (t) {
       if (!FOF.Board.anchor('t' + t.id)) return;
       var hasMallet = canBuildHere && ['C', 'F', 'P', 'Ci', 'T'].some(function (ty) { return !FOF.canBuild(st, t.id, ty); });
       var a = anchorOf('t' + t.id, t.blds.length, false, hasMallet);
@@ -351,7 +394,7 @@
         var bx = gx0 + i * 17, by = a.y - 16;
         // v1.9.6 - pastilles d'aménagement : fond sombre et icône dorée. Le fond beige et l'icône
         // noire se fondaient dans les terrains clairs de la carte.
-        out.push('<rect x="' + bx + '" y="' + by + '" width="15" height="15" rx="3" fill="#201b14" stroke="' + color(bd.o) + '" stroke-width="2"/><image href="assets/icons/bld-' + bd.t + '-or.png" x="' + (bx + 2) + '" y="' + (by + 2) + '" width="11" height="11"/>');
+        out.push('<rect data-tloc="t' + t.id + '" x="' + bx + '" y="' + by + '" width="15" height="15" rx="3" fill="#201b14" stroke="' + color(bd.o) + '" stroke-width="2"/><image href="assets/icons/bld-' + bd.t + '-or.png" x="' + (bx + 2) + '" y="' + (by + 2) + '" width="11" height="11"/>');
       });
       if (K !== 1) out.push('</g>');
       if (hasMallet) {
@@ -430,8 +473,8 @@
     if (pd && pd.type === 'cedeTerritory') return '<b>' + esc(st.players[pd.pid].name) + '</b> doit céder un territoire à ' + esc(st.players[pd.to].name) + ' : cliquez un territoire vert.';
     if (pd && pd.type === 'revolt') return 'Tyrannie : <b>' + esc(st.players[pd.pid].name) + '</b> choisit le territoire qui se révolte (en vert).';
     if (pd && pd.type === 'razeSlot') return '<b>' + esc(st.players[pd.pid].name) + '</b> doit raser un aménagement ' + (pd.cause === 'conquete' ? 'de la capitale conquise' : 'de son ancienne capitale') + ', devenue un territoire ordinaire.';
-    if (mode && mode.kind === 'deploy') return 'Où déployer <b>' + esc(FOF.unitDef(st.zone[mode.slot]).name) + '</b> ? Cliquez un territoire qui clignote en blanc (l’achat se fait au déploiement).';
-    if (mode && mode.kind === 'move') return 'Déplacer <b>' + esc(mode.label) + '</b> : cliquez une case qui clignote en blanc (' + mode.left + ' case' + (mode.left > 1 ? 's' : '') + ' max).';
+    if (mode && mode.kind === 'deploy') return 'Où déployer <b>' + esc(FOF.unitDef(st.zone[mode.slot]).name) + '</b> ? Cliquez sur un territoire qui clignote en blanc (l’achat se fait au déploiement).';
+    if (mode && mode.kind === 'move') return 'Déplacer <b>' + esc(mode.label) + '</b> : cliquez sur une case qui clignote en blanc (' + mode.left + ' case' + (mode.left > 1 ? 's' : '') + ' max).';
     return '';
   }
 
@@ -585,7 +628,7 @@
     var px = e.clientX - rect.left, py = e.clientY - rect.top;
     var loc = tk ? tk.dataset.tloc : ml ? ml.dataset.tloc : FOF.Board.locAt(st, b.x + px / rect.width * b.w, b.y + py / rect.height * b.h);
     if (FOF.sfx) FOF.sfx(mode && mode.kind === 'move' && loc && mode.reach[loc] !== undefined ? 'march' : tk && +tk.dataset.own === st.cur ? 'select' : 'tap');
-    if (!loc) { pop = null; if (mode && mode.kind === 'deploy') err = 'Cliquez un territoire qui clignote en blanc pour déployer votre unité (ou « Annuler »).'; else mode = null; render(); return; }
+    if (!loc) { pop = null; if (mode && mode.kind === 'deploy') err = 'Cliquez sur un territoire qui clignote en blanc pour déployer votre unité (ou « Annuler »).'; else mode = null; render(); return; }
     // clic sur un de mes pions en phase militaire : on part directement en déplacement
     if (tk && !mode && !st.pending.length && st.phase === 'military' && +tk.dataset.own === st.cur && myTurn()) {
       // v1.9.19 - une unité ouvre le même menu circulaire que le dirigeant ; une pile s'ouvre d'abord en
@@ -602,6 +645,8 @@
     if (piece === 'L') { if (p.lConq || p.lFought || p.lMovesLeft <= 0) return false; obj = 'L'; from = p.lpos; budget = p.lMovesLeft; label = FOF.LEADERS[p.leader].name; }
     else { obj = st.units.filter(function (u) { return u.uid === piece; })[0]; if (!obj || obj.fought || obj.pacif || obj.movesLeft <= 0) return false; from = obj.pos; budget = obj.movesLeft; label = FOF.unitDef(obj.key).name; }
     var reach = FOF.reach(st, from, obj, p, budget);
+    // v1.9.24 - Cartographe : les autres ports du joueur sont atteignables, pour tous les points restants
+    FOF.portHops(st, p, from, budget).forEach(function (l) { if (reach[l] === undefined) reach[l] = budget; });
     if (!Object.keys(reach).length) { err = label + ' ne peut aller nulle part (un port est nécessaire pour prendre la mer).'; return true; }
     mode = { kind: 'move', piece: piece, reach: reach, label: label, left: budget }; err = '';
     return true;
@@ -611,7 +656,7 @@
     if (pd && (pd.type === 'cedeTerritory' || pd.type === 'revolt')) { if (loc[0] === 't' && myTurn()) dispatch({ type: 'resolve', tid: +loc.slice(1) }); return; }
     if (mode && mode.kind === 'deploy') {
       if (loc[0] === 't' && mode.spots.indexOf(+loc.slice(1)) >= 0) { var slot = mode.slot; mode = null; sel = loc; dispatch({ type: 'buy', slot: slot, tid: +loc.slice(1) }); return; }
-      err = 'Impossible de déployer ici : cliquez un territoire qui clignote en blanc (ou « Annuler »).'; pop = null; render(); return;
+      err = 'Impossible de déployer ici : cliquez sur un territoire qui clignote en blanc (ou « Annuler »).'; pop = null; render(); return;
     }
     if (mode && mode.kind === 'move') {
       if (mode.reach[loc] !== undefined) { var piece = mode.piece; mode = null; sel = loc; dispatch({ type: 'move', piece: piece, to: loc }); if (!err) openPopAfterMove(loc); return; }
@@ -650,7 +695,7 @@
       if (FOF.isElite(u.key) && !u.fought && !u.pacif && FOF.attackTargets(st, radial.loc).length) items.push('<button class="rbtn attack" data-attack="' + radial.loc + '"><b>' + FOF.ic('swords', 22) + '</b><span>Attaquer</span></button>');
       if (t && FOF.isElite(u.key) && t.ctrl === p.id && t.blds.some(function (b) { return b.o !== p.id; })) {
         var okP = t.conqStamp < st.turnNo && u.arr < st.turnNo && !u.moved && !u.fought && !p.flags.pacified;
-        items.push('<button class="rbtn pacify" data-pacify="' + u.uid + '" ' + (okP ? '' : 'disabled title="' + (p.flags.pacified ? 'Une seule pacification par tour' : 'Une élite doit être ici depuis votre tour précédent') + '"') + '><b>' + FOF.ic('branch', 20) + '</b><span>Pacifier</span></button>');
+        items.push('<button class="rbtn pacify" data-pacify="' + u.uid + '" ' + (okP ? '' : 'disabled title="' + (p.flags.pacified ? 'Une seule pacification par tour' : 'Une unité d’élite doit être ici depuis votre tour précédent.') + '"') + '><b>' + FOF.ic('branch', 20) + '</b><span>Pacifier</span></button>');
       }
       var effU = FOF.effectAvailable(st, u);
       if (effU) items.push('<button class="rbtn effect" ' + (u.key === 'trebuchets' ? 'data-rpop="1"' : 'data-effect="' + u.uid + '"') + ' title="' + esc(effU) + '"><b>' + FOF.ic('star', 20) + '</b><span>Effet</span></button>');
@@ -738,7 +783,7 @@
       if (t && FOF.isElite(u.key) && t.ctrl === p.id && t.blds.some(function (b) { return b.o !== p.id; })) {
         var ok = t.conqStamp < st.turnNo && u.arr < st.turnNo && !u.moved && !u.fought;
         var cib = FOF.ciblePacification(t, p.id);
-        var tip = p.flags.pacified ? 'Une seule pacification par tour' : !ok ? 'Une élite doit être ici depuis votre tour précédent' : cib ? 'Convertit : ' + FOF.BUILDINGS[cib.t].name + ' (le moins cher d’abord)' : '';
+        var tip = p.flags.pacified ? 'Une seule pacification par tour' : !ok ? 'Une unité d’élite doit être ici depuis votre tour précédent.' : cib ? 'Convertit : ' + FOF.BUILDINGS[cib.t].name + ' (le moins cher d’abord)' : '';
         acts.push('<button class="btn small" data-pacify="' + u.uid + '" ' + (ok && !p.flags.pacified ? 'title="' + tip + '"' : 'disabled title="' + tip + '"') + '>Pacifier' + (cib ? ' · ' + FOF.BUILDINGS[cib.t].name : '') + '</button>');
       }
     }
@@ -760,9 +805,9 @@
     C:  ['+1 déf.',             'Campement - +1 en défense sur cette case.'],
     F:  ['+3 déf.',             'Fort - +3 en défense sur cette case.'],
     P:  ['+1 déf.',             'Port - +1 en défense, et vos unités peuvent embarquer depuis cette case.'],
-    Ci: ['+1 or/tour',          'Cité - +1 or à chaque collecte. Beaucoup de cartes exigent des cités.'],
-    T:  ['victoire religieuse', 'Temple - compte pour la victoire religieuse. Il occupe un emplacement d’aménagement. Le détruire coûte 1 diplomatie à l’assaillant.'],
-    A:  ['+1 par gain diplo.',  'Ambassade - chaque gain de diplomatie obtenu par une action (unité, carte, pouvoir) en rapporte 1 de plus, sauf celui du Héraut. Uniquement si vous n’avez ni attaqué ni été attaqué depuis votre dernier tour. Une seule, dans votre capitale, où elle occupe un emplacement.']
+    Ci: ['+1 or/tour',          'Cité - +1 or à chaque collecte.'],
+    T:  ['victoire religieuse', 'Temple - compte pour la victoire religieuse. Le détruire coûte 1 diplomatie à l’assaillant.'],
+    A:  ['+1 par gain diplo.',  'Ambassade - chaque gain de diplomatie obtenu par une action en rapporte 1 de plus, sauf mention contraire. Une seule, dans votre capitale, où elle occupe un emplacement.']
   };
   function buildPanel(p, t) {
     var slots = FOF.slotsOf(st, p, t.id);
@@ -795,10 +840,14 @@
     if (st.phase !== 'recruit' || st.pending.length || !myTurn()) { el.hidden = true; if (bd0) bd0.style.setProperty('--mh', '0px'); return; }
     var mini = !marketOpen;
     el.className = 'market' + (mini ? ' compact' : '');
+    // v1.9.24 - « Regarder la carte » et « Regarder le marché » : en doré, et au même endroit dans les
+    // deux états, sous la pile du deck (créateur, 08/10/2026). Sur les écrans où la pile est masquée,
+    // le bouton reste dans le titre.
     var toggle = mini
-      ? '<button class="btn small ghost" data-showmarket="1" title="Réafficher les cartes en entier">Agrandir les cartes ▴</button>'
-      : '<button class="btn small ghost" data-hidemarket="1" title="Réduire les cartes pour regarder la carte">Regarder la carte ▾</button>';
-    var h = ['<h3><span class="mk-t">Zone de recrutement · 1 achat et 1 défausse par tour</span> ' + toggle + '</h3>' +
+      ? '<button class="btn small gold mk-toggle" data-showmarket="1" title="Réafficher les cartes en entier">Regarder le marché ▴</button>'
+      : '<button class="btn small gold mk-toggle" data-hidemarket="1" title="Réduire les cartes pour regarder la carte">Regarder la carte ▾</button>';
+    var nAch = p.flags.yusuf ? 3 : 1;
+    var h = ['<h3><span class="mk-t">Marché · ' + nAch + ' achat' + (nAch > 1 ? 's' : '') + ' et 1 défausse par tour</span> <span class="mk-h3t">' + toggle + '</span></h3>' +
       '<div class="market-inner"' + (mini && !(mode && mode.kind === 'deploy') ? ' data-showmarket="1" title="Cliquez pour revoir les cartes en entier"' : '') + '>'];
     h.push('<div class="deckpile"><img src="assets/cardback.jpg" alt="Deck"><span>Deck : <b class="num">' + st.deck.length + '</b><br>Défausse : <b class="num">' + st.discard.length + '</b></span>' +
       '</div>');
@@ -816,6 +865,9 @@
     el.hidden = false;
     if (!mini) fitMarket(el);
     if (bd0) bd0.style.setProperty('--mh', el.offsetHeight + 'px');   // pour décaler les boutons de zoom
+    // v1.9.24 : le bouton carte / marché garde la même place à l'écran, marché ouvert ou réduit
+    function caleBouton() { if (!bd0 || el.hidden) return; var gapB = Math.max(0, Math.round(bd0.getBoundingClientRect().bottom - el.getBoundingClientRect().bottom)); if (el.style.getPropertyValue('--mkgap') !== gapB + 'px') el.style.setProperty('--mkgap', gapB + 'px'); }
+    caleBouton(); requestAnimationFrame(caleBouton);
   }
   // v1.8 : sur un écran court, les cartes débordaient du plateau et il fallait faire défiler pour
   // voir les dernières (et parfois pour atteindre le bouton Acheter). On resserre par paliers.
@@ -849,15 +901,15 @@
   }
   var HINTS = {
     collect: ['Revenus encaissés, solde payée sur le trésor.', 'Passer au recrutement →'],
-    recruit: ['Achetez au plus 1 unité et défaussez au plus 1 carte.', 'Passer à la phase militaire →'],
-    military: ['Cliquez un de vos pions pour le déplacer (badge vert = cases restantes). Cliquez une case pour attaquer, conquérir ou pacifier.', 'Passer à la construction →'],
-    build: ['Cliquez un de vos territoires pour bâtir.', 'Terminer mon tour ✓']
+    recruit: ['Achetez 1 unité et défaussez 1 carte.', 'Passer à la phase militaire →'],
+    military: ['Cliquez sur un de vos pions pour le déplacer (badge vert = cases restantes). Cliquez sur une case pour attaquer, conquérir ou pacifier.', 'Passer à la construction →'],
+    build: ['Cliquez sur un de vos territoires pour bâtir.', 'Terminer mon tour ✓']
   };
   function renderMat() {
     var p = FOF.cur(st), v = st.victory, army = FOF.army(st, p.id), inc = st.collect ? st.collect.inc : FOF.income(st, p);
-    var h = ['<div class="me' + (p.tyran ? ' tyran' : '') + '" style="--pc:' + color(p.id) + '"><div class="pwrap">' + FOF.heroImg(p.leader) + (p.tyran ? '<div class="flames" aria-hidden="true">' + '<i></i>'.repeat(14) + '</div>' : '') + '</div>' + '<div class="who"><div class="ribbon" style="background:' + color(p.id) + ';color:#fff;border-color:#1b1a1d">' + esc(p.name) + '</div>' +
+    var h = ['<div class="me' + (p.tyran ? ' tyran' : '') + (FOF.procheVictoire(st, p).length ? ' proche' : '') + '" style="--pc:' + color(p.id) + '"><div class="pwrap">' + FOF.heroImg(p.leader) + (p.tyran ? '<div class="flames" aria-hidden="true">' + '<i></i>'.repeat(14) + '</div>' : '') + '</div>' + '<div class="who"><div class="ribbon" style="background:' + color(p.id) + ';color:#fff;border-color:#1b1a1d">' + esc(p.name) + '</div>' +
       '<div class="line"><span class="star gold" style="width:24px;height:24px;font-size:13px">' + p.mod + '</span><span>' + esc(FOF.LEADERS[p.leader].name) + '</span>' + (p.tyran ? '<span class="pill tyran">Tyran</span>' : '') + (p.pact !== null ? '<span class="pill pact">Pacte avec ' + esc(st.players[p.pact].name) + '</span>' : '') + '</div>' +
-      '<div class="purse" data-gold="' + p.id + ':' + p.gold + '" title="Revenu : ' + inc.total + ' − entretien ' + inc.upkeep + '"><span class="coin"></span><b>' + p.gold + '</b><span class="muted" style="font-size:12.5px">or · revenu ' + (inc.total - inc.upkeep >= 0 ? '+' : '') + (inc.total - inc.upkeep) + '/tour</span></div></div></div>'];
+      '<div class="purse" data-gold="' + p.id + ':' + p.gold + '" title="Revenu : ' + inc.total + ' − solde ' + inc.upkeep + '"><span class="coin"></span><b>' + p.gold + '</b><span class="muted" style="font-size:12.5px">or · revenu ' + (inc.total - inc.upkeep >= 0 ? '+' : '') + (inc.total - inc.upkeep) + '/tour</span></div></div></div>'];
     h[0] = h[0].replace('<div class="me', '<div data-heroinfo="' + moiPid() + '" title="Voir la fiche du dirigeant" class="me');
     h.push('<div style="display:flex;gap:18px;align-items:center;min-width:0;flex-wrap:wrap"><div class="tracks" style="--pc:' + color(p.id) + '">' +
       track('Territoires', '<img class="icn" src="assets/icons/terr.png" alt="">', FOF.terrOf(st, p.id).length, v.mil) +
@@ -885,11 +937,11 @@
     // v1.9 : le bouton n'est plus désactivé par un mode en cours (déploiement) - il l'était, et
     // une interface restée coincée rendait la fin de tour impossible. Il explique et débloque.
     h.push('<div class="cta"><div class="hint">' + hint[0] + '</div>' +
-      (st.phaseClean && st.phase !== 'collect' && !st.pending.length && !st.winner && myTurn() && !(mode && mode.kind === 'deploy')
-        ? '<button class="btn small undo" data-backphase="1" title="Aucune action jouée dans cette phase : vous pouvez y revenir">← Phase précédente</button>' : '') +
-      (canUndo() ? '<button class="btn small undo" data-undo="1" title="Le pion revient d’où il vient et peut repartir ailleurs">' + FOF.ic('move', 14) + ' Annuler le déplacement</button>' : '') +
+      (canUndo() ? '<button class="btn small undo" data-undo="1" title="Revenir à l’état d’avant votre dernière action (sauf combat, achat, défausse au marché et Espion)">↶ Annuler la dernière action</button>' : '') +
       '<button class="btn primary go" data-next="1" ' + (st.pending.length || st.winner || !myTurn() ? 'disabled' : '') + '>' + hint[1] + '</button>' +
-      (p.leader === 'edouard' && st.phase === 'collect' ? '<button class="btn small gold" data-act="edouard" ' + (p.edouardUsed || p.dip > 3 || p.gold < FOF.EDOUARD_COUT || p.tyran || p.attackedLast || p.raidedLast ? 'disabled' : '') + '>Edouard : ' + FOF.EDOUARD_COUT + ' or → +1 diplomatie</button>' : '') + '</div>');
+      // v1.9.24 - Yusuf : bouton du pouvoir en phase de recrutement (pas dans le texte de la carte, demande du créateur)
+      (p.leader === 'yusuf' && st.phase === 'recruit' && myTurn() && !st.pending.length ? '<button class="btn small gold" data-yusuf="1" ' + (p.yusufUsed ? 'disabled title="Pouvoir déjà utilisé"' : 'title="Une fois par partie : 3 achats ce tour-ci"') + '>' + (p.flags.yusuf ? 'Yusuf : 3 achats ce tour' : 'Yusuf : acheter 3 cartes') + '</button>' : '') +
+      (p.leader === 'edouard' && st.phase === 'collect' ? '<button class="btn small gold" data-act="edouard" ' + (p.edouardUsed || p.dip > FOF.EDOUARD_MAX || p.gold < FOF.EDOUARD_COUT || p.tyran || p.attackedLast || p.raidedLast ? 'disabled' : '') + '>Édouard : ' + FOF.EDOUARD_COUT + ' or → +1 diplomatie</button>' : '') + '</div>');
     setHTML($('mat'), h.join(''));
   }
 
@@ -948,7 +1000,7 @@
     var el = $('modal'), pd = st.pending[0], h = null;
     if (st.winner) {
       var w = st.players[st.winner.pid], label = { mil: 'Victoire militaire', rel: 'Victoire religieuse', dip: 'Victoire diplomatique', survie: 'Dernier dirigeant debout' }[st.winner.type];
-      h = '<div class="modal victory" style="text-align:center"><div class="confetti" aria-hidden="true">' + new Array(40).join('<i></i>') + '</div><div class="vcrown" style="width:140px;margin:0 auto 10px">' + FOF.heroImg(w.leader) + '</div><h2 style="color:' + color(w.id) + ';font-size:30px">' + esc(w.name) + '</h2><p class="verdict">' + label + '</p><p class="muted">' + esc(FOF.LEADERS[w.leader].name) + ' · tour ' + st.round + '</p><div class="actions" style="justify-content:center"><button class="btn" data-endstats="1">' + FOF.ic('scroll', 15) + ' Statistiques de la partie</button><button class="btn primary" data-act="newgame">Nouvelle partie</button></div></div>';
+      h = '<div class="modal victory" style="text-align:center"><div class="confetti" aria-hidden="true">' + new Array(40).join('<i></i>') + '</div><div class="vcrown" style="width:140px;margin:0 auto 10px">' + FOF.heroImg(w.leader) + '</div><h2 style="color:' + color(w.id) + ';font-size:30px">' + esc(w.name) + '</h2><p class="verdict">' + label + '</p><p class="muted">' + esc(FOF.LEADERS[w.leader].name) + ' · tour ' + st.round + '</p><div class="actions" style="justify-content:center"><button class="btn" data-endstats="1">' + FOF.ic('scroll', 15) + ' Statistiques de la partie</button><button class="btn primary" data-act="newgame">Revenir au menu</button></div></div>';
       if (modal && modal.kind === 'endstats') h = endStatsHTML();
     }
     // v1.9.17 - le rapport de l'Espion passe devant tout (décision en attente comprise) : on peut
@@ -978,7 +1030,7 @@
         FOF.army(st, p.id).map(function (u) {
           var a = FOF.unitArt(u.key), n = defSel.c[u.uid] || 0, coins = '';
           for (var i = 0; i < u.gold; i++) coins += '<button type="button" class="dcoin' + (i < n ? ' on' : '') + '" data-dcoin="' + u.uid + '|' + i + '" aria-pressed="' + (i < n) + '" title="' + (i < n ? 'Laisser cette pièce' : 'Reprendre cette pièce') + '"></button>';
-          return '<div class="pc-row' + (n ? ' quitte' : '') + '" style="--pc:' + color(p.id) + '">' + (a ? '<img src="' + a + '" alt="">' : '') + '<div class="t"><b>' + esc(FOF.unitDef(u.key).name) + '</b><small>' + (n ? 'désertera' : 'entretien ' + FOF.unitDef(u.key).upkeep) + '</small></div><div class="dcoins">' + (coins || '<small class="muted">aucune pièce</small>') + '</div></div>';
+          return '<div class="pc-row' + (n ? ' quitte' : '') + '" style="--pc:' + color(p.id) + '">' + (a ? '<img src="' + a + '" alt="">' : '') + '<div class="t"><b>' + esc(FOF.unitDef(u.key).name) + '</b><small>' + (n ? 'désertera' : 'solde ' + FOF.unitDef(u.key).upkeep) + '</small></div><div class="dcoins">' + (coins || '<small class="muted">aucune pièce</small>') + '</div></div>';
         }).join('') +
         '<p class="deficit-tot">Repris : <b class="num">' + prise + '</b> / ' + pd.left + ' or' + (errDef && prise ? ' · <span class="muted">' + esc(errDef) + '</span>' : '') + '</p>' +
         '<div class="actions"><button class="btn primary" data-defgo="1"' + (errDef ? ' disabled' : '') + '>Valider</button></div></div>';
@@ -987,7 +1039,7 @@
       var rt = st.map.terr[pd.tid];
       var conq = pd.cause === 'conquete';
       h = '<div class="modal">' + passHTML(pd.pid) + '<h2>' + FOF.ic('warn', 20) + ' ' + esc(rt.name) + (conq ? ' : une capitale conquise' : ' n’est plus votre capitale') + '</h2>' +
-        '<p>' + (conq ? 'Sa cour est tombée : ce n’est plus qu’un territoire ordinaire, qui ne porte que <b>2 aménagements</b>. Choisissez celui que vous rasez.' : 'Un territoire ordinaire ne porte que <b>2 aménagements</b>. Choisissez celui que vous rasez - il est perdu, sans remboursement.') + '</p>' +
+        '<p>' + (conq ? 'Ce n’est plus qu’un territoire ordinaire, qui ne porte que <b>2 aménagements</b>. Choisissez celui que vous rasez.' : 'Un territoire ordinaire ne porte que <b>2 aménagements</b>. Choisissez celui que vous rasez - il est perdu, sans remboursement.') + '</p>' +
         '<div class="choice-grid">' + rt.blds.map(function (b, i) {
           return '<button class="btn danger" data-resolve="raze" data-idx="' + i + '">' + bIconOr(b.t, 20) + ' <b>' + esc(FOF.BUILDINGS[b.t].name) + '</b>' +
             (b.o !== pd.pid ? '<br><small>appartient à ' + esc(st.players[b.o].name) + '</small>' : '') + '</button>';
@@ -997,8 +1049,8 @@
     else if (modal && modal.kind === 'killc') {
       var uk = st.units.filter(function (x) { return x.uid === modal.uid; })[0];
       h = uk ? '<div class="modal edouardc"><h2>' + FOF.ic('skull', 20) + ' Licencier ' + esc(FOF.unitDef(uk.key).name) + ' ?</h2>' +
-        '<p>L’unité quitte le jeu et sa carte retourne à la défausse. Vous récupérez la place, pas l’or : les <b>' + uk.gold + ' pièce' + (uk.gold > 1 ? 's' : '') + '</b> posées sur sa carte sont perdues.</p>' +
-        '<p class="warn-line">Une seule unité licenciée par tour. Vous pourrez acheter à sa place dans ce même tour de recrutement.</p>' +
+        '<p>L’unité quitte le jeu et sa carte retourne à la défausse. Les <b>' + uk.gold + ' pièce' + (uk.gold > 1 ? 's' : '') + '</b> posées sur sa carte sont perdues.</p>' +
+        '<p class="warn-line">Une seule unité licenciée par tour. Vous pourrez acheter dans ce même tour de recrutement.</p>' +
         '<div class="actions"><button class="btn" data-close="1">Annuler</button><button class="btn gold" data-killgo="1">Licencier</button></div></div>'
         : '<div class="modal"><p>Unité introuvable.</p><div class="actions"><button class="btn primary" data-close="1">Fermer</button></div></div>';
     }
@@ -1013,7 +1065,7 @@
           var d = FOF.unitDef(u.key), ar = FOF.unitArt(u.key), ow = st.players[u.owner];
           return '<div class="pc-row" style="--pc:' + color(u.owner) + '">' + (ar ? '<img src="' + ar + '" alt="">' : '') +
             '<div class="t"><b>' + esc(d.name) + '</b><small>' + esc(ow.name) + ' · ' + (FOF.isElite(u.key) ? 'élite' : 'spéciale') +
-            ' · entretien ' + d.upkeep + ' · réserve ' + u.gold + (u.owner === st.cur ? ' · ' + u.movesLeft + ' déplacement' + (u.movesLeft > 1 ? 's' : '') : '') + '</small></div></div>';
+            ' · solde ' + d.upkeep + ' · réserve ' + u.gold + (u.owner === st.cur ? ' · ' + u.movesLeft + ' déplacement' + (u.movesLeft > 1 ? 's' : '') : '') + '</small></div></div>';
         }).join('') +
         '</div></div><div class="actions"><button class="btn primary" data-close="1">Fermer</button></div></div>';
     }
@@ -1023,7 +1075,7 @@
         '<p>Votre cour quitterait <b>' + esc(st.map.terr[cp.capital].name) + '</b> pour <b>' + esc(ct.name) + '</b>.</p>' +
         '<div class="ed-ledger"><span>Coût</span><b class="num">8 <i class="coin"></i></b><span>Après le transfert</span><b class="num' + (cp.gold - 8 < 2 ? ' low' : '') + '">' + (cp.gold - 8) + ' <i class="coin"></i></b></div>' +
         (FOF.countBld(st, cp.id, 'A')
-          ? '<p class="warn-line danger">' + FOF.ic('warn', 16) + ' Votre <b>Ambassade</b> sera <b>détruite</b> : elle ne tient qu’à la capitale et ne suit pas la cour. Il faudra la rebâtir (4 or) dans la nouvelle.</p>'
+          ? '<p class="warn-line danger">' + FOF.ic('warn', 16) + ' Votre <b>Ambassade</b> sera <b>détruite</b>. Il faudra la rebâtir (' + FOF.BUILDINGS.A.cost + ' or) dans la nouvelle.</p>'
           : '') +
         (st.map.terr[cp.capital].blds.filter(function (b) { return b.t !== 'A'; }).length > 2
           ? '<p class="warn-line danger">' + FOF.ic('warn', 16) + ' <b>' + esc(st.map.terr[cp.capital].name) + '</b> redeviendra un territoire ordinaire : <b>2 emplacements au lieu de 3</b>. Vous devrez y <b>raser un aménagement</b> juste après le transfert.</p>'
@@ -1043,6 +1095,14 @@
           (vieux.t === 'T' ? '<p class="warn-line danger">' + FOF.ic('warn', 16) + ' Un <b>temple</b> de moins vous éloigne de la victoire religieuse.</p>' : '') +
           '<div class="actions"><button class="btn" data-close="1">Annuler</button><button class="btn gold" data-replacego="1">Oui, remplacer · ' + rcout + ' or</button></div></div>';
       }
+    }
+    else if (modal && modal.kind === 'proche') {
+      var prj = st.players[modal.pid], NOMS = { mil: 'militaire', rel: 'religieuse', dip: 'diplomatique' }, UNIT = { mil: ['territoire', 'territoires'], rel: ['temple', 'temples'], dip: ['point de diplomatie', 'points de diplomatie'] };
+      h = '<div class="modal proche-v" style="--pc:' + color(prj.id) + '"><div class="pv-portrait">' + FOF.heroImg(prj.leader) + '</div>' +
+        '<h2>' + esc(prj.name) + ' s’approche de la victoire</h2>' +
+        modal.types.map(function (x) { return '<p class="pv-type"><b>Victoire ' + NOMS[x.t] + '</b> · plus que ' + x.reste + ' ' + UNIT[x.t][x.reste > 1 ? 1 : 0] + '</p>'; }).join('') +
+        '<p class="muted">' + esc(FOF.LEADERS[prj.leader].name) + '</p>' +
+        '<div class="actions"><button class="btn primary" data-closeproche="1">Continuer</button></div></div>';
     }
     else if (modal && modal.kind === 'settings') h = settingsHTML();
     else if (modal && modal.kind === 'help') h = helpHTML();
@@ -1072,10 +1132,17 @@
         '<button class="btn primary" data-pause="1">Mettre en pause 48 h</button>' +
         '<button class="btn danger" data-surrender="1">Abandonner maintenant</button></div></div>';
     }
+    else if (modal && modal.kind === 'yusufc') {
+      var yp = FOF.cur(st), dejaA = yp.flags.buys || (yp.flags.bought ? 1 : 0);
+      h = '<div class="modal edouardc"><h2>' + FOF.ic('cards', 20) + ' Ouvrir les coffres de Yusuf ?</h2>' +
+        '<p>Ce tour-ci, vous pourrez acheter jusqu’à <b>3 cartes</b> au marché' + (dejaA ? ' (achat déjà fait compris)' : '') + ', chacune à son prix. Les plafonds de l’armée restent les mêmes : 4 unités, dont 3 élites et 3 spéciales au plus.</p>' +
+        '<p class="warn-line">Ce pouvoir ne sert qu’<b>une seule fois par partie</b>.</p>' +
+        '<div class="actions"><button class="btn" data-close="1">Annuler</button><button class="btn gold" data-yusufgo="1">Oui, ouvrir les coffres</button></div></div>';
+    }
     else if (modal && modal.kind === 'edouardc') {
       var ep = FOF.cur(st), after = ep.gold - FOF.EDOUARD_COUT;
       h = '<div class="modal edouardc"><h2>' + dipIcon(18) + ' Acheter 1 diplomatie ?</h2>' +
-        '<p>Le pouvoir d’Edouard le Sage vous coûtera <b class="num">' + FOF.EDOUARD_COUT + '</b> or et vous fera passer de <b class="num">' + ep.dip + '</b> à <b class="num">' + (ep.dip + 1) + '</b> en diplomatie' + (FOF.countBld(st, ep.id, 'A') ? ', <b>+2 avec votre Ambassade</b>' : '') + '.</p><p class="warn-line">Ce pouvoir ne sert qu’<b>une seule fois par partie</b>.</p>' +
+        '<p>Le pouvoir d’Édouard le Sage vous coûtera <b class="num">' + FOF.EDOUARD_COUT + '</b> or et vous fera passer de <b class="num">' + ep.dip + '</b> à <b class="num">' + (ep.dip + 1) + '</b> en diplomatie' + (FOF.countBld(st, ep.id, 'A') ? ', <b>+2 avec votre Ambassade</b>' : '') + '.</p><p class="warn-line">Ce pouvoir ne sert qu’<b>une seule fois par partie</b>.</p>' +
         '<div class="ed-ledger"><span>Trésor</span><b class="num">' + ep.gold + ' <i class="coin"></i></b><span>Après l’achat</span><b class="num' + (after < 2 ? ' low' : '') + '">' + after + ' <i class="coin"></i></b></div>' +
         (st.round <= 1 ? '<p class="warn-line">Nous sommes au <b>tour 1</b> : avec ' + after + ' or il vous restera peu de quoi recruter. La plupart des unités coûtent 1 à 3 or.</p>'
           : after < 2 ? '<p class="warn-line">Il ne vous restera que ' + after + ' or pour ce tour.</p>' : '') +
@@ -1112,34 +1179,35 @@
     FOF.army(st, cp.id).forEach(function (u) { row('Solde : ' + esc(FOF.unitDef(u.key).name), -FOF.unitDef(u.key).upkeep, 'minus'); });
     var net = c ? c.net : inc.total - inc.upkeep;
     var acts = [];
-    if (cp.leader === 'edouard') acts.push('<button class="btn gold" data-act="edouard" ' + (cp.edouardUsed || cp.dip > 3 || cp.gold < FOF.EDOUARD_COUT || cp.tyran || cp.attackedLast || cp.raidedLast ? 'disabled' : '') + '>Edouard : ' + FOF.EDOUARD_COUT + ' or → +1 diplomatie</button>');
+    if (cp.leader === 'edouard') acts.push('<button class="btn gold" data-act="edouard" ' + (cp.edouardUsed || cp.dip > FOF.EDOUARD_MAX || cp.gold < FOF.EDOUARD_COUT || cp.tyran || cp.attackedLast || cp.raidedLast ? 'disabled' : '') + '>Édouard : ' + FOF.EDOUARD_COUT + ' or → +1 diplomatie</button>');
     return '<div class="modal collect"><div class="pass" style="background:' + color(cp.id) + '33;border:1px solid ' + color(cp.id) + '">' + (net ? 'À vous de jouer, <b>' + esc(cp.name) + '</b> !' : 'Passez l’écran à <b>' + esc(cp.name) + '</b>') + '</div>' +
       '<div class="collect-top">' + FOF.heroImg(cp.leader) + '<div><div class="ribbon" style="background:' + color(cp.id) + ';color:#fff">' + esc(cp.name) + '</div><div class="muted">' + esc(FOF.LEADERS[cp.leader].name) + ' · tour ' + st.round + '</div></div></div>' +
       '<div class="gold-big ' + (net < 0 ? 'neg' : '') + '"><i class="coin"></i><span>' + (net >= 0 ? '+' : '−') + Math.abs(net) + '</span><small>écus ce tour</small></div>' +
       '<div class="ledger">' + rows.join('') + '<div class="lg tot"><span>Trésor</span><b>' + cp.gold + ' <i class="coin"></i></b></div></div>' +
       (c && c.taken ? '<p class="warn-line">' + c.taken + ' écus repris sur vos unités, qui ont déserté.</p>' : '') +
-      (cp.gold < 0 ? '<p class="warn-line danger">Trésor négatif : ni recrutement ni construction tant qu’il ne remonte pas.</p>' : '') +
+      (cp.gold < 0 ? '<p class="warn-line danger">Trésor négatif : ni recrutement ni construction.</p>' : '') +
       (cp.tyran ? '<p class="warn-line">Vous êtes Tyran : un de vos territoires se révoltera à la fin du tour.</p>' : '') +
       (acts.length ? '<div class="collect-acts">' + acts.join('') + '</div>' : '') +
       '<div class="actions"><button class="btn primary go" data-collectgo="1">Passer au recrutement →</button></div></div>';
   }
   var FACE = { 1: 'rotateX(0deg) rotateY(0deg)', 2: 'rotateY(-90deg)', 3: 'rotateX(-90deg)', 4: 'rotateX(90deg)', 5: 'rotateY(90deg)', 6: 'rotateY(180deg)' };
   var PIPS = { 1: [5], 2: [1, 9], 3: [1, 5, 9], 4: [1, 3, 7, 9], 5: [1, 3, 5, 7, 9], 6: [1, 3, 4, 6, 7, 9] };
-  function dieHTML(v, col) {
+  function dieHTML(v, col, still, clic) {
     var faces = [[1, 'f1'], [2, 'f2'], [3, 'f3'], [4, 'f4'], [5, 'f5'], [6, 'f6']].map(function (f) {
       var pips = ''; for (var k = 1; k <= 9; k++) pips += '<i' + (PIPS[f[0]].indexOf(k) >= 0 ? ' class="on"' : '') + '></i>';
       return '<div class="face ' + f[1] + '">' + pips + '</div>';
     }).join('');
-    return '<div class="die3d" style="--dc:' + col + '"><div class="cube" style="--final:' + FACE[v] + '">' + faces + '</div></div>';
+    return '<div class="die3d' + (still ? ' still' : '') + (clic ? ' clic' : '') + '" style="--dc:' + col + '"' + (clic ? ' data-reroll="1" role="button" tabindex="0" title="Cliquez pour relancer"' : '') + '><div class="cube" style="--final:' + FACE[v] + '">' + faces + '</div></div>';
   }
   // un camp du combat : les unités qui s'affrontent (et le dirigeant seulement s'il est engagé)
-  function sideHTML(q, det, tot, die, units, lead, delay) {
+  function sideHTML(q, det, tot, die, units, lead, delay, dieOpt) {
+    dieOpt = dieOpt || {};
     units = units || [];
     var troops = units.map(function (k) { var a = FOF.unitArt(k); return '<div class="trp' + (FOF.isElite(k) ? ' el' : '') + '">' + (a ? '<img src="' + a + '" alt="">' : '<div class="noart">' + esc(FOF.unitDef(k).name.slice(0, 2)) + '</div>') + '<span>' + esc(FOF.unitDef(k).name) + '</span></div>'; });
     if (lead) troops.unshift('<div class="trp lead">' + FOF.heroImg(q.leader, '') + '<span>' + esc(FOF.LEADERS[q.leader].name) + '</span></div>');
     if (!troops.length) troops.push('<div class="trp none"><img src="assets/images/garnison.jpg" alt=""><span>Garnison (aménagements)</span></div>');   // v1.9.15 : illustration de la garnison
     return '<div class="side" style="--sc:' + color(q.id) + '"><h4>' + esc(q.name) + '</h4><div class="troops">' + troops.join('') + '</div>' + det.map(function (x) { return '<div class="kv"><span>' + esc(x[0]) + '</span><b class="num">+' + x[1] + '</b></div>'; }).join('') +
-      (die ? dieHTML(die, color(q.id)) + '<div class="total num reveal">' + tot + '</div>' : '<div class="total num">' + tot + ' + ' + FOF.ic('dice', 16) + '</div>') + '</div>';
+      (die ? dieHTML(die, color(q.id), dieOpt.still, dieOpt.clic) + '<div class="total num' + (dieOpt.still ? '' : ' reveal') + '">' + tot + '</div>' + (dieOpt.msg ? '<div class="reroll-msg">' + dieOpt.msg + '</div>' : '') : '<div class="total num">' + tot + ' + ' + FOF.ic('dice', 16) + '</div>') + '</div>';
   }
   function attackHTML(m) {
     var tg = FOF.attackTargets(st, m.loc), p = FOF.cur(st);
@@ -1160,40 +1228,80 @@
     if (p.pact === d.id) couts.push('−2 rupture du pacte (' + esc(d.name) + ' gagne +1)');
     if (pv.nSpe) couts.push('−' + pv.nSpe + ' pour ' + (pv.nSpe > 1 ? 'les ' + pv.nSpe + ' unités spéciales détruites' : 'l’unité spéciale détruite') + (pv.auto ? '' : ' si vous gagnez'));
     var total = pv.cost + (pv.auto ? pv.nSpe : 0);
-    if (pv.auto) h.push('<p class="warn-line">Des unités spéciales seules ne se battent pas : elles sont <b>défaites d’office</b>, sans dé.</p>');
+    if (pv.auto) h.push('<p class="warn-line">Les unités spéciales seules ne se battent pas : elles sont <b>détruites d’office</b>.</p>');
     h.push('<p>Chances de victoire : <b class="num">' + prob + ' %</b> · Diplomatie : <b class="num">' + (couts.length ? '−' + total + (pv.auto || !pv.nSpe ? '' : ' (−' + (total + pv.nSpe) + ' si vous gagnez)') : 'aucun coût (cible Tyran)') + '</b></p>' +
       (couts.length ? '<p class="muted">' + couts.join(' · ') + '</p>' : ''));
     h.push('<p class="muted">Si vous perdez, toutes vos unités engagées sont défaussées.</p><div class="actions"><button class="btn" data-close="1">Annuler</button><button class="btn attack-go" data-go="1">' + FOF.ic('swords', 17) + ' Lancer l’assaut</button></div></div>');
     return h.join('');
   }
   function dipLignes(c) { return (c.dip || []).map(function (x) { return '<p class="dip-loss">' + dipIcon(14) + ' ' + esc(x) + '</p>'; }).join(''); }
+  /* v1.9.24 - égalité et Prêtresse : le jet suivant ne s'affiche qu'au clic sur le dé, par le joueur
+     concerné (l'attaquant pour une égalité, le propriétaire de la Prêtresse pour sa relance). Si ce
+     joueur est un bot ou joue sur un autre écran, le dé se relance tout seul après un court délai.
+     Les valeurs sont celles tirées par le moteur : seule leur présentation est échelonnée. */
+  function combatFrames(c) {
+    var fr = [], a = st.players[c.att], d = st.players[c.def];
+    c.rolls.forEach(function (r, i) {
+      var a0 = r.a0 !== undefined ? r.a0 : r.a, d0 = r.d0 !== undefined ? r.d0 : r.d;
+      fr.push({ a: a0, d: d0 });
+      if (r.pa) { fr[fr.length - 1].wait = { pid: a.id, side: 'a', msg: 'Prêtresse : ' + esc(a.name) + ' relance son dé' }; fr.push({ a: r.a, d: d0, moved: 'a' }); }
+      if (r.pd) { fr[fr.length - 1].wait = { pid: d.id, side: 'd', msg: 'Prêtresse : ' + esc(d.name) + ' relance son dé' }; fr.push({ a: r.a, d: r.d, moved: 'd' }); }
+      if (i < c.rolls.length - 1) fr[fr.length - 1].wait = { pid: a.id, side: 'both', msg: 'Égalité ! ' + esc(a.name) + ' relance les dés' };
+    });
+    return fr;
+  }
+  function peutCliquer(pid) { var q = st.players[pid]; return !!q && !q.bot && (!net || net.seatIndex() === pid); }
+  var rerollT = null;
+  function relancer() {
+    if (!modal || modal.kind !== 'combat' || !st.lastCombat) return;
+    var fr = combatFrames(st.lastCombat);
+    if ((modal.f || 0) < fr.length - 1) {
+      modal.f = (modal.f || 0) + 1; if (FOF.sfx) FOF.sfx('dice3d');
+      if (modal.f >= fr.length - 1) {   // dernier jet : le cor ou le luth, comme pour un combat d'un seul jet
+        var c = st.lastCombat, mine = net ? (net.seatIndex() === c.att ? c.win : net.seatIndex() === c.def ? !c.win : null) : c.win;
+        if (mine !== null && FOF.sfx) setTimeout(function () { FOF.sfx(mine ? 'win' : 'loss'); }, 1350);
+      }
+    }
+    render();
+  }
+  FOF.combatOuvert = function () { return !!(st && modal && modal.kind === 'combat' && st.lastCombat); };
+  FOF.combatRevele = function () { if (!st || !modal || modal.kind !== 'combat' || !st.lastCombat || st.lastCombat.auto) return true; return (modal.f || 0) >= combatFrames(st.lastCombat).length - 1; };
   function combatHTML(c) {
     var a = st.players[c.att], d = st.players[c.def];
     if (c.auto || !c.rolls.length) return '<div class="modal battle awin"><h2>Bataille de ' + esc(FOF.locName(st, c.loc)) + '</h2>' +
       '<div class="verdict">Victoire de ' + esc(a.name) + '</div><div>' + c.events.map(function (e) { return '<p>' + esc(e) + '</p>'; }).join('') + '</div>' + dipLignes(c) +
       '<div class="actions"><button class="btn primary" data-close="1">Continuer</button></div></div>';
-    var last = c.rolls[c.rolls.length - 1];
-    return '<div class="modal battle ' + (c.win ? 'awin' : 'dwin') + '"><h2>Bataille de ' + esc(FOF.locName(st, c.loc)) + '</h2><div class="duel">' + sideHTML(a, c.detA, c.A + last.a, last.a, c.unitsA, c.leadA) + '<div class="vs">' + FOF.ic('swords', 22) + '</div>' + sideHTML(d, c.detD, c.D + last.d, last.d, c.unitsD, c.leadD) + '</div>' +
-      (c.rolls.length > 1 ? '<p class="muted">Égalité : relancé ' + (c.rolls.length - 1) + ' fois.</p>' : '') +
-      c.rolls.map(function (r) { return r.notes.map(function (n) { return '<p class="muted">' + esc(n) + '</p>'; }).join(''); }).join('') +
-      '<div class="verdict">' + (c.win ? 'Victoire de ' + esc(a.name) : esc(d.name) + ' tient bon') + '</div><div>' + c.events.map(function (e) { return '<p>' + esc(e) + '</p>'; }).join('') + '</div>' + dipLignes(c) +
-      '<div class="actions"><button class="btn primary" data-close="1">Continuer</button></div></div>';
+    var fr = combatFrames(c), fi = Math.min(modal && modal.f || 0, fr.length - 1), f = fr[fi], fin = fi >= fr.length - 1;
+    var w = f.wait, clic = w && peutCliquer(w.pid);
+    if (w && !clic) { if (!rerollT) rerollT = setTimeout(function () { rerollT = null; relancer(); }, 1500); }
+    var msgA = w && (w.side === 'a' || w.side === 'both') ? (clic ? w.msg + ' : cliquez sur le dé' : w.msg + '…') : '';
+    var msgD = w && w.side === 'd' ? (clic ? w.msg + ' : cliquez sur le dé' : w.msg + '…') : '';
+    var optA = { still: fi > 0 && f.moved !== 'a' && f.moved !== undefined, clic: clic && w.side !== 'd', msg: msgA };
+    var optD = { still: fi > 0 && f.moved !== 'd' && f.moved !== undefined, clic: clic && w.side === 'd', msg: msgD };
+    var nRel = 0; for (var k = 0; k < fi; k++) if (fr[k].wait && fr[k].wait.side === 'both') nRel++;
+    var notes = []; fr.slice(1, fi + 1).forEach(function (x) { if (x.moved) notes.push((x.moved === 'a' ? 'Prêtresse : ' + esc(a.name) : 'Prêtresse : ' + esc(d.name)) + ' a relancé (' + (x.moved === 'a' ? x.a : x.d) + ')'); });
+    return '<div class="modal battle ' + (fin ? (c.win ? 'awin' : 'dwin') : 'pending') + '"><h2>Bataille de ' + esc(FOF.locName(st, c.loc)) + '</h2><div class="duel">' + sideHTML(a, c.detA, c.A + f.a, f.a, c.unitsA, c.leadA, 0, optA) + '<div class="vs">' + FOF.ic('swords', 22) + '</div>' + sideHTML(d, c.detD, c.D + f.d, f.d, c.unitsD, c.leadD, 0, optD) + '</div>' +
+      (nRel ? '<p class="muted">Égalité : relancé ' + nRel + ' fois.</p>' : '') +
+      notes.map(function (n) { return '<p class="muted">' + n + '</p>'; }).join('') +
+      (fin ? '<div class="verdict">' + (c.win ? 'Victoire de ' + esc(a.name) : esc(d.name) + ' tient bon') + '</div><div>' + c.events.map(function (e) { return '<p>' + esc(e) + '</p>'; }).join('') + '</div>' + dipLignes(c) +
+        '<div class="actions"><button class="btn primary" data-close="1">Continuer</button></div>' : '') + '</div>';
   }
   /* ---------- fin de partie : le bilan, façon tableau de campagne ---------- */
   function endStatsHTML() {
     var w = st.winner ? st.players[st.winner.pid] : null;
     var mins = Math.max(1, Math.round((Date.now() - (st.t0 || Date.now())) / 60000));
     var rows = st.players.slice().sort(function (x, y) { return (y.alive ? 1 : 0) - (x.alive ? 1 : 0) || FOF.terrOf(st, y.id).length - FOF.terrOf(st, x.id).length; });
-    var head = ['Dirigeant', 'Terr.', 'Record', 'Temples', 'Cités', 'Forts', 'Or', 'Dipl.', 'Recrues', 'Bâtis', 'Batailles', 'Gagnées'];
+    // v1.9.24 : cases parcourues (unités et dirigeant) et pourcentage de batailles gagnées (créateur, 08/10/2026)
+    var head = ['Dirigeant', 'Terr.', 'Record', 'Temples', 'Cités', 'Forts', 'Or', 'Dipl.', 'Recrues', 'Bâtis', 'Cases parcourues', 'Batailles', '% gagnées'];
     var h = ['<div class="modal endstats"><h2>' + FOF.ic('scroll', 22) + ' Bilan de la partie</h2>',
       '<p class="muted">' + st.round + ' tours · ' + mins + ' min · ' + st.players.length + ' joueurs' + (w ? ' · vainqueur : ' + esc(w.name) : '') + '</p>',
       '<div class="statwrap"><table class="stats"><thead><tr>' + head.map(function (x) { return '<th>' + x + '</th>'; }).join('') + '</tr></thead><tbody>'];
     rows.forEach(function (q) {
       var t = q.tally || {};
       h.push('<tr class="' + (w && q.id === w.id ? 'win' : q.alive ? '' : 'out') + '" style="--pc:' + color(q.id) + '"><td class="who"><span><span class="dot" style="background:' + color(q.id) + '"></span>' + esc(q.name) + (q.bot ? ' ' + FOF.ic('helm', 12) : '') + '</span><small>' + esc(FOF.LEADERS[q.leader].name) + (q.tyran ? ' · Tyran' : '') + (q.alive ? '' : ' · éliminé') + '</small></td>' +
-        [FOF.terrOf(st, q.id).length, t.peak || 0, FOF.countBld(st, q.id, 'T'), FOF.countBld(st, q.id, 'Ci'), FOF.countBld(st, q.id, 'F'), q.gold, q.tyran ? '-' : q.dip, t.recruit || 0, t.build || 0, t.battles || 0, t.wins || 0].map(function (x) { return '<td class="num">' + x + '</td>'; }).join('') + '</tr>');
+        [FOF.terrOf(st, q.id).length, t.peak || 0, FOF.countBld(st, q.id, 'T'), FOF.countBld(st, q.id, 'Ci'), FOF.countBld(st, q.id, 'F'), q.gold, q.tyran ? '-' : q.dip, t.recruit || 0, t.build || 0, t.cases || 0, t.battles || 0, t.battles ? Math.round(100 * (t.wins || 0) / t.battles) + ' %' : '-'].map(function (x) { return '<td class="num">' + x + '</td>'; }).join('') + '</tr>');
     });
-    h.push('</tbody></table></div><div class="actions"><button class="btn" data-closestats="1">Retour</button><button class="btn primary" data-act="newgame">Nouvelle partie</button></div></div>');
+    h.push('</tbody></table></div><div class="actions"><button class="btn" data-closestats="1">Retour</button><button class="btn primary" data-act="newgame">Revenir au menu</button></div></div>');
     return h.join('');
   }
 
@@ -1205,20 +1313,20 @@
     ['Zone de mer', 'Une étendue d’eau. On ne s’y bat jamais, et il faut partir d’un port pour y entrer.'],
     ['Neutre', 'Territoire sans maître. Votre dirigeant peut le prendre en le conquérant. Pour ce faire, il faut rester dessus un tour pour pouvoir le conquérir au prochain tour.'],
     ['Capitale', 'La case de départ de votre dirigeant : +3 en défense. La perdre, c’est perdre la partie.'],
-    ['Dirigeant', 'Votre héros. Aucun entretien, ajoute son bonus au combat sur sa case, et seul lui peut conquérir un territoire neutre.'],
-    ['Unité d’élite', 'Une troupe qui se bat. Sa puissance dépend du terrain de la case.'],
-    ['Unité spéciale', 'Une unité qui ne combat pas et qui a un effet propre (diplomatie, or, conversion…). Attaquée seule, sans élite ni dirigeant, elle est défaite d’office, sans dé ; la détruire coûte 1 de diplomatie à l’assaillant.'],
+    ['Dirigeant', 'Votre héros. Aucune solde ; il ajoute son bonus au combat sur sa case, et lui seul peut conquérir un territoire neutre.'],
+    ['Unité d’élite', 'Une troupe qui se bat. Sa puissance dépend du terrain de la case. Elle peut pacifier un aménagement.'],
+    ['Unité spéciale', 'Une unité qui ne combat pas et qui a un effet propre (diplomatie, or, conversion…). Attaquée seule, sans élite ni dirigeant, elle est détruite d’office ; la détruire coûte 1 de diplomatie à l’assaillant.'],
     ['Aménagement', 'Campement, fort, port, cité, temple ou ambassade. Il appartient à un joueur, qui peut être différent du maître du territoire.'],
-    ['Entretien', 'Le coût par tour d’une unité. À la collecte, revenus moins entretien vont au trésor, en plus ou en moins. Si le trésor passe sous 0, vous reprenez des pièces posées sur vos unités jusqu’à le ramener à 0 ; toute unité dont vous reprenez une pièce est renvoyée. Tant que le trésor est négatif, ni recrutement ni construction.'],
+    ['Solde', 'Le coût par tour d’une unité. À la collecte, les revenus moins la solde des unités sont calculés et appliqués au trésor (valeur positive ou négative). Si le trésor passe sous 0, vous reprenez des pièces posées sur vos unités jusqu’à le ramener à 0 ; toute unité dont vous reprenez une pièce est renvoyée. Tant que le trésor est négatif, ni recrutement ni construction.'],
     ['Conquérir', 'Prendre un territoire neutre avec son dirigeant, ou garder un territoire ennemi après une victoire (les aménagements restent à leur propriétaire).'],
     ['Dévaster', 'Dépenser 1 de diplomatie supplémentaire pour détruire tous les aménagements sur la case. Attention : un temple détruit de cette manière coûte un autre point de diplomatie.'],
-    ['Pacifier', 'Sur un de vos territoires où restent des aménagements d’un autre joueur : une unité d’élite qui y est depuis votre tour précédent convertit l’aménagement étranger le moins cher. Une seule pacification par tour.'],
+    ['Pacifier', 'Sur un de vos territoires où restent des aménagements d’un autre joueur : une unité d’élite qui y est depuis votre tour précédent convertit l’aménagement le moins cher. Une seule pacification par tour.'],
     ['Convertir', 'Changer le propriétaire d’un aménagement.'],
     ['Remplacer', 'Changer le type d’un de vos aménagements en payant le prix du nouveau. L’ancien disparaît.'],
     ['Diplomatie', 'Ressource qui dépend de vos interactions avec les autres joueurs. Vous pouvez en gagner et en perdre.'],
     ['Tyran', 'Ce que devient celui qui attaque sans diplomatie : il n’en gagne plus, tout le monde peut l’attaquer gratuitement, et un de ses territoires se révolte à chaque tour.'],
     ['Pacte', 'Accord de non-agression apporté par l’Ambassadeur. Le rompre en attaquant coûte 2 diplomatie (en plus de l’attaque), et le trahi en gagne 1. Si l’ambassadeur quitte la capitale, pour quelque raison que ce soit, son propriétaire perd 1 diplomatie.'],
-    ['Zone de recrutement', 'Les 5 cartes face visible du marché. Un achat et une défausse par tour.'],
+    ['Marché', 'Les 5 cartes face visible. Un achat et une défausse par tour.'],
     ['Déployer', 'Poser l’unité achetée sur un de vos territoires qui possède l’aménagement demandé par sa carte.']
   ];
   function glossHTML() {
@@ -1232,7 +1340,7 @@
     function group(list) {
       var c = {}; list.forEach(function (k) { c[k] = (c[k] || 0) + 1; });
       return Object.keys(c).sort(function (x, y) { return FOF.unitDef(x).name.localeCompare(FOF.unitDef(y).name); })
-        .map(function (k) { return '<li class="' + (FOF.isElite(k) ? 'el' : 'sp') + '" data-key="' + k + '"><b>' + c[k] + '×</b> ' + esc(FOF.unitDef(k).name) + '<small>' + (FOF.isElite(k) ? 'élite' : 'spéciale') + ' · entretien ' + FOF.unitDef(k).upkeep + '</small></li>'; }).join('');
+        .map(function (k) { return '<li class="' + (FOF.isElite(k) ? 'el' : 'sp') + '" data-key="' + k + '"><b>' + c[k] + '×</b> ' + esc(FOF.unitDef(k).name) + '<small>' + (FOF.isElite(k) ? 'élite' : 'spéciale') + ' · solde ' + FOF.unitDef(k).upkeep + '</small></li>'; }).join('');
     }
     // v1.9.2 : la zone de recrutement est consultable ici à tout moment, et survoler n'importe
     // quelle ligne affiche la carte en grand (le survol marche sur tout élément [data-key]).
@@ -1242,7 +1350,7 @@
         '<span>' + esc(FOF.unitDef(k).name) + '</span></div>';
     }).join('');
     return '<div class="modal deckview"><h2>' + FOF.ic('cards', 22) + ' Le deck</h2>' +
-      '<div class="section-title">Zone de recrutement · les 5 cartes face visible</div>' +
+      '<div class="section-title">Marché · les 5 cartes face visible</div>' +
       '<div class="zonestrip">' + (zone || '<span class="muted">Zone vide</span>') + '</div>' +
       '<p class="muted" style="margin-top:12px">Il reste <b class="num">' + st.deck.length + '</b> cartes à piocher et <b class="num">' + st.discard.length + '</b> à la défausse. L’ordre de la pioche reste secret. <b>Survolez une ligne pour voir la carte en grand.</b></p>' +
       '<div class="deckcols"><div><div class="section-title">Encore dans la pioche</div><ul class="decklist">' + (group(st.deck) || '<li class="muted">Pioche vide</li>') + '</ul></div>' +
@@ -1256,48 +1364,48 @@
     return '<div class="modal help"><h2>' + FOF.ic('help', 22) + ' Les règles</h2>' +
 
       '<div class="section-title">Le but</div>' +
-      '<p>Trois façons de gagner, ouvertes à tous dès le premier tour. La victoire est <b>immédiate</b> dès qu\'une condition est remplie. À ' + n + ' joueurs :</p>' +
+      '<p>Trois façons de gagner. La victoire est <b>immédiate</b> dès qu\'une condition est remplie. À ' + n + ' joueurs :</p>' +
       '<ul class="rules-l"><li><b>Militaire</b> - contrôler <b>' + v.mil + ' territoires</b>, votre capitale comprise.</li>' +
       '<li><b>Religieuse</b> - posséder <b>' + v.rel + ' temples</b>, y compris en terre étrangère.</li>' +
       '<li><b>Diplomatique</b> - atteindre <b>' + v.dip + ' de diplomatie</b>.</li></ul>' +
 
       '<div class="section-title">Le tour, en quatre phases</div>' +
-      '<ol class="rules-l"><li><b>Collecte</b> - vous encaissez 1 or par territoire, 1 de plus par cité, moins la solde de vos unités. Si vous ne pouvez pas payer, une unité déserte.</li>' +
-      '<li><b>Recrutement</b> - cinq cartes sont face visible. Vous pouvez en <b>acheter une</b> et en <b>défausser une</b>, dans l\'ordre que vous voulez. Le prix d\'achat est égal à l\'entretien de la carte.</li>' +
-      '<li><b>Militaire</b> - vous déplacez vos pions, vous conquérez, vous attaquez.</li>' +
-      '<li><b>Construction</b> - vous bâtissez autant que votre or le permet.</li></ol>' +
+      '<ol class="rules-l"><li><b>Collecte</b> - Phase où vous récupérez vos revenus : 1 or par territoire, 1 de plus par cité, auxquels peut s\'ajouter l\'effet d\'unités spéciales. Enlevez à cela la solde totale de vos unités. Si vous ne pouvez pas assurer la solde de vos unités, reprenez sur elles le nombre de pièces manquant. Une unité sur laquelle vous reprenez au moins une pièce déserte.</li>' +
+      '<li><b>Recrutement</b> - Phase où vous pouvez acheter et défausser des unités présentes dans le marché. Le prix d\'achat est égal à la solde de la carte. Le marché est partagé par tous les joueurs.</li>' +
+      '<li><b>Militaire</b> - Phase où vous déplacez vos pions, lancez des assauts, conquérez des territoires, pacifiez des territoires et activez les effets de vos unités spéciales.</li>' +
+      '<li><b>Construction</b> - Phase où vous construisez et remplacez vos aménagements.</li></ol>' +
 
       '<div class="section-title">Se déplacer</div>' +
-      '<p>Cliquez un de vos pions : les cases atteignables clignotent en blanc, cliquez-en une. Le badge vert sur un pion indique les cases qu\'il lui reste.</p>' +
-      '<p><b>La mer.</b> Pour <b>prendre la mer</b> il faut partir d\'un territoire qui porte un port - le vôtre ou celui d\'un autre joueur. Une fois en mer, vous <b>débarquez où vous voulez</b> : toutes les côtes voisines de la zone sont ouvertes, port ou pas. Le Corbeau messager prend la mer sans port.</p>' +
+      '<p>Cliquez sur un de vos pions pour le déplacer sur les cases atteignables en surbrillance. Le badge vert sur un pion indique les cases qu\'il lui reste. Un pion qui lance un assaut ne peut plus se déplacer.</p>' +
+      '<p><b>Cases maritimes</b> - Pour <b>prendre la mer</b> il faut partir d\'un territoire qui porte un port - le vôtre ou celui d\'un autre joueur. Une fois en mer, vous pouvez débarquer sur toutes les côtes voisines de la zone, port ou pas.</p>' +
 
       '<div class="section-title">Conquérir un territoire neutre</div>' +
-      '<p>Sans combat, et sans votre armée : votre <b>dirigeant</b> doit se trouver sur le territoire neutre <b>depuis votre tour précédent</b>, sans avoir bougé ni combattu. Le bouton « Conquérir » apparaît alors dans son menu.</p>' +
+      '<p>Lorsque vous conquérez un territoire, il devient vôtre et vous pouvez construire dessus dès la phase de construction qui suit. Seul votre <b>dirigeant</b> peut le faire, et il doit se trouver sur le territoire neutre <b>depuis votre tour précédent</b>. Le bouton « Conquérir » apparaît alors dans son menu.</p>' +
 
       '<div class="section-title">Combattre</div>' +
-      '<p>Amenez vos unités sur la case visée, puis cliquez-la. Toutes vos unités présentes combattent ensemble.</p>' +
+      '<p>Amenez vos unités sur la case visée, puis cliquez sur cette case. Toutes vos unités présentes combattent ensemble.</p>' +
       '<ul class="rules-l"><li><b>Attaquant</b> : 1 dé + la puissance de chaque élite <b>selon le terrain de la case</b> + son dirigeant s\'il est présent.</li>' +
       '<li><b>Défenseur</b> : 1 dé + ses unités + son dirigeant + la défense de <b>ses</b> aménagements sur la case + <b>3</b> si c\'est sa capitale.</li>' +
-      '<li>Égalité : on relance les dés.</li>' +
+      '<li>Égalité : on relance les dés (cliquez sur le dé).</li>' +
       '<li>Chaque attaque coûte <b>1 diplomatie</b>, sauf contre un Tyran.</li>' +
-      '<li>Si votre dirigeant menait l\'assaut et que vous perdez, vous cédez un territoire au vainqueur et il rentre à votre capitale.</li></ul>' +
+      '<li>Si votre dirigeant menait l\'assaut et que vous perdez, vous cédez un territoire au vainqueur. Votre dirigeant rentre à votre capitale.</li></ul>' +
 
       '<div class="section-title">Bâtir</div>' +
-      '<p>En phase de construction, cliquez un de vos territoires. <b>Trois aménagements sur votre capitale, deux sur les autres territoires</b>, jamais deux du même type - sauf le campement, qu\'on peut doubler. Temple et ambassade occupent un emplacement comme les autres.</p>' +
+      '<p>En phase de construction, cliquez sur un de vos territoires. Vous pouvez construire <b>trois aménagements sur votre capitale, deux sur les autres territoires</b>, jamais deux du même type - sauf le campement. L\'ambassade occupe un emplacement comme les autres mais ne peut être construite que sur la capitale.</p>' +
       '<ul class="rules-l"><li>' + bl('C') + ' · +1 en défense.</li>' +
       '<li>' + bl('F') + ' · +3 en défense.</li>' +
-      '<li>' + bl('P') + ' · +1 en défense (+2 pour Alinor), et permet d\'embarquer.</li>' +
-      '<li>' + bl('Ci') + ' · +1 or à chaque collecte. Beaucoup de cartes exigent des cités.</li>' +
-      '<li>' + bl('T') + ' · compte pour la victoire religieuse.</li>' +
-      '<li>' + bl('A') + ' · dans votre capitale uniquement, une seule. Chaque gain de diplomatie obtenu par une action vous en rapporte <b>1 de plus</b>, à condition de n\'avoir ni attaqué ni été attaqué depuis votre dernier tour.</li></ul>' +
-      '<p>Vous pouvez aussi <b>remplacer</b> un de vos aménagements en payant le prix du nouveau, ou <b>transférer votre capitale</b> sur un de vos territoires pour 8 or - votre Ambassade, qui ne tient qu’à la cour, est alors <b>détruite</b>.</p>' +
+      '<li>' + bl('P') + ' · +1 en défense et permet d\'embarquer.</li>' +
+      '<li>' + bl('Ci') + ' · +1 or à chaque collecte.</li>' +
+      '<li>' + bl('T') + ' · compte pour la victoire religieuse. Le détruire coûte 1 de diplomatie supplémentaire à l\'assaillant.</li>' +
+      '<li>' + bl('A') + ' · dans votre capitale uniquement, une seule. Chaque gain de diplomatie obtenu par une action vous en rapporte <b>1 de plus</b>, sauf si le contraire est précisé sur l\'unité spéciale qui permet le gain.</li></ul>' +
+      '<p>Vous pouvez aussi <b>remplacer</b> un de vos aménagements en payant le prix du nouveau, ou <b>transférer votre capitale</b> sur un de vos territoires pour 8 or - votre Ambassade est alors <b>détruite</b>.</p>' +
 
       '<div class="section-title">Diplomatie et tyrannie</div>' +
       '<p>La diplomatie est à la fois une voie de victoire et la monnaie de la guerre.</p>' +
-      '<ul class="rules-l"><li>Vous en <b>perdez</b> 1 par attaque, 1 par unité spéciale détruite, 2 de plus si vous rompez un pacte, et 1 de plus pour dévaster. Le Calomniateur adverse peut aussi vous en retirer 2.</li>' +
-      '<li>Vous en <b>gagnez</b> avec le Corbeau messager, l\'Émissaire, le Pèlerin, le Héraut et le Chroniqueur (1 par bataille gagnée), et l\'Ambassade ajoute 1 à la plupart de ces gains.</li>' +
+      '<ul class="rules-l"><li>Vous en <b>perdez</b> 1 point par attaque, 1 par unité spéciale détruite, 2 de plus si vous rompez un pacte, 1 de plus pour dévaster et 1 de plus par temple rasé. Le Calomniateur adverse peut aussi vous en retirer 2.</li>' +
+      '<li>Vous en <b>gagnez</b> avec le Corbeau messager, l\'Émissaire, le Pèlerin, le Héraut et le Chroniqueur (1 par bataille gagnée).</li>' +
       '<li>À <b>0</b>, un joueur qui attaque quand même devient <b>Tyran</b> : il ne gagne plus jamais de diplomatie, tout le monde peut l\'attaquer sans rien payer, et un de ses territoires se révolte à chaque tour.</li>' +
-      '<li>Un territoire qui s’est soulevé contre un tyran lui est <b>fermé</b> : il ne peut plus le conquérir ni s’y établir tant qu’un autre joueur ne l\'a pas repris.</li></ul>' +
+      '<li>Un territoire qui s’est soulevé contre un tyran ne peut plus être conquis par ce dernier tant qu’un autre joueur ne l\'a pas repris.</li></ul>' +
 
       '<div class="section-title">Fin de partie</div>' +
       '<p>Un joueur qui perd sa capitale est <b>éliminé</b>. S\'il ne reste qu\'un joueur en vie, il l\'emporte. Une partie laissée de côté plus de 48 heures est abandonnée.</p>' +
@@ -1310,9 +1418,11 @@
     if (!st) return;
     if (radial && !e.target.closest('#radial')) radial = null;
     if (e.target.closest('#boardWrap') && !e.target.closest('#popover') && !e.target.closest('#radial')) { if (!dragMoved) boardClick(e); return; }
-    var el = e.target.closest('[data-capitalgo],[data-replacego],[data-setstyle],[data-setspeed],[data-setanim],[data-pause],[data-resume],[data-surrender],[data-endstats],[data-closestats],[data-closeradial],[data-rpick],[data-rpop],[data-act],[data-buy],[data-discard],[data-move],[data-conquer],[data-pacify],[data-effect],[data-build],[data-replace],[data-capital],[data-cede],[data-attack],[data-close],[data-resolve],[data-dcoin],[data-defgo],[data-tsel],[data-go],[data-next],[data-closepop],[data-cancel],[data-mini],[data-hidemarket],[data-showmarket],[data-heroinfo],[data-collectgo],[data-undo],[data-release],[data-killgo],[data-stack],[data-backphase],[data-spy],[data-spyview],[data-spydecide]');
+    var el = e.target.closest('[data-capitalgo],[data-replacego],[data-setstyle],[data-setspeed],[data-setanim],[data-pause],[data-resume],[data-surrender],[data-endstats],[data-closestats],[data-closeradial],[data-rpick],[data-rpop],[data-act],[data-buy],[data-discard],[data-move],[data-conquer],[data-pacify],[data-effect],[data-build],[data-replace],[data-capital],[data-cede],[data-attack],[data-close],[data-resolve],[data-dcoin],[data-defgo],[data-tsel],[data-go],[data-next],[data-closepop],[data-cancel],[data-mini],[data-hidemarket],[data-showmarket],[data-heroinfo],[data-collectgo],[data-undo],[data-release],[data-killgo],[data-stack],[data-backphase],[data-spy],[data-spyview],[data-spydecide],[data-reroll],[data-yusuf],[data-yusufgo],[data-closeproche]');
     if (!el) return;
     var ds = el.dataset, p = FOF.cur(st);
+    if (ds.closeproche) { if (procheT) { clearTimeout(procheT); procheT = null; } modal = null; return render(); }
+    if (ds.reroll) { var frR = st.lastCombat && combatFrames(st.lastCombat)[modal && modal.f || 0]; if (frR && frR.wait && peutCliquer(frR.wait.pid)) relancer(); return; }
     var VIEW = ds.undo || ds.release || ds.stack || ds.capital || ds.capitalgo || ds.setstyle !== undefined || ds.setspeed !== undefined || ds.setanim !== undefined || ds.pause || ds.resume || ds.surrender || ds.closeradial || ds.closepop || ds.cancel || ds.hidemarket || ds.showmarket || ds.close || ds.heroinfo || ds.endstats || ds.closestats || ds.act === 'newgame';
     if (FOF.sfx) FOF.sfx(clickSound(ds));
     if (ds.surrender) {
@@ -1322,7 +1432,7 @@
     }
     if (ds.endstats) { modal = { kind: 'endstats' }; return render(); }
     if (ds.closestats) { modal = null; return render(); }
-    if (ds.close && modal && (modal.kind === 'gloss' || modal.kind === 'deck' || modal.kind === 'edouardc' || modal.kind === 'settings' || modal.kind === 'capitalc' || modal.kind === 'replacec' || modal.kind === 'killc' || modal.kind === 'stack' || modal.kind === 'spy')) { modal = prevModal; prevModal = null; return render(); }
+    if (ds.close && modal && (modal.kind === 'gloss' || modal.kind === 'deck' || modal.kind === 'edouardc' || modal.kind === 'yusufc' || modal.kind === 'settings' || modal.kind === 'capitalc' || modal.kind === 'replacec' || modal.kind === 'killc' || modal.kind === 'stack' || modal.kind === 'spy')) { modal = prevModal; prevModal = null; return render(); }
     if (ds.heroinfo !== undefined) { modal = { kind: 'hero', pid: +ds.heroinfo }; return render(); }   // v1.9.15 : le joueur d'id 1 voyait sa propre fiche
     if (ds.closeradial) { radial = null; return render(); }
     if (ds.rpick) { var rp = ds.rpick; radial = { loc: radial.loc, x: radial.x, y: radial.y }; if (rp !== 'L') radial.uid = +rp; return render(); }
@@ -1341,6 +1451,8 @@
     if (ds.stack) { modal = { kind: 'stack', loc: ds.stack }; return render(); }
     if (ds.next) { if (mode && mode.kind === 'deploy') { err = 'Déployez d’abord votre unité sur un territoire qui clignote, ou annulez l’achat.'; marketOpen = true; return render(); } mode = null; pop = null; modal = null; return dispatch({ type: 'nextPhase' }); }
     if (ds.act === 'edouard') { openOver('edouardc'); return; }
+    if (ds.yusuf) { openOver('yusufc'); return; }
+    if (ds.yusufgo) { modal = prevModal; prevModal = null; marketOpen = true; return dispatch({ type: 'yusuf' }); }
     if (ds.act === 'edouardgo') { modal = prevModal; prevModal = null; return dispatch({ type: 'edouard' }); }
     // v1.8 : pause - on quitte l'écran de jeu sans rien abandonner. La sauvegarde locale et le
     // salon en ligne restent en place ; la règle des 48 h existante ferme la partie si personne ne revient.
