@@ -104,6 +104,7 @@
     function larg(j) { if (kind[j] === 0) { kind[j] = 2; id[j] = id[u0]; fl[tl++] = j; } }
     var u0;
     var segs = FOF.SANS_REDRESSE ? null : redresserMers(kind, id, gw, gh, S);
+    if (segs && !FOF.SANS_ALIGNER) alignerMers(kind, id, gw, gh, S, segs, m.terr);
     var rs = finir(st, { seed: seed, minX: minX, minY: minY, maxX: maxX, maxY: maxY, wU: wU, hU: hU, S: S, gw: gw, gh: gh, kind: kind, id: id, W: W });
     rs.seaSegs = segs;
     return rs;
@@ -183,6 +184,65 @@
     }
     if (!segs.length) return null;
     return segs;
+  }
+  /* v1.9.25 - « les cases de mer doivent correspondre à leurs pointillés » (créateur, 24/10/2026).
+     Le trait tracé est une version lissée et simplifiée de la limite réelle : la zone surlignée (clic,
+     déplacement) débordait de quelques pixels de part et d'autre. On redécoupe donc la mer de la trame
+     selon les traits eux-mêmes : chaque région délimitée par les traits prend la mer majoritaire de ses
+     pixels, et les pixels du trait reprennent la mer de leur voisin. Une région où deux mers se
+     partagent les pixels (trait non tracé, trop court) garde son découpage d'origine. Le moteur n'est pas
+     touché : seule la trame (affichage et clic) change. */
+  function alignerMers(kind, id, gw, gh, S, segs, terr) {
+    var N = gw * gh, mur = new Uint8Array(N), i;
+    function poser(x, y) {
+      var r = Math.max(1, Math.round(0.6 * S));
+      for (var dy = -r; dy <= r; dy++) for (var dx = -r; dx <= r; dx++) {
+        var px = Math.round(x) + dx, py = Math.round(y) + dy;
+        if (px >= 0 && py >= 0 && px < gw && py < gh) mur[py * gw + px] = 1;
+      }
+    }
+    segs.forEach(function (g) {
+      // les bouts sont prolongés de quelques pixels : le trait doit toucher la côte pour fermer la région
+      var pts = g.slice(), ext = 4 * S;
+      function prolonger(a, b) { var dx = a[0] - b[0], dy = a[1] - b[1], L = Math.hypot(dx, dy) || 1; return [a[0] + dx / L * ext, a[1] + dy / L * ext]; }
+      if (pts.length >= 2) { pts.unshift(prolonger(pts[0], pts[1])); pts.push(prolonger(pts[pts.length - 1], pts[pts.length - 2])); }
+      for (var k = 1; k < pts.length; k++) {
+        var ax = pts[k - 1][0], ay = pts[k - 1][1], bx = pts[k][0], by = pts[k][1], n = Math.ceil(Math.hypot(bx - ax, by - ay)) + 1;
+        for (var t = 0; t <= n; t++) poser(ax + (bx - ax) * t / n, ay + (by - ay) * t / n);
+      }
+    });
+    // régions de mer séparées par les traits (4-connexité)
+    var reg = new Int32Array(N).fill(-1), file = new Int32Array(N), nR = 0, compte = [];
+    for (i = 0; i < N; i++) {
+      if (kind[i] !== 2 || mur[i] || reg[i] >= 0) continue;
+      var h = 0, t2 = 0, c = {}, cotes = {}; file[t2++] = i; reg[i] = nR;
+      while (h < t2) {
+        var u = file[h++], x = u % gw; c[id[u]] = (c[id[u]] || 0) + 1;
+        [x > 0 ? u - 1 : -1, x < gw - 1 ? u + 1 : -1, u - gw, u + gw].forEach(function (j) {
+          if (j < 0 || j >= N) return;
+          if (kind[j] === 1) cotes[id[j]] = 1;
+          else if (kind[j] === 2 && !mur[j] && reg[j] < 0) { reg[j] = nR; file[t2++] = j; }
+        });
+      }
+      compte.push({ c: c, cotes: Object.keys(cotes) }); nR++;
+    }
+    var choix = compte.map(function (r) {
+      var c = r.c, tot = 0, best = -1, bn = 0; Object.keys(c).forEach(function (k) { tot += c[k]; if (c[k] > bn) { bn = c[k]; best = +k; } });
+      if (bn < tot * 0.8) return -1;   // pas de majorité nette : région laissée telle quelle
+      // la région ne doit pas donner à un territoire une mer qu'il ne touche pas pour le moteur
+      if (r.cotes.some(function (t) { return terr[t] && terr[t].seas.indexOf(best) < 0; })) return -1;
+      return best;
+    });
+    for (i = 0; i < N; i++) if (reg[i] >= 0 && choix[reg[i]] >= 0) id[i] = choix[reg[i]];
+    // pixels du trait : la mer de la région voisine la plus proche
+    var fh = 0, ft = 0, fait = new Uint8Array(N);
+    function toucheTerre(k) { var kx = k % gw; return (kx > 0 && kind[k - 1] === 1) || (kx < gw - 1 && kind[k + 1] === 1) || (k >= gw && kind[k - gw] === 1) || (k + gw < N && kind[k + gw] === 1); }
+    // sur le rivage, le pixel du trait garde sa mer d'origine : c'est elle que le moteur connaît
+    for (i = 0; i < N; i++) if (kind[i] === 2 && (!mur[i] || toucheTerre(i))) { fait[i] = 1; file[ft++] = i; }
+    while (fh < ft) {
+      var v = file[fh++], vx = v % gw;
+      [vx > 0 ? v - 1 : -1, vx < gw - 1 ? v + 1 : -1, v - gw, v + gw].forEach(function (j) { if (j >= 0 && j < N && kind[j] === 2 && !fait[j]) { fait[j] = 1; id[j] = id[v]; file[ft++] = j; } });
+    }
   }
   // Douglas-Peucker : garde les points qui s'écartent de la corde de plus que tol(point)
   function simplifier(pts, tol) {

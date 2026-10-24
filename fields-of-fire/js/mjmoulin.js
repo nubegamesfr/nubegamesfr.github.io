@@ -98,7 +98,7 @@
 
   /* ---------- interface ---------- */
   var NIVEAUX = { ecuyer: { nom: 'Écuyer', prof: 0 }, chevalier: { nom: 'Chevalier', prof: 2 }, seigneur: { nom: 'Seigneur', prof: 3 } };
-  FOF.Minijeux.enregistrer({ id: 'moulin', nom: 'Le Moulin (jeu de la marelle)', ic: 'moulin', creer: function (api) {
+  FOF.Minijeux.enregistrer({ id: 'moulin', nom: 'Le Moulin (jeu de la marelle)', regles: '<p>Vous avez les pions clairs et vous commencez. Chacun a 9 pions.</p><p>1. Pose : chacun pose un pion à tour de rôle sur une intersection libre.<br>2. Déplacement : quand tout est posé, on fait glisser un pion vers une intersection voisine libre, le long des lignes.<br>3. Saut : un joueur qui n’a plus que 3 pions peut sauter sur n’importe quelle intersection libre.</p><p>Trois pions alignés sur une même ligne forment un moulin : vous retirez alors un pion adverse qui n’est pas dans un moulin (sauf si tous le sont).</p><p>On perd quand il reste moins de 3 pions ou qu’on ne peut plus bouger. Partie nulle après 40 déplacements sans prise.</p>', ic: 'moulin', creer: function (api) {
     var niveau = api.lire('moulin-niveau', 'chevalier'); if (!NIVEAUX[niveau]) niveau = 'chevalier';
     var s, sel = -1, enAttente = null, retrait = null, dernier = null, pensee = null;
     function nouveau() { s = R.neuf(); sel = -1; enAttente = null; retrait = null; dernier = null; clearTimeout(pensee); pensee = null; }

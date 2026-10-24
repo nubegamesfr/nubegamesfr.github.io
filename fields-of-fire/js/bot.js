@@ -144,7 +144,7 @@
   }
   function valeurUnite(st, p, u) {
     if (FOF.isElite(u.key)) return FOF.ELITES[u.key].pow.reduce(function (a, b) { return a + b; }, 0);
-    return { heraut: 9, emissaire: 8, ambassadeur: 7, prelat: 7, maitre: 6 }[u.key] || 4;
+    return { heraut: 9, emissaire: 8, emnef: 8, ambassadeur: 7, prelat: 7, maitre: 6 }[u.key] || 4;
   }
 
   /* ---------- recrutement ---------- */
@@ -155,6 +155,8 @@
   var SPECIAL_TARGET = {
     corbeau: function (st, p, t) { return !p.tyran && others(st, p).some(function (q) { return q.capital === t.id && t.ctrl === q.id; }); },
     emissaire: function (st, p, t) { return !p.tyran && others(st, p).some(function (q) { return q.capital === t.id && t.ctrl === q.id; }); },
+    emnef: function (st, p, t) { return !p.tyran && others(st, p).some(function (q) { return q.capital === t.id && t.ctrl === q.id; }); },
+    maitre: function (st, p, t) { return t.blds.some(function (b) { return b.t === 'T' && b.o === p.id && !b.fort; }); },
     ambassadeur: function (st, p, t) { return p.pact === null && !p.tyran && others(st, p).some(function (q) { return q.capital === t.id && t.ctrl === q.id && !q.tyran && q.pact === null; }); },
     pelerin: function (st, p, t) { return !p.tyran && t.blds.some(function (b) { return b.t === 'T' && b.o !== p.id; }); },
     colonie: function (st, p, t) { return t.ctrl === null && t.revoltFrom !== p.id; },
@@ -183,7 +185,7 @@
     }
     var has = function (k) { return cibles(st, p, k).length > 0; };
     switch (key) {
-      case 'emissaire': return p.tyran ? 0 : (path === 'dip' ? 5 : 2.8) + (cnt(st, p, 'A') ? 0.6 : 0) + (dipFin ? 2 : 0);
+      case 'emissaire': case 'emnef': return p.tyran ? 0 : (path === 'dip' ? 5 : 2.8) + (cnt(st, p, 'A') ? 0.6 : 0) + (dipFin ? 2 : 0);
       case 'corbeau': return p.tyran ? 0 : (path === 'dip' ? 4 : 2.2) + (dipFin ? 1.5 : 0);
       case 'heraut': return p.tyran ? 0 : (path === 'dip' ? 5.5 : 3);
       case 'pelerin': return !has('pelerin') ? 0 : (path === 'dip' ? 3.8 : 2);
@@ -196,7 +198,7 @@
       case 'caboteur': return has('caboteur') ? 2 : 0;
       case 'caravanier': return has('caravanier') ? 2.4 : 0;
       case 'pretresse': return elites(st, p).length >= 2 ? 1.8 : 0.4;
-      case 'maitre': return path === 'rel' ? 4.4 : 1.2;
+      case 'maitre': return has('maitre') ? (path === 'rel' ? 3 : 1.2) : 0;
       case 'prelat': return path === 'rel' ? 3.6 + cnt(st, p, 'T') * 0.5 : cnt(st, p, 'T') * 0.4;
       case 'trebuchets': return has('trebuchets') && (thr || path === 'mil') && !p.tyran && p.dip >= 3 ? 2.6 : 0.6;
       case 'espion': return 0.2;
@@ -352,7 +354,7 @@
     var best = null, bs = -1;
     // cibles : ses unités spéciales diplomatiques d'abord, puis n'importe quel territoire à lui
     var locs = {};
-    FOF.army(st, q.id).forEach(function (u) { if (u.pos[0] === 't' && ['emissaire', 'corbeau', 'heraut', 'pelerin', 'ambassadeur'].indexOf(u.key) >= 0) locs[u.pos] = { kind: 'units', bonus: 3 }; });
+    FOF.army(st, q.id).forEach(function (u) { if (u.pos[0] === 't' && ['emissaire', 'emnef', 'corbeau', 'heraut', 'pelerin', 'ambassadeur'].indexOf(u.key) >= 0) locs[u.pos] = { kind: 'units', bonus: 3 }; });
     FOF.terrOf(st, q.id).forEach(function (t) { if (!locs['t' + t.id]) locs['t' + t.id] = { kind: 'terr', bonus: 0 }; });
     Object.keys(locs).forEach(function (loc) {
       var t = T(st, tid(loc)), info = locs[loc];
@@ -429,6 +431,12 @@
         });
         if (ix < 0 || br < 2) continue;
         ea.arg = ix;
+      }
+      // v1.9.25 : le message donne +1 à l'hôte ; on ne lui offre pas la victoire
+      if (['corbeau', 'emissaire', 'emnef'].indexOf(su.key) >= 0) {
+        var hoteM = others(st, p).filter(function (q) { return q.capital === tid(su.pos); })[0];
+        var gainH = hoteM && !hoteM.tyran ? 1 + (cnt(st, hoteM, 'A') ? 1 : 0) : 0, gainP = (su.key === 'corbeau' ? 1 : 2) + (cnt(st, p, 'A') ? 1 : 0);
+        if (gainH && hoteM.dip + gainH >= st.victory.dip && p.dip + gainP < st.victory.dip) continue;
       }
       if (su.key === 'calomniateur') { var vic = st.players[T(st, tid(su.pos)).ctrl]; if (vic.dip < 2 && !(thr && thr.id === vic.id)) continue; }
       if (su.key === 'ambassadeur') { var hote = others(st, p).filter(function (q) { return q.capital === tid(su.pos); })[0]; if (hote && threat(st, p) && threat(st, p).id === hote.id && path === 'mil') continue; }

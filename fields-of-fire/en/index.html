@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<base href="../">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Fields of Fire · a conquest board game for 3 to 6 players</title>
+<meta name="description" content="Playable prototype of Fields of Fire: conquer, build and choose your path - the sword, the faith or diplomacy. 3 to 6 players, on one screen or online.">
+<meta name="theme-color" content="#1b1a1f">
+<meta name="color-scheme" content="dark">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://nubegames.fr/fields-of-fire/en/">
+<link rel="alternate" hreflang="fr" href="https://nubegames.fr/fields-of-fire/">
+<link rel="alternate" hreflang="en" href="https://nubegames.fr/fields-of-fire/en/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Nube Games">
+<meta property="og:url" content="https://nubegames.fr/fields-of-fire/en/">
+<meta property="og:locale" content="en_US">
+<meta property="og:title" content="Fields of Fire · the playable prototype">
+<meta property="og:description" content="A conquest board game for 3 to 6 players. Free, in your browser.">
+<meta property="og:image" content="https://nubegames.fr/assets/images/og-image.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="assets/icons/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="assets/icons/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+<link rel="preload" href="assets/fonts/cinzel-700.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/fonts/alegreya-sans-400.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="css/style.css?v=beta-1.9.25">
+<script>try{if(localStorage.getItem('fof-lang')==='fr')location.replace(location.pathname.replace(/en\/(index\.html)?$/,'')+location.search+location.hash)}catch(e){}</script>
+<script>try{document.documentElement.dataset.theme=localStorage.getItem('fof-theme')==='feutre'?'feutre':'braise'}catch(e){document.documentElement.dataset.theme='braise'}</script>
+</head>
+<body>
+<section id="setup" hidden>
+  <div class="setup-music" data-music-slot></div>
+  <button class="btn ghost theme-btn setup-theme" type="button" data-theme-toggle aria-label="Change theme"></button>
+  <a class="btn ghost lang-btn setup-lang" href="./" data-lang="fr" hreflang="fr" lang="fr" title="Jouer en français">FR</a>
+  <button class="btn ghost icon-btn setup-bug" type="button" id="bugBtn2" onclick="document.getElementById('bugBtn').click()" title="Report a bug" data-ic="bug"></button>
+  <div class="setup-inner">
+    <div class="cover" aria-hidden="true">
+      <h1>Fields<br>of Fire</h1>
+      <img src="assets/icons/crown.png" alt="">
+      <div class="proto">PROTOTYPE</div>
+    </div>
+    <div class="setup-form">
+      <div id="stepMode">
+        <p class="eyebrow">Playable prototype · 3 to 6 players</p>
+        <h2>Take the helm of a kingdom</h2>
+        <p class="lead">Everyone starts from their capital: conquer, build, and choose your path - the sword, the faith or politics.</p>
+        <div class="mode-grid">
+          <button class="mode-card" type="button" data-mode="local">
+            <span class="mc-ico" data-ic="dice"></span>
+            <b>Local game</b>
+            <span>One screen for everyone: pass it around each turn.</span>
+            <span class="mc-list"><i>Computer-controlled seats</i><i>3-round tutorial</i><i>Nothing to install</i></span>
+            <span class="mc-go">Choose the leaders →</span>
+          </button>
+          <div class="mode-card online-only">
+            <span class="mc-ico" data-ic="chat"></span>
+            <b>Online game</b>
+            <span>Everyone on their own computer. Create a room and share its code, or join a friend’s.</span>
+            <label class="fld">Your name<input id="myName" maxlength="16" autocomplete="nickname" placeholder="e.g. Aurelian"></label>
+            <button class="btn primary" type="button" data-mode="create">Create a room</button>
+            <div class="join-row"><input id="joinCode" maxlength="5" placeholder="CODE" aria-label="Room code" autocomplete="off"><button class="btn" type="button" id="joinBtn" data-mode="join">Join</button></div>
+          </div>
+        </div>
+        <p class="err" id="netErr" role="alert"></p>
+        <p class="note" id="onlineNote" hidden>Online play isn’t enabled on this site yet.</p>
+        <div class="setup-actions" id="resumeBox"></div>
+        <footer class="setup-foot">
+          <p><b>Version beta 1.9.25</b> · prototype. Games are recorded anonymously (length, rounds, leaders, victory type) to balance the game. Hugues the Builder, Alinor the Admiral, Yusuf the Merchant and Zaynab the Wanderer unlock when you leave your email address.</p>
+          <p>Illustrations, portraits and icons: Nube Games. Music: public domain (CC0) from OpenGameArt, details in CREDITS. Fonts under the SIL OFL 1.1 license, hosted on our server.</p>
+          <p class="setup-legal"><a href="/">Nube Games</a> · <a href="/mentions-legales.html">Legal notice</a> · <a href="/confidentialite.html">Privacy</a> · <a href="/conditions.html">Terms</a> · <a href="notes.html">Patch notes</a> (in French)</p>
+        </footer>
+      </div>
+      <div id="stepLocal" hidden>
+        <button class="btn ghost small" type="button" data-back="1">← Back</button>
+        <h2>Local Game</h2>
+        <p class="lead">Everyone plays on this screen. Click a leader’s card to pick a different one.</p>
+        <div class="count-pick" id="countPick"></div>
+        <div class="map-pick" id="mapPick"></div>
+        <div id="tutoOpt" class="tuto-opt"></div>
+        <div id="rows"></div>
+        <p class="note" id="winInfo"></p>
+        <div class="setup-actions">
+          <button class="btn primary" id="startBtn" type="button">Start the game</button>
+          <button class="btn" id="shuffleBtn" type="button">Draw random leaders</button>
+        </div>
+      </div>
+      <div id="stepLobby" hidden>
+        <h2>Online Room</h2>
+        <div id="lobby"></div>
+      </div>
+    </div>
+  </div>
+  <div class="ia-note" id="iaNote"><p><b>Temporary artwork.</b> The AI-generated illustrations are placeholders for the beta and won’t be kept: the final artwork isn’t here yet. We respect artists’ work, and we know AI has no place in the final version of a game like this one.</p><a class="btn small ia-maj" href="notes.html">Patch notes (French)</a></div>
+  <section id="catalog" class="catalog" aria-labelledby="catTitle" hidden></section>
+  <div id="heroPick" hidden></div>
+</section>
+
+<div id="game" hidden>
+  <header class="bar">
+    <div class="brand">Fields of Fire</div>
+    <span class="round-chip" id="roundChip"></span>
+    <div class="phases" id="phases"></div>
+    <button class="btn ghost icon-btn" id="chatBtn" type="button" aria-label="Chat" hidden data-ic="chat"></button>
+    <button class="btn ghost hdr-toggle" id="logBtn" type="button" aria-pressed="true" title="Show / hide the Chronicle"><span data-ic="scroll"></span> Chronicle</button>
+    <button class="btn ghost" id="deckBtn" type="button" title="See the deck"><span data-ic="cards"></span> Deck</button>
+    <button class="btn ghost" id="glossBtn" type="button" title="Glossary"><span data-ic="book"></span> Glossary</button>
+    <button class="btn ghost icon-btn theme-btn" id="themeBtn" type="button" data-theme-toggle aria-label="Change theme"></button>
+    <a class="btn ghost icon-btn lang-btn" href="./" data-lang="fr" hreflang="fr" lang="fr" title="Jouer en français">FR</a>
+    <button class="btn ghost icon-btn" id="setBtn" type="button" title="Settings" aria-label="Settings" data-ic="gear"></button>
+    <span class="pause-wrap"><button class="btn ghost icon-btn" id="pauseBtn" type="button" title="Pause the game" aria-label="Pause the game" data-ic="pause" hidden></button><span id="pauseLbl" class="pause-lbl" hidden>Game paused</span></span>
+    <button class="btn ghost icon-btn hdr-flag" id="flagBtn" type="button" title="Leave the game (48 h pause or forfeit)" aria-label="Leave the game" data-ic="flag"></button>
+    <button class="btn ghost" id="helpBtn" type="button" title="Rules"><span data-ic="help"></span> Rules</button>
+    <button class="btn ghost icon-btn" id="bugBtn" type="button" title="Report a bug" aria-label="Report a bug" data-ic="bug"></button>
+    <button class="btn ghost" id="newBtn" type="button" title="New game"><span data-ic="restart"></span> New game</button>
+  </header>
+  <aside class="left" id="players"></aside>
+  <main id="board">
+    <div class="banner" id="banner" hidden></div>
+    <div id="boardWrap"><canvas id="baseCv"></canvas><canvas id="amCv"></canvas><canvas id="ovCv"></canvas><canvas id="rcCv"></canvas><svg id="tokens"></svg><div class="popover" id="popover" hidden></div><div id="radial" hidden></div></div>
+    <div class="legend"><span><i class="chip chip-P" style="background:#b3d65a"></i><img src="assets/icons/biome-P.png" alt="">Plains</span><span><i class="chip chip-F" style="background:#2d6b2f"></i><img src="assets/icons/biome-F.png" alt="">Forest</span><span><i class="chip chip-M" style="background:#aca596"></i><img src="assets/icons/biome-M.png" alt="">Mountains</span><span><i class="chip chip-Ma" style="background:#526043"></i><img src="assets/icons/biome-Ma.png" alt="">Swamp</span></div>
+    <div class="board-tools"><button class="btn small" id="zoomOut" type="button" aria-label="Zoom out">−</button><button class="btn small" id="zoomIn" type="button" aria-label="Zoom in">+</button></div>
+    <div class="market" id="market" hidden></div>
+  </main>
+  <aside class="right" id="right"><div id="rightLog"></div><section class="minijeu" id="minijeu" hidden aria-label="Mini-game while others play"></section></aside>
+  <section class="mat" id="mat"></section>
+</div>
+<div id="modal" hidden></div>
+<div id="hoverTip" hidden></div>
+<div id="cardTip" hidden></div>
+<div id="pileTip" hidden></div>
+<div id="bugModal" hidden></div>
+<div id="chatPanel" hidden><div class="chat-head"><b><span data-ic="chat"></span> Game chat</b><button class="btn small ghost" data-chatclose="1" aria-label="Close">✕</button></div><div id="chatList"></div><div class="chat-in"><input id="chatInput" maxlength="300" placeholder="Your message…" autocomplete="off"><button class="btn small primary" data-chatsend="1">Send</button></div></div>
+
+<script>document.addEventListener('click',function(e){var a=e.target.closest('[data-lang]');if(!a)return;e.preventDefault();try{localStorage.setItem('fof-lang',a.dataset.lang)}catch(x){}location.href=a.getAttribute('href')+location.search+location.hash;});</script>
+<script src="js/en/config.js?v=beta-1.9.25"></script>
+<script src="js/en/icons.js?v=beta-1.9.25"></script>
+<script src="js/en/data.js?v=beta-1.9.25"></script>
+<script src="js/en/map.js?v=beta-1.9.25"></script>
+<script src="js/en/cartes.js?v=beta-1.9.25"></script>
+<script src="js/en/engine.js?v=beta-1.9.25"></script>
+<script src="js/en/cards.js?v=beta-1.9.25"></script>
+<script src="js/en/board.js?v=beta-1.9.25"></script>
+<script src="js/en/net.js?v=beta-1.9.25"></script>
+<script src="js/en/stats.js?v=beta-1.9.25"></script>
+<script src="js/en/sfx.js?v=beta-1.9.25"></script>
+<script src="js/en/fx.js?v=beta-1.9.25"></script>
+<script src="js/en/music.js?v=beta-1.9.25"></script>
+<script src="js/en/bot.js?v=beta-1.9.25"></script>
+<script src="js/en/tutorial.js?v=beta-1.9.25"></script>
+<script src="js/en/extras.js?v=beta-1.9.25"></script>
+<script src="js/en/minijeu.js?v=beta-1.9.25"></script>
+<script src="js/en/mjchausse.js?v=beta-1.9.25"></script>
+<script src="js/en/mjmoulin.js?v=beta-1.9.25"></script>
+<script src="js/en/mjtresor.js?v=beta-1.9.25"></script>
+<script src="js/en/mjblasons.js?v=beta-1.9.25"></script>
+<script src="js/en/mjmemoire.js?v=beta-1.9.25"></script>
+<script src="js/en/mjtaquin.js?v=beta-1.9.25"></script>
+<script src="js/en/mjreussite.js?v=beta-1.9.25"></script>
+<script src="js/en/ui.js?v=beta-1.9.25"></script>
+<script src="js/en/main.js?v=beta-1.9.25"></script>
+
+</body>
+</html>

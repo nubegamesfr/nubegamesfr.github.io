@@ -1,0 +1,223 @@
+/* Fields of Fire - animations (déplacements, phases, or, conquêtes, constructions, cartes) */
+(function (FOF) {
+  'use strict';
+  var prev = null, reduce = false;
+  try { reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) {}
+  var PH = { collect: ['Income', 'coins'], recruit: ['Recruit', 'cards'], military: ['Military Phase', 'swords'], build: ['Build', 'castle'] };
+
+  function snap(st) {
+    return {
+      // v1.9.11 - identifiant stable de la partie. C'était st.seed, qui change à chaque tirage au
+      // sort (dés, pioche) : après un combat, la comparaison était sautée et les annonces perdues.
+      seed: st.t0 + ':' + st.map.terr.length, phase: st.phase, turnNo: st.turnNo, cur: st.cur, winner: !!st.winner,
+      ctrl: st.map.terr.map(function (t) { return t.ctrl; }),
+      blds: st.map.terr.map(function (t) { return t.blds.map(function (b) { return b.t + b.o; }).join(','); }),
+      gold: st.players.map(function (p) { return p.gold; }),
+      dip: st.players.map(function (p) { return p.dip; }),
+      tyran: st.players.map(function (p) { return !!p.tyran; }),
+      logN: st.logN || st.log.length,
+      combat: st.lastCombat ? JSON.stringify([st.lastCombat.loc, st.lastCombat.att, st.lastCombat.rolls, st.lastCombat.n]) : '',
+      units: st.units.length
+    };
+  }
+  function cle(g) { return (g.dataset.fk || g.dataset.tk) + '|' + g.dataset.own; }
+  function tokPos() {
+    var m = {};
+    // v1.9.17 - clé = pion représenté (dirigeant ou unité), et non plus data-tk : toutes les piles
+    // d'un joueur portaient la même clé « G », si bien qu'avec deux piles sur la carte l'une
+    // repartait de la position de l'autre à chaque action (va-et-vient signalé en playtest).
+    document.querySelectorAll('#tokens .tk').forEach(function (g) { m[cle(g)] = [+g.dataset.x, +g.dataset.y]; });
+    return m;
+  }
+  function board() { return document.getElementById('board'); }
+  function fxLayer() {
+    var el = document.getElementById('fx');
+    if (!el) { el = document.createElement('div'); el.id = 'fx'; el.setAttribute('aria-hidden', 'true'); board().appendChild(el); }
+    return el;
+  }
+  function banner(html, col) {
+    var el = fxLayer(), b = document.createElement('div');
+    // v1.9.1 : un bandeau dure 1,9 s. Quand les phases s'enchaînaient vite, jusqu'à cinq se
+    // superposaient et l'écran restait barré de sombre. Il n'y en a plus qu'un à la fois.
+    var vieux = el.querySelectorAll('.fx-banner');
+    for (var i = 0; i < vieux.length; i++) vieux[i].remove();
+    b.className = 'fx-banner'; b.innerHTML = html; if (col) b.style.setProperty('--bc', col);
+    el.appendChild(b); setTimeout(function () { b.remove(); }, 1900);
+  }
+  // `icon` : nom d'icône facultatif. Il était auparavant concaténé au texte, or floatAt écrit
+  // en textContent : le SVG s'affichait tel quel, en clair, pendant deux secondes.
+  function floatAt(target, text, cls, icon) {
+    if (!target) return;
+    var r = target.getBoundingClientRect(), f = document.createElement('div');
+    f.className = 'fx-float ' + (cls || '');
+    if (icon && FOF.hasIcon(icon)) f.innerHTML = FOF.esc(text) + ' ' + FOF.ic(icon, 13);
+    else f.textContent = text;
+    f.style.left = (r.left + r.width / 2) + 'px'; f.style.top = (r.top + 4) + 'px';
+    document.body.appendChild(f); setTimeout(function () { f.remove(); }, 1500);
+  }
+  var KIND = {
+    capfall: ['pop', 'castle', 'bad'], devastate: ['pop', 'flame', 'bad'], conquer: ['pop', 'banner', 'good'], tyran: ['tyran', 'crown', 'bad'],
+    elim: ['pop', 'skull', 'bad'], pact: ['pop', 'branch', 'good'], pactbreak: ['pop', 'broken', 'bad'], revolt: ['pop', 'flame', 'bad'],
+    attackwin: ['toast', 'swords', 'good'], attacklose: ['toast', 'shield', 'bad'], recruit: ['toast', 'cards', 'good'], build: ['toast', 'hammer', 'good'],
+    land: ['toast', 'banner', 'good'], gold: ['toast', 'coins', 'good'], deficit: ['toast', 'warn', 'bad'], 'dip+': ['toast', 'branch', 'good'], 'dip-': ['toast', '⚠', 'bad'],
+    bad: ['toast', 'warn', 'bad'], cede: ['toast', 'branch', 'good'], cedeterr: ['toast', 'warn', 'bad'], convert: ['toast', 'star', 'good'], card: ['toast', '🂠', ''], win: [null]
+  };
+  function classify(l) { var r = KIND[l.k]; return r ? [null].concat(r) : [null, 'toast', '•', '']; }
+  function toast(text, icon, tone, col) {
+    var el = fxLayer(), box = el.querySelector('.fx-toasts');
+    if (!box) { box = document.createElement('div'); box.className = 'fx-toasts'; el.appendChild(box); }
+    var t = document.createElement('div'); t.className = 'fx-toast ' + (tone || ''); if (col) t.style.setProperty('--tc', col);
+    t.innerHTML = '<span class="i">' + (FOF.hasIcon(icon) ? FOF.ic(icon, 17) : icon) + '</span><span>' + FOF.esc(text) + '</span>';
+    box.appendChild(t); while (box.children.length > 4) box.firstChild.remove();
+    setTimeout(function () { t.classList.add('out'); setTimeout(function () { t.remove(); }, 400); }, 3600);
+  }
+  function pop(text, icon, tone, col) {
+    var el = fxLayer(), p = document.createElement('div');
+    p.className = 'fx-pop ' + (tone || ''); if (col) p.style.setProperty('--tc', col);
+    p.innerHTML = '<span class="i">' + (FOF.hasIcon(icon) ? FOF.ic(icon, 34) : icon) + '</span><b>' + FOF.esc(text) + '</b>';
+    el.appendChild(p); setTimeout(function () { p.remove(); }, 2300);
+  }
+  FOF.FX_pop = pop;
+  /* v1.9.11 - retour de playtest : le passage en Tyran doit s'afficher chez TOUT LE MONDE. Il
+     était lu dans les 4 dernières lignes de chronique : en ligne, un tour adverse en produit
+     souvent plus, et l'annonce se perdait. Il est désormais détecté sur l'état des joueurs, et
+     s'affiche aussi quand les animations sont réduites (version fixe). Un clic le ferme. */
+  function tyranPop(p, fixe) {
+    if (!p) return;
+    var el = document.createElement('div'); el.className = 'fx-tyran' + (fixe ? ' still' : '');
+    el.setAttribute('role', 'alert');
+    el.innerHTML = '<div class="ty-crown">' + FOF.ic('crown', 84) + '</div><div class="ty-t">TYRANT</div><div class="ty-n">' + FOF.esc(p.name) + ' has become a Tyrant.</div><div class="ty-s">Anyone can now attack them without losing Diplomacy, and their lands will revolt every turn.</div><div class="ty-x">Click to close</div>';
+    var fini = false;
+    function fermer() { if (fini) return; fini = true; el.classList.add('out'); setTimeout(function () { el.remove(); }, 600); }
+    el.addEventListener('click', fermer);
+    document.body.appendChild(el); setTimeout(fermer, 5200);
+  }
+  var pendingGold = 0;
+  FOF.FX_flushGold = function () { if (pendingGold) { var n = pendingGold; pendingGold = 0; setTimeout(function () { goldPop(n); }, 120); } };
+  function goldPop(n) {
+    var m = document.getElementById('modal');
+    if (m && !m.hidden && m.querySelector('.pass')) { pendingGold += n; return; }
+    var el = document.createElement('div'); el.className = 'fx-gold' + (n < 0 ? ' loss' : '');
+    el.innerHTML = '<i class="coin"></i><div>' + (n > 0 ? '+' : '') + n + ' gold<small>' + (n > 0 ? 'Income' : 'Upkeep') + '</small></div>';
+    if (n > 0) for (var k = 0; k < 10; k++) { var s = document.createElement('i'); s.className = 'spark'; var ang = k / 10 * Math.PI * 2; s.style.setProperty('--dx', Math.round(Math.cos(ang) * 120) + 'px'); s.style.setProperty('--dy', Math.round(Math.sin(ang) * 70) + 'px'); s.style.animationDelay = (0.15 + Math.random() * 0.2) + 's'; el.appendChild(s); }
+    document.body.appendChild(el); setTimeout(function () { el.remove(); }, 2500);
+    setTimeout(function () { FOF.sfx(n > 0 ? 'coins' : 'spend'); }, 150);
+  }
+  function svgRing(loc, col) {
+    var a = FOF.Board.anchor(loc), svg = document.getElementById('tokens'); if (!a || !svg) return;
+    var ns = 'http://www.w3.org/2000/svg';
+    [0, 1].forEach(function (k) {
+      var c = document.createElementNS(ns, 'circle');
+      c.setAttribute('cx', a.x); c.setAttribute('cy', a.y); c.setAttribute('r', 10);
+      c.setAttribute('class', 'fx-ring'); c.style.stroke = col; c.style.animationDelay = (k * 0.25) + 's';
+      svg.appendChild(c);
+    });
+  }
+
+  var tyransAttente = [];
+  // un combat dont les dés se montrent en plusieurs fois (égalité, Prêtresse) : le son de victoire ou
+  // de défaite part au dernier jet (voir ui.js), pas au premier
+  FOF.combatEnPlusieursFois = function (c) { return !!c && !c.auto && !!c.rolls && (c.rolls.length > 1 || c.rolls.some(function (r) { return r.pa || r.pd; })); };
+  FOF.FX = {
+    before: function () { return { pos: tokPos() }; },
+    after: function (st, before, o) {
+      var cur = snap(st);
+      // v1.9.24 - l'annonce du Tyran attend la fin de la bataille (fenêtre de combat fermée), au lieu
+      // de la recouvrir pendant que les dés roulent (créateur, 08/10/2026)
+      if (prev && prev.seed === cur.seed && prev.tyran) cur.tyran.forEach(function (t, i) {
+        if (t && !prev.tyran[i] && tyransAttente.indexOf(i) < 0) tyransAttente.push(i);
+      });
+      if (tyransAttente.length && !(FOF.combatOuvert && FOF.combatOuvert())) {
+        tyransAttente.splice(0).forEach(function (i) { tyranPop(st.players[i], reduce || FOF.animOn === false); FOF.sfx && FOF.sfx('tyran'); });
+      }
+      if (reduce || !prev || prev.seed !== cur.seed) { prev = cur; return; }
+      var anim = FOF.animOn !== false;
+      // 1) les pions glissent vers leur nouvelle case
+      if (anim) document.querySelectorAll('#tokens .tk').forEach(function (g) {
+        var k = cle(g), p0 = before.pos[k]; if (!p0) { g.classList.add('fx-in'); return; }
+        var dx = p0[0] - +g.dataset.x, dy = p0[1] - +g.dataset.y; if (Math.abs(dx) + Math.abs(dy) < 0.5) return;
+        var inner = g.querySelector('.tki'); if (!inner) return;
+        inner.style.transition = 'none'; inner.style.transform = 'translate(' + dx + 'px,' + dy + 'px)';
+        inner.getBoundingClientRect();
+        requestAnimationFrame(function () { inner.style.transition = 'transform .55s cubic-bezier(.2,.8,.2,1)'; inner.style.transform = 'translate(0px,0px)'; });
+        g.classList.add('fx-moved');
+      });
+      // 2) nouveau tour / nouvelle phase
+      // v1.9 : ces bandeaux sont larges et sombres. Joués pour chaque phase de chaque adversaire
+      // (jusqu'à douze par tour de table), ils faisaient clignoter tout l'écran pendant qu'on
+      // attendait. Ils ne s'affichent plus que pour le joueur assis devant l'écran.
+      var aMoi = !FOF.myTurn || FOF.myTurn();
+      if (!cur.winner && anim && aMoi) {
+        if (cur.turnNo !== prev.turnNo) {
+          var p = st.players[st.cur];
+          banner('<small>Round ' + st.round + '</small><b>' + FOF.esc(p.name) + '</b><span>' + FOF.esc(FOF.LEADERS[p.leader].name) + '</span>', o.color(p.id));
+        } else if (cur.phase !== prev.phase && PH[cur.phase]) {
+          banner('<span class="ico">' + FOF.ic(PH[cur.phase][1], 28) + '</span><b>' + PH[cur.phase][0] + '</b>', o.color(st.cur));
+        }
+      }
+      // 3) territoires qui changent de main
+      if (anim) cur.ctrl.forEach(function (c, i) { if (c !== prev.ctrl[i]) svgRing('t' + i, c === null ? '#f1d488' : o.color(c)); });
+      // 4) nouveaux aménagements
+      cur.blds.forEach(function (b, i) {
+        if (b === prev.blds[i]) return;
+        var a = FOF.Board.anchor('t' + i); if (!a) return;
+        if (b.split(',').length >= (prev.blds[i] ? prev.blds[i].split(',').length : 0)) svgRing('t' + i, '#f1d488');
+      });
+      // 4b) grand pop d'or à la collecte du joueur actif (et en ligne : seulement si c'est moi)
+      if (cur.turnNo !== prev.turnNo && !cur.winner && (!o.online || o.seat === st.cur)) {
+        var gd = cur.gold[st.cur] - prev.gold[st.cur];
+        /* la fenêtre de collecte affiche désormais le bilan détaillé */
+      }
+      // 5) or et diplomatie qui bougent
+      cur.gold.forEach(function (g, i) {
+        var d = g - prev.gold[i]; if (!d) return;
+        var opp = document.querySelectorAll('#players .opp')[i];
+        floatAt(opp && opp.querySelector('.st'), (d > 0 ? '+' : '') + d + ' gold', d > 0 ? 'gain' : 'loss');
+        if (i === st.cur) { var pu = document.querySelector('#mat .purse'); floatAt(pu, (d > 0 ? '+' : '') + d, d > 0 ? 'gain big' : 'loss big'); if (pu) { pu.classList.remove('bump'); void pu.offsetWidth; pu.classList.add('bump'); } }
+      });
+      cur.dip.forEach(function (v, i) {
+        var d = v - prev.dip[i]; if (!d || st.players[i].tyran) return;
+        var opp = document.querySelectorAll('#players .opp')[i];
+        floatAt(opp && opp.querySelector('.nm'), (d > 0 ? '+' : '') + d, d > 0 ? 'gain dip' : 'loss dip', 'branch');
+      });
+      // 6) messages visuels (pop pour les grands événements, bulles pour le reste) + sons
+      var snd = [], n = Math.min(4, cur.logN - prev.logN), popped = false;
+      if (n > 0) st.log.slice(-n).forEach(function (l) {
+        var r = classify(l); if (!r || !r[1]) return;
+        var col = l.p !== null && l.p !== undefined ? o.color(l.p) : null;
+        if (r[1] === 'tyran') { popped = true; return; }   // annoncé plus haut, d'après l'état des joueurs
+        // v1.9.1 : la grande carte centrale (sombre, 2,3 s, jusqu'à 80 % de largeur) n'apparaît plus
+        // pendant le tour d'un autre joueur - l'événement est quand même annoncé, en bulle.
+        if (r[1] === 'pop' && !popped && aMoi && anim) { pop(l.m, r[2], r[3], col); popped = true; snd.push(r[3] === 'bad' ? 'bad' : l.k === 'pact' ? 'dip' : 'conquer'); }
+        else toast(l.m, r[2], r[3], col);
+        if (l.k === 'recruit') snd.push('recruit');
+        if (l.k === 'build') snd.push('build');
+        if (l.k === 'dip+') snd.push('dip');
+      });
+      if (cur.combat && cur.combat !== prev.combat) {
+        var c = st.lastCombat, mine = o.online ? (o.seat === c.att ? c.win : o.seat === c.def ? !c.win : null) : c.win;
+        FOF.sfx('dice3d'); if (mine !== null && !FOF.combatEnPlusieursFois(c)) setTimeout(function () { FOF.sfx(mine ? 'win' : 'loss'); }, 1350);   // v1.9.15 : plus de fracas d'épées, seulement les dés puis cor ou luth
+      } else if (cur.winner && !prev.winner) {
+        // v1.9.24 : un son propre à chaque victoire (militaire, religieuse, diplomatique), pour tous
+        if (FOF.sonVictoire) FOF.sonVictoire(st.winner.type);
+      } else if (Date.now() - (FOF.sfxLast || 0) < 700) { /* le clic a déjà fait son bruit */ }
+      else if (snd.length) FOF.sfx(snd[0]);
+      else if (cur.turnNo !== prev.turnNo) FOF.sfx(o.online && o.seat === st.cur ? 'turn' : 'phase');
+      else if (cur.phase !== prev.phase) FOF.sfx('phase');
+      else if (document.querySelector('#tokens .tk.fx-moved')) FOF.sfx('move');
+      else if (cur.gold[st.cur] > prev.gold[st.cur]) FOF.sfx('coin');
+      else if (cur.gold[st.cur] < prev.gold[st.cur]) FOF.sfx('spend');
+      prev = cur;
+    },
+    reset: function () { prev = null; tyransAttente.length = 0; }
+  };
+  // cartes du marché : animation « distribuée » quand une nouvelle carte arrive dans un emplacement
+  var seenSlots = {};
+  new MutationObserver(function () {
+    document.querySelectorAll('#market .slot').forEach(function (s) {
+      var key = s.dataset.slotkey, idx = key.split(':')[0];
+      if (seenSlots[idx] !== undefined && seenSlots[idx] !== key.split(':')[1] && !reduce) s.classList.add('deal');
+      seenSlots[idx] = key.split(':')[1];
+    });
+  }).observe(document.documentElement, { childList: true, subtree: true });
+})(window.FOF = window.FOF || {});

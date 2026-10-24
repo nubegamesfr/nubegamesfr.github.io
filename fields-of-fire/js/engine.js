@@ -16,7 +16,7 @@
     else if (pg && pg.carte) st.map = FOF.historicMap(pg.carte, st.n);   // v1.9.17 : le nombre de joueurs a changé
     else st.map = FOF.generateMap(st, st.n);
     st.players = cfg.players.map(function (p, i) {
-      return { id: i, name: p.name, color: p.color, leader: p.leader, bot: !!p.bot, mod: FOF.LEADERS[p.leader].mod, gold: 3, dip: 3, tyran: false, tyranStamp: null,
+      return { id: i, name: p.name, color: p.color, leader: p.leader, bot: !!p.bot, mod: FOF.LEADERS[p.leader].mod, gold: 3, dip: 2, tyran: false, tyranStamp: null,
         alive: true, capital: null, lpos: null, lArr: 0, lMoved: false, lConq: false, lFought: false, pact: null,
         tally: { gold: 3, recruit: 0, build: 0, battles: 0, wins: 0, losses: 0, conquest: 0, lost: 0, peak: 1, cases: 0 },
         attackedLast: false, attackedNow: false, raidedLast: false, raidedNow: false, edouardUsed: false, flags: {} };
@@ -28,10 +28,20 @@
     var TT = st.map.terr, best = null, bestD = -1;
     // v1.9.24 - certaines cases ne peuvent pas servir de départ (îles de la Manche à 6 joueurs)
     var depart = range(TT.length).filter(function (i) { return !TT[i].noCap; });
-    for (var tr = 0; tr < 60; tr++) {
-      var pick = FOF.shuffle(st, depart.slice()).slice(0, st.players.length), md = 99;
-      for (var i1 = 0; i1 < pick.length; i1++) for (var i2 = i1 + 1; i2 < pick.length; i2++) md = Math.min(md, FOF.terrDistance(st.map, pick[i1], pick[i2]));
-      if (md >= 2 && md > bestD) { bestD = md; best = pick; }
+    /* v1.9.25 (créateur, 24/10/2026) : au moins 2 territoires entre deux capitales par la terre (distance 3).
+       Deux capitales que seule la mer relie ne sont pas concernées. Cartes générées et historiques. */
+    var dTerre = {};
+    function loinParTerre(a, b) { var k = a < b ? a + ':' + b : b + ':' + a; if (dTerre[k] === undefined) dTerre[k] = FOF.distanceTerre(st.map, a, b); return dTerre[k] >= 3; }
+    var bestOk = false;
+    for (var tr = 0; tr < 4000; tr++) {
+      var pick = FOF.shuffle(st, depart.slice()).slice(0, st.players.length), md = 99, okT = true;
+      for (var i1 = 0; i1 < pick.length; i1++) for (var i2 = i1 + 1; i2 < pick.length; i2++) {
+        md = Math.min(md, FOF.terrDistance(st.map, pick[i1], pick[i2]));
+        if (!loinParTerre(pick[i1], pick[i2])) okT = false;
+      }
+      if (md < 2) continue;
+      if ((okT && !bestOk) || (okT === bestOk && md > bestD)) { bestD = md; best = pick; bestOk = okT; }
+      if (bestOk && tr >= 60) break;
     }
     if (!best) throw new Error('Placement des dirigeants impossible');
     st.players.forEach(function (p, i) { var t = TT[best[i]]; t.ctrl = p.id; p.capital = t.id; p.lpos = 't' + t.id; });
@@ -90,7 +100,7 @@
     // v1.9.6 - Maître d'œuvre : la remise s'applique APRÈS le pouvoir du dirigeant, donc elle se
     // cumule avec Adèle (temple 7 → 6 par Adèle → 5 avec le Maître d'œuvre).
     // v1.9.11 - cumulable : deux Maîtres d'œuvre retirent 2 or (décision du créateur, 27/09/2026).
-    if (type === 'T') { var nMaitres = st.units.filter(function (u) { return u.owner === p.id && u.key === 'maitre'; }).length; if (nMaitres) c = Math.max(1, c - nMaitres); }
+    // v1.9.25 - remise retirée : le Maître d'œuvre fortifie désormais un temple (créateur, 24/10/2026).
     return c;
   };
   FOF.defBonus = function (st, p, t) {
@@ -100,6 +110,8 @@
       d += B[b.t].def;
       if (p.leader === 'alienor' && b.t === 'P') d += 1;   // v1.9.14 : ports d'Alinor à +2 défense
       if (p.leader === 'adele' && b.t === 'T') d += 1;
+      // v1.9.25 - temple fortifié par un Maître d'œuvre : +2, une seule fois, garde son bonus s'il change de mains
+      if (b.t === 'T' && b.fort) d += 2;
     });
     // v1.9.19 - capitale : +3 au lieu de +2 ; Gustave : +1 sur chacun de ses territoires (créateur, 07/10/2026)
     if (t.id === p.capital && t.ctrl === p.id) d += 3;
@@ -151,6 +163,7 @@
   function canEmbark(st, tid, piece, p) {
     var t = T(st, tid);
     if (!t.seas.length) return false;
+    // v1.9.25 - l'Émissaire en nef ne prend pas la mer sans port (créateur, 24/10/2026)
     if (piece !== 'L' && piece.key === 'corbeau') return true;
     if (t.blds.some(function (b) { return b.t === 'P'; })) return true;
     
@@ -160,11 +173,13 @@
     var out = [];
     if (loc[0] === 't') {
       var t = T(st, +loc.slice(1));
-      t.adj.forEach(function (a) { out.push('t' + a); });
+      // v1.9.25 - unités côtières (Émissaire en nef, Exploratrice, Caboteur) : mer et territoires côtiers seulement
+      var cotier = piece !== 'L' && FOF.unitDef(piece.key).cotier;
+      t.adj.forEach(function (a) { if (!cotier || T(st, a).seas.length) out.push('t' + a); });
       if (canEmbark(st, t.id, piece, p)) t.seas.forEach(function (z) { out.push('s' + z); });
     } else {
       var z = st.map.seas[+loc.slice(1)];
-      z.adjT.forEach(function (a) { out.push('t' + a); });
+      z.adjT.forEach(function (a) { out.push('t' + a); });   // un territoire bordant la mer est côtier
       z.adjS.forEach(function (a) { out.push('s' + a); });
     }
     return out;
@@ -357,7 +372,35 @@
     if (inutile) return 'Une des unités choisies n’est pas nécessaire : le trésor serait déjà revenu à 0 sans elle.';
     return null;
   };
+  /* v1.9.24 - proche de la victoire (créateur, 08/10/2026) : à 2 territoires, 2 temples ou 2 points de
+     diplomatie du seuil, ou moins. Sert au halo du portrait et à l'annonce entre deux tours. */
+  FOF.procheVictoire = function (st, p) {
+    if (!p || !p.alive || st.winner) return [];
+    var v = st.victory, out = [];
+    if (v.mil - FOF.terrOf(st, p.id).length <= 2) out.push({ t: 'mil', reste: v.mil - FOF.terrOf(st, p.id).length });
+    if (v.rel - FOF.countBld(st, p.id, 'T') <= 2) out.push({ t: 'rel', reste: v.rel - FOF.countBld(st, p.id, 'T') });
+    if (!p.tyran && v.dip - p.dip <= 2) out.push({ t: 'dip', reste: v.dip - p.dip });
+    return out;
+  };
+  /* v1.9.25 (créateur, 24/10/2026) : l'annonce ne paraît qu'une fois par type de victoire, à la fin du
+     tour où le joueur l'atteint. Tant qu'il reste proche, plus d'annonce ; s'il s'éloigne puis revient,
+     elle reparaît. p.procheVu garde les types déjà annoncés, st.procheAnnonce l'annonce à montrer. */
+  function oublierProche(st) {
+    st.players.forEach(function (q) {
+      if (!q.procheVu || !q.procheVu.length) return;
+      var types = FOF.procheVictoire(st, q).map(function (x) { return x.t; });
+      q.procheVu = q.procheVu.filter(function (t) { return types.indexOf(t) >= 0; });
+    });
+  }
+  function annoncerProche(st, p) {
+    oublierProche(st);
+    var cur = FOF.procheVictoire(st, p), vu = p.procheVu || [];
+    var neufs = cur.filter(function (x) { return vu.indexOf(x.t) < 0; });
+    p.procheVu = cur.map(function (x) { return x.t; });
+    st.procheAnnonce = neufs.length ? { pid: p.id, types: neufs, turnNo: st.turnNo + 1 } : null;
+  }
   function nextPlayer(st) {
+    annoncerProche(st, st.players[st.cur]);
     var n = st.players.length, i = st.cur, wrapped = false;
     for (var k = 0; k < n; k++) {
       i = (i + 1) % n;
@@ -564,11 +607,12 @@
     var t = T(st, +u.pos.slice(1));
     var others = st.players.filter(function (q) { return q.id !== p.id && q.alive; });
     switch (u.key) {
-      case 'corbeau': case 'emissaire':
+      case 'corbeau': case 'emissaire': case 'emnef':
         return others.some(function (q) { return q.capital === t.id && t.ctrl === q.id; }) && !p.tyran ? 'Délivrer le message' : null;
       case 'ambassadeur':
         var host = others.filter(function (q) { return q.capital === t.id && t.ctrl === q.id; })[0];
         return host && !host.tyran && !p.tyran && p.pact === null && host.pact === null ? 'Conclure un pacte avec ' + host.name : null;
+      case 'maitre': return t.blds.some(function (b) { return b.t === 'T' && b.o === p.id && !b.fort; }) ? 'Fortifier le temple' : null;
       case 'pelerin': return t.blds.some(function (b) { return b.t === 'T' && b.o !== p.id; }) && !p.tyran ? 'Faire pèlerinage' : null;
       case 'colonie': return t.ctrl === null && t.revoltFrom !== p.id ? 'Fonder une colonie' : null;
       // v1.9.19 - l'Exploratrice agit dès son arrivée, en phase militaire, comme la Colonie (créateur, 07/10/2026)
@@ -589,8 +633,20 @@
   function useEffect(st, u, arg) {
     var p = st.players[u.owner], t = u.pos[0] === 't' ? T(st, +u.pos.slice(1)) : null, name = FOF.unitDef(u.key).name;
     switch (u.key) {
-      case 'corbeau': gainDip(st, p, 1, name); discardUnit(st, u); break;
-      case 'emissaire': gainDip(st, p, 2, name); discardUnit(st, u); break;
+      /* v1.9.25 (créateur, 24/10/2026) : le joueur adverse visité gagne +1 de diplomatie (son Ambassade
+         le relaie, un Tyran ne gagne rien). Si les deux atteignent le seuil, le joueur actif gagne
+         (checkWin le regarde en premier). */
+      case 'corbeau': case 'emissaire': case 'emnef': {
+        var hote = st.players.filter(function (q) { return q.id !== p.id && q.capital === t.id && t.ctrl === q.id; })[0];
+        gainDip(st, p, u.key === 'corbeau' ? 1 : 2, name);
+        if (hote) gainDip(st, hote, 1, 'message reçu');
+        discardUnit(st, u); break;
+      }
+      case 'maitre': {
+        var tf = t.blds.filter(function (b) { return b.t === 'T' && b.o === p.id && !b.fort; })[0];
+        tf.fort = true; log(st, 'Le Maître d’œuvre de ' + p.name + ' fortifie le temple de ' + t.name + ' (+2 défense).', p.id, 'build');
+        discardUnit(st, u); break;
+      }
       case 'ambassadeur':
         var host = st.players.filter(function (q) { return q.capital === t.id; })[0];
         p.pact = host.id; host.pact = p.id; log(st, p.name + ' et ' + host.name + ' scellent un pacte de non-agression.', p.id, 'pact'); break;
@@ -602,7 +658,8 @@
       }
       case 'pelerin':
         var tb = t.blds.filter(function (b) { return b.t === 'T' && b.o !== p.id; })[0];
-        gainDip(st, p, 1, name); gainDip(st, st.players[tb.o], 1, 'pèlerin accueilli', true);   // v1.9.12 : l'Ambassade ne relaie pas un gain reçu
+        // v1.9.25 : +2 au lieu de +1 ; l'Ambassade ne s'ajoute qu'au gain du pèlerin (créateur, 24/10/2026)
+        gainDip(st, p, 2, name); gainDip(st, st.players[tb.o], 1, 'pèlerin accueilli', true);
         // v1.9.17 - la défausse et le break étaient restés dans le commentaire ci-dessus : l'effet
         // enchaînait sur celui de la Colonie et le Pèlerin prenait le territoire (playtest du 30/09).
         discardUnit(st, u); break;
@@ -920,6 +977,7 @@
     }
     verifierPactes(st, tenus);
     advancePending(st);
+    oublierProche(st);
     return st;
   };
 

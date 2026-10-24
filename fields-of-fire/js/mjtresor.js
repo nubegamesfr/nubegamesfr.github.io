@@ -42,7 +42,7 @@
   FOF.TresorRegles = R;
 
   var DIRS = { ArrowLeft: 'g', ArrowRight: 'd', ArrowUp: 'h', ArrowDown: 'b' };
-  FOF.Minijeux.enregistrer({ id: 'tresor', nom: 'Trésor (façon 2048)', ic: 'coins', creer: function (api) {
+  FOF.Minijeux.enregistrer({ id: 'tresor', nom: 'Trésor (façon 2048)', regles: '<p>Poussez toutes les pièces d’un côté avec les flèches du clavier, les boutons sous la grille ou en glissant la souris.</p><p>Deux pièces identiques qui se touchent fusionnent en la pièce suivante : obole, denier, sou, gros, écu, florin, ducat, bourse, coffre, trésor, couronne. Une nouvelle pièce apparaît après chaque poussée.</p><p>But : atteindre la Couronne (2048). La partie s’arrête quand plus rien ne peut bouger.</p>', ic: 'coins', creer: function (api) {
     var g, score, fini, couronne, depart = null, neuves = {};
     function nouveau() { g = R.poser(R.poser(new Array(N * N).fill(0))); score = 0; fini = false; couronne = false; neuves = {}; }
     function pousser(d) {

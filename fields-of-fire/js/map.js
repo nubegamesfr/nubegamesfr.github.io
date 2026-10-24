@@ -45,8 +45,13 @@
   /* v1.9.17 - règle du créateur (30/09/2026) : un continent ne peut pas contenir autant de cases, ou
      plus, qu'il n'en faut pour la victoire militaire (8 + joueurs). Taille maximale : 7 + joueurs. Il
      faut donc au moins ⌈7n / (7 + n)⌉ continents : 3 à 3, 4 et 5 joueurs, 4 à 6 joueurs. */
-  FOF.maxContinent = function (n) { return 7 + n; };
-  FOF.minContinents = function (n) { return Math.ceil(7 * n / (7 + n)); };
+  /* v1.9.25 (créateur, 24/10/2026) : un continent compte MOINS de territoires qu'il ne faut de temples
+     pour la victoire religieuse (5 + joueurs), donc au plus 4 + joueurs ; et il y a au moins
+     joueurs + 1 continents, jusqu'à joueurs + 3. */
+  FOF.maxContinent = function (n) { return 4 + n; };
+  FOF.minContinents = function (n) { return n + 1; };
+  FOF.maxContinents = function (n) { return n + 3; };
+  var MIN_CONT = 3;   // taille minimale d'un continent (v1.9.25 : 5 avant, intenable avec joueurs + 3 continents)
   // v1.5 : continents libres (nombre et tailles au hasard), total = 7 × joueurs
   function continentSizes(s, n, k) {
     var total = 7 * n;
@@ -61,12 +66,12 @@
       var vmax = Math.min(FOF.maxContinent(n), Math.max(8, Math.ceil(total / k) + 5));
       var sizes = [], left = total;
       for (var i = 0; i < k; i++) {
-        var rest = k - i - 1, lo = Math.max(5, left - rest * vmax), hi = Math.min(vmax, left - rest * 5);
+        var rest = k - i - 1, lo = Math.max(MIN_CONT, left - rest * vmax), hi = Math.min(vmax, left - rest * MIN_CONT);
         if (lo > hi) break;
         var v = i === k - 1 ? left : lo + ri(s, hi - lo + 1);
         sizes.push(v); left -= v;
       }
-      if (sizes.length === k && left === 0 && sizes.every(function (v) { return v >= 5 && v <= vmax; })) return { sizes: sizes, extra: 0 };
+      if (sizes.length === k && left === 0 && sizes.every(function (v) { return v >= MIN_CONT && v <= vmax; })) return { sizes: sizes, extra: 0 };
     }
     return null;   // v1.9.17 : plus de repli à deux moitiés, qui pouvait dépasser la taille maximale d'un continent
   }
@@ -78,10 +83,10 @@
   //   3 j : 2      4 j : 2-3      5 j : 2-4      6 j : 2-4
   // v1.9.17 - la taille maximale d'un continent (7 + joueurs) impose désormais un minimum :
   //   3 j : 3      4 j : 3      5 j : 3-4      6 j : 4
-  var KMAX = { 3: 3, 4: 3, 5: 4, 6: 4 };
   // part de mer tolérée dans la boîte des centres de territoires (filtre rapide avant la découpe des
   // mers). v1.9.17 : 0,32 à 3 joueurs (trois continents obligatoires ; 0,215 avant). Mesuré : boîte à 30 % → 58 % de mer à l'écran, 34 % → 61 %.
-  function seuilMer(n) { return n <= 3 ? 0.32 : 0.48; }
+  // v1.9.25 - plus de continents, donc plus de mer entre eux : plafond relevé à 0,62 (mesures ci-dessous)
+  function seuilMer(n) { return 0.62; }
 
   /* Une passe : tous les essais d'un tirage de continents. Renvoie une carte CONFORME à la règle
      des 4 débarquements, ou null si aucun essai n'y est arrivé. */
@@ -91,7 +96,7 @@
     // plusieurs tentatives, si bien que le hasard retombait sur deux dans 87 % des parties
     // (mesuré : 26 cartes à deux continents sur 30 à cinq joueurs). On tient donc le nombre voulu,
     // et on ne descend d'un cran que s'il est réellement impossible à placer.
-    var kmin = Math.max(2, FOF.minContinents(n)), kmax = Math.max(kmin, KMAX[n] || Math.min(n + 1, 4));
+    var kmin = FOF.minContinents(n), kmax = FOF.maxContinents(n);
     var kVoulu = FOF.FORCE_K || (kmin + ri(s, kmax - kmin + 1));
     for (var want = kVoulu; want >= kmin; want--) {
       for (var attempt = 0; attempt < 300; attempt++) {
@@ -168,11 +173,13 @@
     // relevé à 60 % par le créateur (01/10/2026) : trois masses séparées ne tiennent pas sous 55 %
     // à 3 joueurs. Mer mesurée à l'écran : 3 j k3 10×6 → 60 %, 4 j k3 12×6 → 56 %,
     // 6 j k4 14×8 → 59 % (choisie pour la vitesse : 12×8 donnait 55 % mais 4,5 s de génération).
+    // v1.9.25 - joueurs + 1 à joueurs + 3 continents : grilles remesurées (mer dans la boîte des
+    // terres : 34 à 58 % selon le cas, génération en 15 à 40 ms par carte).
     var GRID = {
-      3: { 2: [10, 6], 3: [10, 6] },
-      4: { 2: [10, 6], 3: [12, 6] },
-      5: { 2: [11, 7], 3: [11, 7], 4: [12, 7] },
-      6: { 2: [12, 8], 3: [12, 8], 4: [14, 8] }
+      3: { 4: [10, 6], 5: [10, 7], 6: [10, 7] },
+      4: { 5: [12, 7], 6: [12, 7], 7: [12, 8] },
+      5: { 6: [13, 8], 7: [14, 8], 8: [15, 8] },
+      6: { 7: [14, 9], 8: [14, 9], 9: [15, 9] }
     };
     var TABLE = { 3: [9, 6], 4: [10, 6], 5: [11, 7], 6: [12, 8] };
     var ASP = FOF.MAP_ASPECT || 1.56;   // rapport rendu ≈ 1,155 × W/H
@@ -284,11 +291,13 @@
     }
     var SEUIL = FOF.SEA_EST || seuilMer(n);
     if (dansBoite && 1 - terr.length / dansBoite > SEUIL) return null;   // marge : la boîte rendue déborde d'un rayon d'hexagone
-    var decoupe = decouperMers(terr, hexToT, water, waterSet, W, H, wide ? 3 * n + 6 : 2 * n + 4);
+    var decoupe = decouperMers(terr, hexToT, water, waterSet, W, H, (wide ? 3 * n + 6 : 2 * n + 4));
     if (!decoupe) return null;
     var seas = decoupe.seas, nz = seas.length;
     terr.forEach(function (t) { t.seas = decoupe.seasOfT[t.id] || []; });
     if (terr.every(function (t) { return !t.seas.length; })) return null;
+    // v1.9.25 - plus de zone de pleine mer : chaque mer borde au moins un territoire (créateur, 24/10/2026)
+    if (seas.some(function (z) { return !z.adjT.length; })) return null;
     // v1.9.9 - une mer sans rivage est désormais permise (pleine mer). En revanche, aucune ne doit
     // ouvrir sur plus de MAX_DEBARQUEMENTS territoires. On note le pire chiffre ici ; unePasse()
     // écarte la carte s'il dépasse la règle (v1.9.10 : règle stricte).
@@ -883,19 +892,93 @@
     var pere = F.pere, lienTri = F.liens, rayMort = MORT.rayMort;
     function trouve(x) { return F.trouve(x); }
 
-    /* ---- 5. mers, ancres, adjacences ---- */
-    var racines = [];
-    for (var t2 = 0; t2 < NT; t2++) { var r2 = trouve(t2); if (racines.indexOf(r2) < 0) racines.push(r2); }
-    racines.sort(function (a, b) { return a - b; });
-    var rang = {}; racines.forEach(function (r, i) { rang[r] = i; });
-    var nz = racines.length;
+    /* ---- 5. v1.9.25 : retouches au triangle près (créateur, 24/10/2026) ------------------
+       · plus de pleine mer : une mer qui ne borde aucune terre est rattachée à sa voisine ;
+       · une mer qui ouvre encore sur plus de MAX_DEBARQUEMENTS territoires est partagée : ses
+         territoires sont regroupés par paquets de 4 au plus, dans l'ordre où on les rencontre en
+         tournant autour de la mer, et chaque triangle va au paquet dont la côte est la plus proche.
+       Les traits pointillés sont redessinés par le rendu à partir des nouvelles limites. */
+    var lab = new Int32Array(NT);
+    for (var t0 = 0; t0 < NT; t0++) lab[t0] = trouve(t0);
+    var voisinsTri = [];
+    for (var v0 = 0; v0 < NT; v0++) voisinsTri.push([]);
+    paires.forEach(function (p) { voisinsTri[p.a].push(p.b); voisinsTri[p.b].push(p.a); });
+    function composantes() {   // relabellise : une mer = un morceau d'un seul tenant
+      var vu = new Int32Array(NT).fill(-1), n = 0, file = new Int32Array(NT);
+      for (var i = 0; i < NT; i++) {
+        if (vu[i] >= 0) continue;
+        var h = 0, q = 0; file[q++] = i; vu[i] = n;
+        while (h < q) { var u = file[h++]; voisinsTri[u].forEach(function (j) { if (vu[j] < 0 && lab[j] === lab[u]) { vu[j] = n; file[q++] = j; } }); }
+        n++;
+      }
+      for (var k = 0; k < NT; k++) lab[k] = vu[k];
+      return n;
+    }
+    function bilan(n) {
+      var terres = [], tris = [];
+      for (var z = 0; z < n; z++) { terres.push({}); tris.push([]); }
+      for (var i = 0; i < NT; i++) { tris[lab[i]].push(i); if (terrDeTri[i] >= 0) terres[lab[i]][terrDeTri[i]] = 1; }
+      return { terres: terres, tris: tris };
+    }
+    function centreTri(i) {
+      var h = water[(i / 6) | 0], k = i % 6, c = FOF.hexCenter(h, W, RH), cs = coinsDe(h, W);
+      return { x: (c.x + cs[k].x + cs[(k + 1) % 6].x) / 3, y: (c.y + cs[k].y + cs[(k + 1) % 6].y) / 3 };
+    }
+    var nzT = composantes(), B0 = bilan(nzT);
+    // pleine mer : rattachée à la voisine qui a le moins de rivages
+    for (var zz = 0; zz < nzT; zz++) {
+      if (Object.keys(B0.terres[zz]).length) continue;
+      var meilleure = -1, mt = 1e9;
+      B0.tris[zz].forEach(function (i) { voisinsTri[i].forEach(function (j) { var o = lab[j]; if (o === zz) return; var nt = Object.keys(B0.terres[o]).length; if (nt && nt < mt) { mt = nt; meilleure = o; } }); });
+      if (meilleure >= 0) B0.tris[zz].forEach(function (i) { lab[i] = meilleure; });
+    }
+    nzT = composantes(); B0 = bilan(nzT);
+    var prochain = nzT;
+    for (var zp = 0; zp < nzT; zp++) {
+      var tz = Object.keys(B0.terres[zp]).map(Number);
+      if (tz.length <= FOF.MAX_DEBARQUEMENTS) continue;
+      // ordre autour de la mer : angle de chaque territoire vu du centre de la mer
+      var cx = 0, cy = 0;
+      B0.tris[zp].forEach(function (i) { var h = water[(i / 6) | 0], c = FOF.hexCenter(h, W, RH); cx += c.x; cy += c.y; });
+      cx /= B0.tris[zp].length; cy /= B0.tris[zp].length;
+      tz.sort(function (a, b) {
+        var ca = FOF.hexCenter(terr[a].hex, W, RH), cb = FOF.hexCenter(terr[b].hex, W, RH);
+        return Math.atan2(ca.y - cy, ca.x - cx) - Math.atan2(cb.y - cy, cb.x - cx);
+      });
+      var nb = Math.ceil(tz.length / FOF.MAX_DEBARQUEMENTS), taille = Math.ceil(tz.length / nb), paquet = {};
+      // départ du découpage au plus grand écart d'angle : un paquet ne chevauche pas ce trou
+      tz.forEach(function (t, i) { paquet[t] = Math.floor(i / taille); });
+      // chaque triangle va au paquet dont la côte est la plus proche à vol d'oiseau : les limites sont
+      // des médiatrices, donc des traits presque droits (un parcours case à case donnait des zigzags)
+      var etiquette = {}, cotes = [];
+      B0.tris[zp].forEach(function (i) { if (terrDeTri[i] >= 0) { etiquette[i] = paquet[terrDeTri[i]]; cotes.push({ c: centreTri(i), e: etiquette[i] }); } });
+      B0.tris[zp].forEach(function (i) {
+        if (etiquette[i] !== undefined) return;
+        var c = centreTri(i), dm = 1e18;
+        cotes.forEach(function (o) { var d = (o.c.x - c.x) * (o.c.x - c.x) + (o.c.y - c.y) * (o.c.y - c.y); if (d < dm) { dm = d; etiquette[i] = o.e; } });
+      });
+      var ids = {};
+      B0.tris[zp].forEach(function (i) { var e = etiquette[i] || 0; if (ids[e] === undefined) ids[e] = e === 0 ? zp : prochain++; lab[i] = ids[e]; });
+    }
+    nzT = composantes();
+    // une mer coupée en morceaux sans rivage (rare) : rattachée comme plus haut
+    B0 = bilan(nzT);
+    for (var zq = 0; zq < nzT; zq++) {
+      if (Object.keys(B0.terres[zq]).length) continue;
+      var mq = -1; B0.tris[zq].forEach(function (i) { voisinsTri[i].forEach(function (j) { if (lab[j] !== zq && mq < 0) mq = lab[j]; }); });
+      if (mq >= 0) B0.tris[zq].forEach(function (i) { lab[i] = mq; });
+    }
+    nzT = composantes();
+
+    /* ---- 6. mers, ancres, adjacences ---- */
+    var nz = nzT;
     var seas = [], somme = [];
     for (var z = 0; z < nz; z++) { seas.push({ id: z, hexes: [], adjT: [], adjS: [], anchor: { x: 0, y: 0 } }); somme.push({ x: 0, y: 0, n: 0 }); }
     var triSea = new Int16Array(NT);
     water.forEach(function (h) {
       var base = triDe[h], c = FOF.hexCenter(h, W, RH), cs = coinsDe(h, W);
       for (var k = 0; k < 6; k++) {
-        var z2 = rang[trouve(base + k)];
+        var z2 = lab[base + k];
         triSea[base + k] = z2;
         var gx = (c.x + cs[k].x + cs[(k + 1) % 6].x) / 3, gy = (c.y + cs[k].y + cs[(k + 1) % 6].y) / 3;
         somme[z2].x += gx; somme[z2].y += gy; somme[z2].n++;
@@ -906,11 +989,10 @@
       if (!somme[z3].n) return null;
       seas[z3].anchor = { x: somme[z3].x / somme[z3].n, y: somme[z3].y / somme[z3].n };
     }
-    // mers voisines : celles que sépare un trait encore en place
-    lienTri.forEach(function (l) {
-      if (rayMort[l.ray]) return;
-      var za = rang[trouve(l.a)], zb = rang[trouve(l.b)];
-      if (za === undefined || zb === undefined || za === zb) return;
+    // mers voisines : deux triangles voisins de mers différentes
+    paires.forEach(function (p) {
+      var za = lab[p.a], zb = lab[p.b];
+      if (za === zb) return;
       if (seas[za].adjS.indexOf(zb) < 0) seas[za].adjS.push(zb);
       if (seas[zb].adjS.indexOf(za) < 0) seas[zb].adjS.push(za);
     });
@@ -922,7 +1004,7 @@
         if (!waterSet[j]) return;
         var kv3 = areteVers(j, t.hex);
         if (kv3 < 0) return;
-        var zf = rang[trouve(triDe[j] + kv3)];
+        var zf = lab[triDe[j] + kv3];
         if (zf !== undefined && acc.indexOf(zf) < 0) acc.push(zf);
       });
       seasOfT[t.id] = acc;
@@ -930,7 +1012,7 @@
     });
     // un trait qui ne sépare plus rien n'est pas dessiné
     var utile = {};
-    lienTri.forEach(function (l) { if (!rayMort[l.ray] && trouve(l.a) !== trouve(l.b)) utile[l.ray] = true; });
+    lienTri.forEach(function (l) { if (!rayMort[l.ray] && lab[l.a] !== lab[l.b]) utile[l.ray] = true; });
     var restes = rayons.filter(function (r, i) { return utile[i]; });
     return { seas: seas, seasOfT: seasOfT, rayons: restes, triSea: Array.prototype.slice.call(triSea) };
   }
@@ -962,6 +1044,16 @@
   // Distance entre deux territoires, pour écarter les capitales. Carte générée : distance en cases
   // (inchangé). Carte historique : nombre de pas, un pas par frontière terrestre, deux pour
   // traverser une mer (comme une case d'eau entre deux terres sur une carte générée).
+  // v1.9.25 - distance par la terre seule (adjacences terrestres), 99 si seule la mer relie les deux cases
+  FOF.distanceTerre = function (m, a, b) {
+    if (a === b) return 0;
+    var d = {}; d[a] = 0; var file = [a];
+    while (file.length) {
+      var x = file.shift();
+      for (var i = 0; i < m.terr[x].adj.length; i++) { var y = m.terr[x].adj[i]; if (d[y] !== undefined) continue; d[y] = d[x] + 1; if (y === b) return d[y]; file.push(y); }
+    }
+    return 99;
+  };
   FOF.terrDistance = function (m, a, b) {
     if (!m.hist) return hexDist(m.terr[a].hex, m.terr[b].hex, m.W);
     if (a === b) return 0;

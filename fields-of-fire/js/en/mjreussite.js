@@ -1,0 +1,157 @@
+/* Fields of Fire - mini-jeu « Solitaire » (Klondike, v1.9.25 ; remplace la Réussite de la Cour).
+   Jeu de 52 cartes aux couleurs latines : coupes et deniers sont rouges, épées et bâtons sont noirs.
+   Valeurs 1 à 10, Valet, Cavalier, Roi. Sept colonnes (1 à 7 cartes, la dernière retournée), une
+   pioche qui se retourne une carte à la fois (tours de pioche illimités) et quatre fondations.
+   Colonnes : on descend d'une valeur en alternant rouge et noir ; une colonne vide ne prend qu'un Roi.
+   Fondations : une par couleur, du 1 au Roi. But : tout monter sur les fondations. */
+(function (FOF) {
+  'use strict';
+  var COUL = ['coupe', 'denier', 'epee', 'baton'], NOMC = { coupe: 'cups', denier: 'coins', epee: 'swords', baton: 'staves' };
+  var RANG = ['', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'C', 'K'];
+  var NOMR = ['', 'ace', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'jack', 'knight', 'king'];
+  var R = {};
+  R.rouge = function (c) { return c.c === 'coupe' || c.c === 'denier'; };
+  R.donne = function (alea) {
+    alea = alea || Math.random;
+    var jeu = []; COUL.forEach(function (c) { for (var r = 1; r <= 13; r++) jeu.push({ c: c, r: r, v: false }); });
+    for (var i = jeu.length - 1; i > 0; i--) { var j = Math.floor(alea() * (i + 1)), t = jeu[i]; jeu[i] = jeu[j]; jeu[j] = t; }
+    var cols = []; for (var k = 0; k < 7; k++) { var col = jeu.splice(0, k + 1); col[k].v = true; cols.push(col); }
+    return { cols: cols, pioche: jeu, def: [], fond: { coupe: [], denier: [], epee: [], baton: [] } };
+  };
+  // la carte (ou la pile qui commence par elle) peut-elle aller sur cette colonne ?
+  R.surColonne = function (c, col) {
+    if (!col.length) return c.r === 13;
+    var d = col[col.length - 1];
+    return d.v && d.r === c.r + 1 && R.rouge(d) !== R.rouge(c);
+  };
+  R.surFondation = function (c, s) { return s.fond[c.c].length === c.r - 1; };
+  R.gagne = function (s) { return COUL.every(function (c) { return s.fond[c].length === 13; }); };
+  FOF.SolitaireRegles = R;
+
+  FOF.Minijeux.enregistrer({ id: 'solitaire', nom: 'Solitaire', regles: '<p>Goal: move all 52 cards onto the four spaces at the top right (the foundations), one per suit, from Ace to King.</p><p>Cards are red (cups, coins) or black (swords, staves). Their order: Ace (1), 2… 10, Jack, Knight (C), King.</p><p>In the seven columns, place a card on one that is one rank higher and of the other color (a black 6 on a red 7). You can move a card together with every card stacked on it. A hidden card flips over when it ends up at the bottom of its column. An empty column only takes a King.</p><p>The stock (top left) turns over one card at a time; once it’s empty, click it to start it over.</p><p>Click a card to pick it, then click where to put it (possible spots light up). Click it a second time to send it on its own to the best spot.</p>', ic: 'reussite', creer: function (api) {
+    var s, fini, histo, sel, coups, chrono = api.chrono();
+    function nouveau() { s = R.donne(); fini = false; histo = []; sel = null; coups = 0; chrono.remise(); }
+    function memo() { histo.push(JSON.stringify(s)); if (histo.length > 80) histo.shift(); }
+    function demarrer() { if (!chrono.marche) chrono.demarrer(); }
+    // pile désignée par une sélection : { de: 'col'|'def'|'fond', i, k }
+    function pile(x) {
+      if (x.de === 'col') return s.cols[x.i].slice(x.k);
+      if (x.de === 'def') return s.def.length ? [s.def[s.def.length - 1]] : [];
+      var f = s.fond[x.i]; return f.length ? [f[f.length - 1]] : [];
+    }
+    function retirer(x, n) {
+      if (x.de === 'col') { s.cols[x.i].splice(s.cols[x.i].length - n, n); var col = s.cols[x.i]; if (col.length) col[col.length - 1].v = true; }
+      else if (x.de === 'def') s.def.pop();
+      else s.fond[x.i].pop();
+    }
+    // destinations permises : ['fond', couleur] ou ['col', i]
+    function destinations(x) {
+      var p = pile(x); if (!p.length) return [];
+      var c = p[0], out = [];
+      if (p.length === 1 && x.de !== 'fond' && R.surFondation(c, s)) out.push(['fond', c.c]);
+      s.cols.forEach(function (col, i) { if (!(x.de === 'col' && x.i === i) && R.surColonne(c, col)) out.push(['col', i]); });
+      return out;
+    }
+    function deplacer(x, dest) {
+      var p = pile(x); demarrer(); memo();
+      retirer(x, p.length);
+      if (dest[0] === 'fond') s.fond[dest[1]].push(p[0]); else Array.prototype.push.apply(s.cols[dest[1]], p);
+      coups++; sel = null; api.son('card'); verifierFin(); return true;
+    }
+    function verifierFin() {
+      if (!R.gagne(s)) return;
+      fini = { ms: chrono.ms() }; chrono.arreter();
+      fini.rec = api.record('solitaire', Math.round(fini.ms / 1000), true); api.son('flag');
+    }
+    function piocher() {
+      if (fini) return false;
+      demarrer(); memo(); sel = null;
+      if (s.pioche.length) { var c = s.pioche.pop(); c.v = true; s.def.push(c); }
+      else if (s.def.length) { s.pioche = s.def.reverse().map(function (c) { c.v = false; return c; }); s.def = []; }
+      else { histo.pop(); return false; }
+      api.son('card'); return true;
+    }
+    // tout est visible et la pioche vide : on peut finir d'un coup
+    function finissable() {
+      return !fini && !s.pioche.length && !s.def.length && s.cols.every(function (col) { return col.every(function (c) { return c.v; }); });
+    }
+    function terminer() {
+      demarrer(); memo();
+      var bouge = true;
+      while (bouge) {
+        bouge = false;
+        s.cols.forEach(function (col) { var c = col[col.length - 1]; if (c && R.surFondation(c, s)) { s.fond[c.c].push(col.pop()); coups++; bouge = true; } });
+      }
+      sel = null; api.son('card'); verifierFin(); return true;
+    }
+    function memeSel(a, b) { return a && b && a.de === b.de && a.i === b.i && a.k === b.k; }
+    function choisir(x) {
+      if (fini) return false;
+      if (sel) {
+        // une destination éclairée ?
+        var d = destinations(sel), cible = x.de === 'col' ? ['col', x.i] : x.de === 'fond' ? ['fond', x.i] : null;
+        var ok = cible && d.filter(function (y) { return y[0] === cible[0] && y[1] === cible[1]; })[0];
+        if (ok) return deplacer(sel, ok);
+        if (memeSel(sel, x)) { var best = d[0]; if (best) return deplacer(sel, best); api.son('error'); sel = null; return true; }
+      }
+      var p = x.de === 'col' && x.k >= 0 ? s.cols[x.i][x.k] : null;
+      if (x.de === 'col' && (x.k < 0 || !p || !p.v)) { sel = null; return true; }
+      if (!pile(x).length) { sel = null; return true; }
+      sel = x; return true;
+    }
+    function carte(c, cls, attrs) {
+      if (!c.v) return '<span class="rs-carte dos' + (cls ? ' ' + cls : '') + '"' + (attrs || '') + ' aria-label="hidden card"></span>';
+      return '<span class="rs-carte ' + c.c + (R.rouge(c) ? ' rouge' : ' noire') + (cls ? ' ' + cls : '') + '"' + (attrs || '') + ' aria-label="' + NOMR[c.r] + ' of ' + NOMC[c.c] + '"><b>' + RANG[c.r] + '</b>' + FOF.ic(c.c, 15) + '</span>';
+    }
+    function attr(de, i, k) { return ' data-so="' + de + '" data-i="' + i + '" data-k="' + k + '" role="button" tabindex="0"'; }
+    nouveau();
+    return {
+      temps: function () { return chrono.ms(); },
+      pause: function () { chrono.pause(); },
+      reprise: function () { chrono.reprise(); },
+      html: function () {
+        var rec = api.meilleur('solitaire'), dests = sel ? destinations(sel) : [];
+        function eclaire(t, i) { return dests.some(function (y) { return y[0] === t && y[1] === i; }) ? ' cible' : ''; }
+        function choisie(de, i, k) { return sel && sel.de === de && sel.i === i && (de !== 'col' || k >= sel.k) ? ' choisie' : ''; }
+        var range = COUL.reduce(function (n, c) { return n + s.fond[c].length; }, 0);
+        var h = '<div class="mj-tete"><div class="mj-titre">Solitaire</div><button type="button" class="mj-neuf" title="New deal">' + FOF.ic('restart', 13) + '</button></div>' +
+          '<div class="mj-barre"><span title="Cards on the foundations">' + FOF.ic('reussite', 13) + ' <b>' + range + '/52</b></span><span class="mj-temps" title="Time">' + FOF.ic('hourglass', 13) + ' <b>' + api.duree(chrono.ms()) + '</b></span>' +
+          '<button type="button" class="rs-annuler" title="Undo last move"' + (histo.length && !fini ? '' : ' disabled') + '><span style="display:inline-flex;transform:rotate(180deg)">' + FOF.ic('arrow', 13) + '</span></button></div>';
+        var dTop = s.def[s.def.length - 1];
+        h += '<div class="so-haut"><button type="button" class="rs-pioche so-pioche' + (s.pioche.length ? '' : ' vide') + '"' + (fini || (!s.pioche.length && !s.def.length) ? ' disabled' : '') + ' title="' + (s.pioche.length ? 'Turn over a card from the stock' : 'Start the stock over') + '"><span>' + (s.pioche.length || FOF.ic('restart', 13)) + '</span></button>' +
+          '<div class="so-place">' + (dTop ? carte(dTop, choisie('def', 0, 0), attr('def', 0, 0)) : '') + '</div><div></div>';
+        COUL.forEach(function (c) {
+          var f = s.fond[c], top = f[f.length - 1];
+          h += '<div class="so-place so-fond' + eclaire('fond', c) + '" data-so="fond" data-i="' + c + '" data-k="0" title="Foundation: ' + NOMC[c] + '">' + (top ? carte(top, choisie('fond', c, 0)) : '<span class="so-vide">' + FOF.ic(c, 15) + '</span>') + '</div>';
+        });
+        h += '</div><div class="rs-cols so-cols">';
+        s.cols.forEach(function (col, i) {
+          h += '<div class="rs-col so-col' + eclaire('col', i) + '" data-so="col" data-i="' + i + '" data-k="-1">';
+          col.forEach(function (c, k) { h += carte(c, (c.v ? 'vue' : '') + choisie('col', i, k), attr('col', i, k)); });
+          h += '</div>';
+        });
+        h += '</div>';
+        h += '<div class="mj-pied">' + (fini ? '<b>All cards home in ' + api.duree(fini.ms) + '</b>, ' + coups + ' moves.' + (fini.rec ? ' Record.' : '') + ' <button type="button" class="mj-neuf mj-rejouer">Play again</button>'
+          : finissable() ? '<button type="button" class="so-finir">Finish</button>'
+          : rec !== undefined ? 'Record: ' + api.duree(rec * 1000) + '.' : 'Move every card onto the foundations.') + '</div>';
+        return h;
+      },
+      clic: function (e) {
+        if (e.target.closest('.mj-neuf')) { nouveau(); return true; }
+        if (e.target.closest('.rs-annuler')) { if (!histo.length || fini) return false; s = JSON.parse(histo.pop()); sel = null; return true; }
+        if (e.target.closest('.so-pioche')) return piocher();
+        if (e.target.closest('.so-finir')) return terminer();
+        var b = e.target.closest('[data-so]');
+        if (b) return choisir({ de: b.dataset.so, i: b.dataset.so === 'fond' ? b.dataset.i : +b.dataset.i, k: +b.dataset.k });
+        if (sel) { sel = null; return true; }
+        return false;
+      },
+      touche: function (e) {
+        if (e.key === 'Escape' && sel) { sel = null; return true; }
+        if (e.key !== 'Enter' && e.key !== ' ') return false;
+        var b = document.activeElement && document.activeElement.closest && document.activeElement.closest('[data-so]'); if (!b) return false;
+        e.preventDefault(); return choisir({ de: b.dataset.so, i: b.dataset.so === 'fond' ? b.dataset.i : +b.dataset.i, k: +b.dataset.k });
+      }
+    };
+  } });
+})(window.FOF = window.FOF || {});

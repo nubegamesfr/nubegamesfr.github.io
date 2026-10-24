@@ -72,11 +72,9 @@ Voir `js/music.js` pour les adresses exactes.
 - *Rejoicing* - RandomMind
 - *Victory Theme* - RandomMind
 - *Lament for a Warrior's Soul* - RandomMind
-- *GrassLands Theme* - DST
 - *The Ancient Legend* - vitalezzz
 - *Adventurer's Path* - vitalezzz
 - *Journey With No Name* - iamoneabe
-- *Peasant Theme* - nihilocrat (v1.9.19)
 
 ### Combat
 

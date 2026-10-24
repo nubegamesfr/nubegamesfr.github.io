@@ -6,10 +6,10 @@
   'use strict';
   var NIVEAUX = { ecuyer: { nom: 'Écuyer', paires: 8 }, chevalier: { nom: 'Chevalier', paires: 10 }, seigneur: { nom: 'Seigneur', paires: 12 } };
   function melanger(a) { for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)), t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
-  FOF.Minijeux.enregistrer({ id: 'memoire', nom: 'Mémoire des armées (paires)', ic: 'cards', creer: function (api) {
+  FOF.Minijeux.enregistrer({ id: 'memoire', nom: 'Mémoire des armées (paires)', regles: '<p>Les cartes sont posées face cachée. Chaque illustration d’unité est présente deux fois.</p><p>Retournez deux cartes à chaque essai. Si elles sont identiques, elles restent visibles. Sinon, elles se retournent : retenez leur place.</p><p>But : trouver toutes les paires en un minimum d’essais.</p>', ic: 'cards', creer: function (api) {
     var niveau = api.lire('memoire-niveau', 'ecuyer'); if (!NIVEAUX[niveau]) niveau = 'ecuyer';
     var cartes, ouvertes, essais, trouvees, fini, attente = null, chrono = api.chrono();
-    function toutes() { return Object.keys(FOF.ELITES).concat(Object.keys(FOF.SPECIALS)).filter(function (k) { return FOF.unitArt(k); }); }
+    function toutes() { return FOF.cartesEnJeu().filter(function (k) { return FOF.unitArt(k); }); }
     function nouveau() {
       clearTimeout(attente); attente = null;
       var ks = melanger(toutes()).slice(0, NIVEAUX[niveau].paires);

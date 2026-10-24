@@ -19,7 +19,6 @@
       { t: 'Adventurer’s Path', a: 'vitalezzz', f: 'adventurers-path.mp3', u: OGA + 'adventurers_path_0.mp3', x: 1, g: g(-13.6) },
       { t: 'Journey With No Name', a: 'iamoneabe', f: 'journey-with-no-name.mp3', u: OGA + 'cresttest_0.mp3', x: 1, g: g(-17.3) },
       { t: 'The Ancient Legend', a: 'vitalezzz', f: 'the-ancient-legend.mp3', u: OGA + 'the_ancient_legend_2.mp3', x: 1, g: g(-15.7) },
-      { t: 'GrassLands Theme', a: 'DST', f: 'grasslands-theme.mp3', u: OGA + 'DST-GrassLands.mp3', x: 1, g: g(-13.0) },
       { t: 'A Legend Will Rise', a: 'CodeManu', f: 'a-legend-will-rise.mp3', u: OGA + 'A%20Legend%20Will%20Rise.mp3', x: 1, g: g(-10.1) },
       { t: 'Treasure Hunter', a: 'TAD', f: 'treasure-hunter.mp3', u: OGA + 'treasure_hunter_0.mp3', g: g(-11.9) },
       { t: 'Minstrel Dance', a: 'RandomMind', f: 'minstrel-dance.mp3', u: OGA + 'Minstrel_Dance_0.mp3', g: g(-12.9) },
@@ -29,10 +28,8 @@
       { t: 'Market Day', a: 'RandomMind', f: 'market-day.mp3', u: OGA + 'Market_Day.mp3', g: g(-8.1) },
       { t: 'Rejoicing', a: 'RandomMind', f: 'rejoicing.mp3', u: OGA + 'Rejoicing_0.mp3', g: g(-12.1), d: 0.5 },
       { t: 'Victory Theme', a: 'RandomMind', f: 'victory-theme.mp3', u: OGA + 'victory_0.mp3', g: g(-10.7) },
-      { t: 'Lament for a Warrior’s Soul', a: 'RandomMind', f: 'lament-for-a-warriors-soul.mp3', u: OGA + 'Lament_for_a_Warriors_Soul.mp3', g: g(-17.6), d: 1.6 },
-      // v1.9.19 - morceau CC0 ajouté (OpenGameArt), sonie mesurée (EBU R128). Cinq autres ajoutés en même
-      // temps ont été retirés à la demande du créateur (07/10/2026).
-      { t: 'Peasant Theme', a: 'nihilocrat', f: 'peasant-theme.ogg', u: OGA + 'peasantry.ogg', g: g(-15.7) },
+      { t: 'Lament for a Warrior’s Soul', a: 'RandomMind', f: 'lament-for-a-warriors-soul.mp3', u: OGA + 'Lament_for_a_Warriors_Soul.mp3', g: g(-17.6), d: 1.6 }
+      // v1.9.25 - GrassLands Theme et Peasant Theme retirés à la demande du créateur (24/10/2026)
     ],
     battle: [
       { t: 'Battle Theme A', a: 'cynicmusic', f: 'battle-theme-a.mp3', u: OGA + 'battleThemeA.mp3', g: g(-10.3) },

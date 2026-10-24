@@ -1,6 +1,23 @@
-# Fields of Fire - version web (beta 1.9.24, prototype)
+# Fields of Fire - version web (beta 1.9.25, prototype)
 
 Jeu 100 % statique (HTML/CSS/JS, sans build). Servi par GitHub Pages sur https://nubegames.fr/fields-of-fire/ (dossier `fields-of-fire/` du repo `nubegamesfr.github.io`).
+
+## v1.9.25 - retours du créateur du 24/10/2026 (25/10/2026)
+
+- **Règles et cartes** : voir notes.html (diplomatie de départ 2, Ambassade 10 or, Émissaire à cheval
+  et Émissaire en nef, gains reçus par l'hôte, Maître d'œuvre qui fortifie un temple, unités
+  côtières, Trébuchets et Gouverneur retirés via `retire: true` et `FOF.cartesEnJeu()`).
+- **Cartes générées** : n+1 à n+3 continents, chacun < 5+n territoires ; zones de mer partagées au
+  triangle près (plus de pleine mer, 4 débarquements au plus) ; `alignerMers` (board.js) fait suivre
+  aux zones leurs pointillés ; capitales à au moins 3 pas par la terre (`FOF.distanceTerre`).
+- **Anglais** : `en/index.html` (généré par gen.py depuis body-en.html, `<base href="../">`) charge
+  `js/en/*.js`. Ces fichiers sont **produits** à partir des sources françaises : chaque chaîne
+  affichée est remplacée par sa traduction (outil hors dépôt, contrôlé par une analyse syntaxique).
+  Ne pas les éditer à la main : modifier le source français puis regénérer. Préférence de langue :
+  `localStorage['fof-lang']`. En ligne, chaque joueur voit l'interface dans sa langue, mais les
+  lignes de chronique sont écrites dans la langue de celui qui agit.
+- **Mini-jeux** : bouton « ? » (champ `regles` de chaque jeu) ; la Réussite de la Cour devient un
+  Solitaire (Klondike, couleurs latines rouges/noires), même fichier `mjreussite.js`.
 
 ## v1.9.24 - retours du créateur du 08/10/2026 (09/10/2026)
 

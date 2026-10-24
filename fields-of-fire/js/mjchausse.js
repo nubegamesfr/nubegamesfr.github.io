@@ -10,7 +10,7 @@
     chevalier: { nom: 'Chevalier', l: 9, h: 13, pieges: 20 },
     seigneur:  { nom: 'Seigneur',  l: 9, h: 16, pieges: 30 }
   };
-  FOF.Minijeux.enregistrer({ id: 'chausse', nom: 'Chausse-trapes (démineur)', ic: 'trap', creer: function (api) {
+  FOF.Minijeux.enregistrer({ id: 'chausse', nom: 'Chausse-trapes (démineur)', regles: '<p>Le pré cache des pièges. Il faut sonder toutes les parcelles sans piège.</p><p>Clic : sonder une parcelle. Un chiffre indique combien de pièges touchent cette parcelle (y compris en diagonale). Rien autour : les parcelles voisines s’ouvrent d’elles-mêmes.</p><p>Clic droit, ou le mode bannière : planter une bannière là où vous pensez qu’il y a un piège. Clic sur un chiffre qui a déjà assez de bannières autour : sonde toutes les autres parcelles voisines.</p><p>Sonder un piège fait perdre la partie.</p>', ic: 'trap', creer: function (api) {
     var niveau = api.lire('chausse-niveau', 'ecuyer'); if (!NIVEAUX[niveau]) niveau = 'ecuyer';
     var modeBanniere = false, jeu = null, chrono = api.chrono();
 

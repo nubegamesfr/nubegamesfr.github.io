@@ -106,10 +106,10 @@
   var catTab = 'heroes', catFiltre = 'tout';
   function renderCatalog() {
     var el = $('catalog'); if (!el) return;
-    var h = ['<div class="cat-head"><h2 id="catTitle">L’arsenal</h2><p>Les dirigeants que l’on peut incarner et les ' + (Object.keys(FOF.ELITES).length + Object.keys(FOF.SPECIALS).length) + ' cartes du deck (' + Object.keys(FOF.ELITES).concat(Object.keys(FOF.SPECIALS)).reduce(function (s, k) { return s + FOF.copies(k); }, 0) + ' exemplaires en tout).</p>' +
+    var h = ['<div class="cat-head"><h2 id="catTitle">L’arsenal</h2><p>Les dirigeants que l’on peut incarner et les ' + FOF.cartesEnJeu().length + ' cartes du deck (' + FOF.cartesEnJeu().reduce(function (s, k) { return s + FOF.copies(k); }, 0) + ' exemplaires en tout).</p>' +
       '<div class="cat-tabs" role="tablist">' +
       '<button type="button" role="tab" aria-selected="' + (catTab === 'heroes') + '" class="cat-tab' + (catTab === 'heroes' ? ' on' : '') + '" data-cattab="heroes">Dirigeants <b>' + LEAD_KEYS.length + '</b></button>' +
-      '<button type="button" role="tab" aria-selected="' + (catTab === 'cards') + '" class="cat-tab' + (catTab === 'cards' ? ' on' : '') + '" data-cattab="cards">Cartes du deck <b>' + (Object.keys(FOF.ELITES).length + Object.keys(FOF.SPECIALS).length) + '</b></button></div></div>'];
+      '<button type="button" role="tab" aria-selected="' + (catTab === 'cards') + '" class="cat-tab' + (catTab === 'cards' ? ' on' : '') + '" data-cattab="cards">Cartes du deck <b>' + FOF.cartesEnJeu().length + '</b></button></div></div>'];
     if (catTab === 'heroes') {
       h.push('<div class="cat-grid heroes">' + LEAD_KEYS.map(function (k) {
         return FOF.heroHTML(k, { note: isLocked(k) ? 'à débloquer' : '' });
@@ -118,9 +118,7 @@
       h.push('<div class="cat-filters">' + [['tout', 'Toutes'], ['el', 'Élites'], ['sp', 'Spéciales']].map(function (f) {
         return '<button type="button" class="chip' + (catFiltre === f[0] ? ' on' : '') + '" data-catf="' + f[0] + '">' + f[1] + '</button>';
       }).join('') + '</div>');
-      var keys = [];
-      if (catFiltre !== 'sp') keys = keys.concat(Object.keys(FOF.ELITES));
-      if (catFiltre !== 'el') keys = keys.concat(Object.keys(FOF.SPECIALS));
+      var keys = FOF.cartesEnJeu(catFiltre);   // v1.9.25 : sans les cartes retirées (Trébuchets, Gouverneur)
       h.push('<div class="cat-grid cards">' + keys.map(function (k) { return '<div class="cat-card">' + FOF.cardHTML(k) + '<span class="cat-x" title="Exemplaires dans le deck">×' + FOF.copies(k) + '</span></div>'; }).join('') + '</div>');
     }
     el.innerHTML = h.join('');
@@ -198,7 +196,8 @@
       FOF.startUI(row.state, r); return;
     }
     if (step !== 'lobby') show('lobby'); else if (!document.activeElement || document.activeElement.id !== 'seatName') renderLobby();
-    if (picking && picking.online) renderPicker();
+    // v1.9.25 - la fenêtre de déblocage (e-mail) reste ouverte quand un autre joueur change de dirigeant
+    if (picking && picking.online && !picking.unlock) renderPicker();
   }
   function leaveLocal() { if (room) { room.stop(); room.listeners = []; } room = null; FOF.clearOnline(); try { history.replaceState(null, '', location.pathname); } catch (e) {} show('mode'); }
   function mySeatUpdate(fn) {
@@ -241,6 +240,7 @@
   /* ---------- déblocage des deux dirigeants ---------- */
   function showUnlock(k) {
     var el = $('heroPick'); if (!el) return;
+    if (picking) picking.unlock = k;
     var nom = FOF.LEADERS[k] ? FOF.LEADERS[k].name : 'ce dirigeant';
     el.hidden = false;
     el.innerHTML = '<div class="modal-bg"><div class="modal" style="max-width:520px">' +
@@ -325,7 +325,7 @@
         FOF.resumeRoom(so.code, so.cid).then(enterRoom, function (err) { FOF.clearOnline(); setErr(err.message); renderMode(); });
         return;
       }
-      if (d.bot !== undefined) { var rb = rows[+d.bot]; rb.bot = !rb.bot; if (rb.bot && /^(Joueur|Aurèle|Bérénice|Corentin|Daphné|Eudes|Félicie)/.test(rb.name)) rb.name = 'Bot ' + FOF.LEADERS[rb.leader].name.split(' ')[0]; return renderLocal(); }
+      if (d.bot !== undefined) { var rb = rows[+d.bot]; rb.bot = !rb.bot; if (rb.bot && (/^(Joueur|Player|Eudes|Félicie|Bot )/.test(rb.name) || DEFAULT_NAMES.indexOf(rb.name) >= 0)) rb.name = 'Bot ' + FOF.LEADERS[rb.leader].name.split(' ')[0]; return renderLocal(); }
       if (d.allbots) { rows.slice(1, count).forEach(function (r) { r.bot = true; r.name = 'Bot ' + FOF.LEADERS[r.leader].name.split(' ')[0]; }); return renderLocal(); }
       if (d.addbot) {
         return room.mutate(function (row) {
@@ -392,8 +392,9 @@
     $('setup').addEventListener('keydown', function (e) { if (e.target.id === 'seatName' && e.key === 'Enter') e.target.blur(); if (e.target.id === 'joinCode' && e.key === 'Enter') $('joinBtn').click(); });
     $('heroPick').addEventListener('click', function (e) {
       if (e.target.closest('[data-unlockgo]')) return doUnlock();
-      if (e.target.closest('[data-unlockclose]') || e.target.closest('[data-unlockdone]')) return renderPicker();
+      if (e.target.closest('[data-unlockclose]') || e.target.closest('[data-unlockdone]')) { if (picking) delete picking.unlock; return renderPicker(); }
       if (e.target.classList.contains('modal-bg') || e.target.closest('[data-closepick]')) { picking = null; return renderPicker(); }
+      if (picking && picking.unlock) return;   // clics dans la fenêtre de déblocage
       var b = e.target.closest('[data-hero]'); if (!b || b.disabled) return;
       var k = b.dataset.hero;
       if (isLocked(k)) return showUnlock(k);

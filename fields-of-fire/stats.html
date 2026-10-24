@@ -25,6 +25,8 @@ td.n { font-family:'IBM Plex Mono',monospace; text-align:right; }
 .bar { display:inline-block; height:8px; background:var(--gold); border-radius:4px; vertical-align:middle; margin-right:6px; }
 .tag { padding:1px 7px; border-radius:10px; font-size:12px; border:1px solid var(--line); }
 .tag.terminée { border-color:#4aa43d; color:#9bd58f; } .tag.abandonnée, .tag.inachevée { border-color:#a0493c; color:#f2a79c; }
+.vtabs { display:flex; gap:6px; flex-wrap:wrap; margin:6px 0 14px; }
+.vtabs button.on { border-color:var(--gold); color:var(--gold); }
 .bar-row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin:12px 0; }
 button, a.btn { background:#2c2b31; color:var(--bone); border:1px solid var(--line); border-radius:8px; padding:7px 12px; font:inherit; cursor:pointer; text-decoration:none; }
 button:hover { border-color:var(--gold); }
@@ -37,6 +39,7 @@ button:hover { border-color:var(--gold); }
   <p class="lead"><b>Seules les parties d’au moins 5 minutes, allées au-delà du tour 1, avec au moins un joueur humain sont comptées</b> : une partie 100 % bots, plus courte que 5 minutes ou arrêtée au tour 1 (terminée, abandonnée ou inachevée), n’apparaît pas ici. Avant la version 1.9.18, le jeu n’enregistrait que les parties 100 % humaines. Les parties retenues le sont anonymement (une ligne par partie, mise à jour à chaque tour). « Inachevée » = pas de vainqueur et plus d’activité depuis 2 h. <b>Compteurs remis à zéro le 23/09/2026</b> : seules les parties commencées après cette date sont affichées.</p>
   <div class="bar-row"><button id="reload">Actualiser</button><button data-csv="games">Télécharger les parties (CSV)</button><button data-csv="leaders">Télécharger les dirigeants (CSV)</button><button data-csv="players">Télécharger les joueurs (CSV)</button><a class="btn" href="./">← Retour au jeu</a></div>
   <p class="err" id="err"></p>
+  <nav class="vtabs" id="vtabs" aria-label="Version du jeu"></nav>
   <div class="kpis" id="kpis"></div>
   <h2>Types de victoire</h2><div id="vict"></div>
   <h2>Dirigeants</h2><div class="wrap"><table id="leaders"></table></div>
@@ -50,7 +53,29 @@ button:hover { border-color:var(--gold); }
   // Les anciennes lignes restent dans la base (rien n'est supprimé) ; pour repartir de zéro plus tard,
   // il suffit de changer cette date.
   var SINCE = '2026-09-23T16:47:30Z';
-  var C = FOF.CONFIG, games = [], leaders = [], raw = [];
+  var C = FOF.CONFIG, games = [], leaders = [], raw = [], tousRaw = [], tousGames = [], version = null;
+  // v1.9.25 - une page par version du jeu, de la plus récente à la plus ancienne (créateur, 24/10/2026)
+  function nomVersion(v) { return v ? String(v).replace(/^beta[- ]*/i, '').trim() : 'inconnue'; }
+  function compareVersions(a, b) {
+    if (a === 'inconnue') return 1; if (b === 'inconnue') return -1;
+    var x = a.split('.').map(Number), y = b.split('.').map(Number);
+    for (var i = 0; i < Math.max(x.length, y.length); i++) { var d = (y[i] || 0) - (x[i] || 0); if (d) return d; }
+    return 0;
+  }
+  function choisirVersion() {
+    var vs = {}; tousRaw.forEach(function (g) { vs[nomVersion(g.app_version)] = (vs[nomVersion(g.app_version)] || 0) + 1; });
+    var liste = Object.keys(vs).sort(compareVersions);
+    var h = (location.hash.match(/v=([^&]+)/) || [])[1];
+    if (h) h = decodeURIComponent(h);
+    if (!version || liste.indexOf(version) < 0) version = liste.indexOf(h) >= 0 ? h : liste[0] || null;
+    document.getElementById('vtabs').innerHTML = liste.map(function (v) {
+      return '<button type="button" data-version="' + esc(v) + '"' + (v === version ? ' class="on" aria-current="page"' : '') + '>' + (v === 'inconnue' ? 'Version inconnue' : 'Version ' + esc(v)) + ' <span style="color:#8b8577">(' + vs[v] + ')</span></button>';
+    }).join('');
+    raw = tousRaw.filter(function (g) { return nomVersion(g.app_version) === version; });
+    var ok = {}; raw.forEach(function (g) { ok[g.id] = 1; });
+    games = tousGames.filter(function (g) { return ok[g.id]; });
+    leaders = buildLeaders(raw); render();
+  }
   var LN = function (k) { return FOF.LEADERS[k] ? FOF.LEADERS[k].name : (k || '-'); };
   var VT = { mil: 'Militaire', rel: 'Religieuse', dip: 'Diplomatique', survie: 'Dernier debout' };
   function get(path) { return fetch(C.supabaseUrl + '/rest/v1/' + path, { headers: { apikey: C.supabaseKey } }).then(function (r) { if (!r.ok) throw new Error('Erreur ' + r.status); return r.json(); }); }
@@ -66,12 +91,12 @@ button:hover { border-color:var(--gold); }
   function load() {
     document.getElementById('err').textContent = '';
     var f = '&started_at=gte.' + SINCE;
-    Promise.all([get('game_summary?select=*&limit=2000' + f), get('game_stats?select=id,started_at,mode,n_players,finished,abandoned,victory_type,rounds,duration_sec,players&order=started_at.desc&limit=2000' + f)]).then(function (r) {
+    Promise.all([get('game_summary?select=*&limit=2000' + f), get('game_stats?select=id,started_at,app_version,mode,n_players,finished,abandoned,victory_type,rounds,duration_sec,players&order=started_at.desc&limit=2000' + f)]).then(function (r) {
       // v1.9.18 - conditions d'affichage : au moins 5 minutes et au moins un humain à la table
-      raw = r[1].filter(retenue);
-      var ok = {}; raw.forEach(function (g) { ok[g.id] = g; });
-      games = r[0].filter(function (g) { return ok[g.id]; }).map(function (g) { g.n_bots = (ok[g.id].players || []).filter(function (p) { return p.bot; }).length; return g; });
-      leaders = buildLeaders(raw); render();
+      tousRaw = r[1].filter(retenue);
+      var ok = {}; tousRaw.forEach(function (g) { ok[g.id] = g; });
+      tousGames = r[0].filter(function (g) { return ok[g.id]; }).map(function (g) { g.n_bots = (ok[g.id].players || []).filter(function (p) { return p.bot; }).length; return g; });
+      choisirVersion();
     }).catch(function (e) { document.getElementById('err').textContent = 'Impossible de charger les données : ' + e.message; });
   }
   // Le tableau des dirigeants est recalculé ici à partir des parties retenues, et non lu dans la vue
@@ -122,11 +147,13 @@ button:hover { border-color:var(--gold); }
   }
   function dl(name, text) { var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type: 'text/csv;charset=utf-8' })); a.download = name; a.click(); }
   document.addEventListener('click', function (e) {
+    var vb = e.target.closest('[data-version]');
+    if (vb) { version = vb.dataset.version; try { history.replaceState(null, '', '#v=' + encodeURIComponent(version)); } catch (x) {} return choisirVersion(); }
     var b = e.target.closest('[data-csv]'); if (!b) return;
     var t = b.dataset.csv;
-    if (t === 'games') dl('fof-parties.csv', csv(games));
-    if (t === 'leaders') dl('fof-dirigeants.csv', csv(leaders));
-    if (t === 'players') { var out = []; raw.forEach(function (g) { (g.players || []).forEach(function (p) { out.push(Object.assign({ game_id: g.id, started_at: g.started_at, mode: g.mode, n_players: g.n_players, rounds: g.rounds, finished: g.finished, abandoned: g.abandoned, victory_type: g.victory_type }, p)); }); }); dl('fof-joueurs.csv', csv(out)); }
+    if (t === 'games') dl('fof-parties-' + version + '.csv', csv(games));
+    if (t === 'leaders') dl('fof-dirigeants-' + version + '.csv', csv(leaders));
+    if (t === 'players') { var out = []; raw.forEach(function (g) { (g.players || []).forEach(function (p) { out.push(Object.assign({ game_id: g.id, started_at: g.started_at, mode: g.mode, n_players: g.n_players, rounds: g.rounds, finished: g.finished, abandoned: g.abandoned, victory_type: g.victory_type }, p)); }); }); dl('fof-joueurs-' + version + '.csv', csv(out)); }
   });
   document.getElementById('reload').addEventListener('click', load);
   load();

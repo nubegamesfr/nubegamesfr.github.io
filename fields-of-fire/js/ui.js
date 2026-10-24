@@ -1,7 +1,7 @@
 /* Fields of Fire - interface (hot-seat, 3 à 6 joueurs sur le même écran) */
 (function (FOF) {
   'use strict';
-  var curPrec = null, annonceTour = 0, procheT = null;
+  var annonceTour = 0, procheT = null;
   var calmT = null, radial = null, st = null, sel = null, mode = null, pop = null, err = '', modal = null, lastTurnShown = 0, zoom = 1, marketOpen = true, net = null, combatSig = '';
   /* v1.9.24 - « Annuler la dernière action » (créateur, 08/10/2026) : un seul bouton, qui rend l'état
      d'avant la dernière action du joueur, et ainsi de suite tant qu'on reste dans son tour. Réponse du
@@ -140,14 +140,14 @@
     // v1.9.24 - entre la fin du tour d'un joueur proche de la victoire et le début du tour suivant :
     // une annonce avec son portrait (créateur, 08/10/2026). Elle se ferme d'un clic ou seule après 4,5 s.
     if (st.turnNo !== lastTurnShown && !st.winner && !viewModal && !modal) {
-      var pp = curPrec !== null && curPrec !== st.cur ? st.players[curPrec] : null, pres = pp ? FOF.procheVictoire(st, pp) : [];
+      // v1.9.25 : le moteur décide de l'annonce (une fois par type de victoire atteint, voir annoncerProche)
+      var pa = st.procheAnnonce && st.procheAnnonce.turnNo === st.turnNo ? st.procheAnnonce : null, pp = pa ? st.players[pa.pid] : null, pres = pa ? pa.types : [];
       if (pres.length && annonceTour !== st.turnNo) {
         annonceTour = st.turnNo; modal = { kind: 'proche', pid: pp.id, types: pres };
         if (procheT) clearTimeout(procheT);
         procheT = setTimeout(function () { procheT = null; if (modal && modal.kind === 'proche') { modal = null; render(); } }, 4500);
       } else { lastTurnShown = st.turnNo; if ((!net || net.seatIndex() === st.cur) && !st.players[st.cur].bot) modal = { kind: 'turn' }; }
     }
-    curPrec = st.cur;
     if (st.winner && !viewModal) modal = { kind: 'victory' };
     var pbtn = $('pauseBtn'); if (pbtn) pbtn.hidden = !!net || !!st.winner;
     var plbl = $('pauseLbl'); if (plbl) plbl.hidden = !paused || !!net || !!st.winner;
@@ -278,16 +278,7 @@
     var inc = FOF.income(st, p), n = inc.total - inc.upkeep;
     return '<small class="rev">' + (n >= 0 ? '+' : '') + n + '/t</small>';
   }
-  /* v1.9.24 - proche de la victoire (créateur, 08/10/2026) : à 2 territoires, 2 temples ou 2 points de
-     diplomatie du seuil, ou moins. Sert au halo du portrait et à l'annonce entre deux tours. */
-  FOF.procheVictoire = function (st, p) {
-    if (!p || !p.alive || st.winner) return [];
-    var v = st.victory, out = [];
-    if (v.mil - FOF.terrOf(st, p.id).length <= 2) out.push({ t: 'mil', reste: v.mil - FOF.terrOf(st, p.id).length });
-    if (v.rel - FOF.countBld(st, p.id, 'T') <= 2) out.push({ t: 'rel', reste: v.rel - FOF.countBld(st, p.id, 'T') });
-    if (!p.tyran && v.dip - p.dip <= 2) out.push({ t: 'dip', reste: v.dip - p.dip });
-    return out;
-  };
+  // FOF.procheVictoire est dans engine.js depuis la v1.9.25
   function renderOpponents() {
     setHTML($('players'), '<div class="section-title">Dirigeants</div>' + st.players.map(function (p) {
       var terr = FOF.terrOf(st, p.id).length, tem = FOF.countBld(st, p.id, 'T');
@@ -395,6 +386,9 @@
         // v1.9.6 - pastilles d'aménagement : fond sombre et icône dorée. Le fond beige et l'icône
         // noire se fondaient dans les terrains clairs de la carte.
         out.push('<rect data-tloc="t' + t.id + '" x="' + bx + '" y="' + by + '" width="15" height="15" rx="3" fill="#201b14" stroke="' + color(bd.o) + '" stroke-width="2"/><image href="assets/icons/bld-' + bd.t + '-or.png" x="' + (bx + 2) + '" y="' + (by + 2) + '" width="11" height="11"/>');
+        // v1.9.25 - temple fortifié par un Maître d'œuvre : petit bouclier translucide dans le coin, qui laisse l'icône lisible
+        // et ne capte pas les clics (créateur, 24/10/2026)
+        if (bd.fort) out.push('<path pointer-events="none" d="M' + (bx + 9) + ' ' + (by + 8.2) + 'h6.6v3.1q0 3.1-3.3 4.4q-3.3-1.3-3.3-4.4z" fill="#d9dde3" fill-opacity=".72" stroke="#201b14" stroke-width=".8"/>');
       });
       if (K !== 1) out.push('</g>');
       if (hasMallet) {
@@ -557,7 +551,7 @@
     h += '<small>' + (owner ? '<i class="dot" style="background:' + color(owner.id) + '"></i>' + esc(owner.name) + (cap ? ' · capitale' : '') : 'Neutre') + '</small>';
     if (owner) h += '<small>' + FOF.ic('shield', 14) + ' Défense : <b>+' + FOF.defBonus(st, owner, t) + '</b>' + (cap ? ' (dont +3 de capitale)' : '') + ' + dé</small>';
     else h += '<small>' + FOF.ic('shield', 14) + ' Neutre : se conquiert sans combat</small>';
-    if (t.blds.length) h += '<small>' + t.blds.map(function (b) { return '<img src="assets/icons/bld-' + b.t + '.png" alt=""> ' + FOF.BUILDINGS[b.t].name + (b.o !== t.ctrl ? ' (' + esc(st.players[b.o].name) + ')' : ''); }).join(' · ') + '</small>';
+    if (t.blds.length) h += '<small>' + t.blds.map(function (b) { return '<img src="assets/icons/bld-' + b.t + '.png" alt=""> ' + FOF.BUILDINGS[b.t].name + (b.fort ? ' fortifié' : '') + (b.o !== t.ctrl ? ' (' + esc(st.players[b.o].name) + ')' : ''); }).join(' · ') + '</small>';
     return h;
   }
   function onHover() {
@@ -742,7 +736,7 @@
     h.push('<h4>' + esc(FOF.locName(st, loc)) + '</h4>');
     if (t) h.push('<div class="sub">' + FOF.BIOME_NAMES[t.biome] + (t.seas.length ? ' · côtier' : '') + ' · ' + (t.ctrl === null ? 'neutre' : '<b style="color:' + color(t.ctrl) + '">' + esc(st.players[t.ctrl].name) + '</b>' + (st.players[t.ctrl].capital === t.id ? ' (capitale)' : '')) + (t.ctrl !== null ? ' · défense +' + FOF.defBonus(st, st.players[t.ctrl], t) : '') + '</div>');
     else h.push('<div class="sub">Zone de mer - on n’y combat pas.</div>');
-    if (t && t.blds.length) h.push('<div class="blds-now">' + t.blds.map(function (b) { return '<span class="bchip" style="--bc:' + color(b.o) + '">' + bIcon(b.t) + FOF.BUILDINGS[b.t].name + (b.o !== t.ctrl ? ' · ' + esc(st.players[b.o].name) : '') + '</span>'; }).join('') + '</div>');
+    if (t && t.blds.length) h.push('<div class="blds-now">' + t.blds.map(function (b) { return '<span class="bchip" style="--bc:' + color(b.o) + '">' + bIcon(b.t) + FOF.BUILDINGS[b.t].name + (b.fort ? ' fortifié (+2 déf.)' : '') + (b.o !== t.ctrl ? ' · ' + esc(st.players[b.o].name) : '') + '</span>'; }).join('') + '</div>');
 
     if (st.phase === 'build' && t) {
       if (t.ctrl === p.id) h.push(buildPanel(p, t));
@@ -815,6 +809,8 @@
     FOF.BUILDING_ORDER.forEach(function (b) {
       var e = FOF.canBuild(st, t.id, b), B = FOF.BUILDINGS[b];
       var ef = BLD_EFF[b] || ['', B.name];
+      // v1.9.25 - les ports d'Alinor donnent +2 en défense : la fiche le dit (créateur, 24/10/2026)
+      if (b === 'P' && p.leader === 'alienor') ef = ['+2 déf.', 'Port - +2 en défense (Alinor), et vos unités peuvent embarquer depuis cette case.'];
       h.push('<button class="bbtn" data-build="' + b + '" data-tid="' + t.id + '" ' + (e ? 'disabled title="' + esc(e) + '"' : 'title="' + esc(ef[1]) + '"') + '>' + bIconOr(b) + '<span>' + B.name + '</span><span class="price">' + FOF.bldCost(st, p, b) + '<span class="coin"></span></span><small>' + esc(ef[0]) + '</small></button>');
     });
     h.push('</div>');
@@ -1310,7 +1306,7 @@
   var GLOSS = [
     ['Case', 'Un territoire ou une zone de mer.'],
     ['Territoire', 'Une case de terre. Il en existe 4 types : plaines, forêts, montagnes, marécage.'],
-    ['Zone de mer', 'Une étendue d’eau. On ne s’y bat jamais, et il faut partir d’un port pour y entrer.'],
+    ['Zone de mer', 'Une étendue d’eau. On ne s’y bat jamais, et il faut partir d’un port pour y entrer (sauf le Corbeau messager).'],
     ['Neutre', 'Territoire sans maître. Votre dirigeant peut le prendre en le conquérant. Pour ce faire, il faut rester dessus un tour pour pouvoir le conquérir au prochain tour.'],
     ['Capitale', 'La case de départ de votre dirigeant : +3 en défense. La perdre, c’est perdre la partie.'],
     ['Dirigeant', 'Votre héros. Aucune solde ; il ajoute son bonus au combat sur sa case, et lui seul peut conquérir un territoire neutre.'],
@@ -1378,6 +1374,7 @@
       '<div class="section-title">Se déplacer</div>' +
       '<p>Cliquez sur un de vos pions pour le déplacer sur les cases atteignables en surbrillance. Le badge vert sur un pion indique les cases qu\'il lui reste. Un pion qui lance un assaut ne peut plus se déplacer.</p>' +
       '<p><b>Cases maritimes</b> - Pour <b>prendre la mer</b> il faut partir d\'un territoire qui porte un port - le vôtre ou celui d\'un autre joueur. Une fois en mer, vous pouvez débarquer sur toutes les côtes voisines de la zone, port ou pas.</p>' +
+      '<p><b>Unités côtières</b> - L\'Émissaire en nef, l\'Exploratrice et le Caboteur ne vont que sur les zones de mer et les territoires côtiers.</p>' +
 
       '<div class="section-title">Conquérir un territoire neutre</div>' +
       '<p>Lorsque vous conquérez un territoire, il devient vôtre et vous pouvez construire dessus dès la phase de construction qui suit. Seul votre <b>dirigeant</b> peut le faire, et il doit se trouver sur le territoire neutre <b>depuis votre tour précédent</b>. Le bouton « Conquérir » apparaît alors dans son menu.</p>' +
@@ -1396,14 +1393,15 @@
       '<li>' + bl('F') + ' · +3 en défense.</li>' +
       '<li>' + bl('P') + ' · +1 en défense et permet d\'embarquer.</li>' +
       '<li>' + bl('Ci') + ' · +1 or à chaque collecte.</li>' +
-      '<li>' + bl('T') + ' · compte pour la victoire religieuse. Le détruire coûte 1 de diplomatie supplémentaire à l\'assaillant.</li>' +
+      '<li>' + bl('T') + ' · compte pour la victoire religieuse. Le détruire coûte 1 de diplomatie supplémentaire à l\'assaillant. Un Maître d\'œuvre peut le fortifier (+2 en défense, une seule fois).</li>' +
       '<li>' + bl('A') + ' · dans votre capitale uniquement, une seule. Chaque gain de diplomatie obtenu par une action vous en rapporte <b>1 de plus</b>, sauf si le contraire est précisé sur l\'unité spéciale qui permet le gain.</li></ul>' +
       '<p>Vous pouvez aussi <b>remplacer</b> un de vos aménagements en payant le prix du nouveau, ou <b>transférer votre capitale</b> sur un de vos territoires pour 8 or - votre Ambassade est alors <b>détruite</b>.</p>' +
 
       '<div class="section-title">Diplomatie et tyrannie</div>' +
-      '<p>La diplomatie est à la fois une voie de victoire et la monnaie de la guerre.</p>' +
+      '<p>La diplomatie est à la fois une voie de victoire et la monnaie de la guerre. Chaque joueur commence la partie avec <b>3 or</b> et <b>2 de diplomatie</b>.</p>' +
       '<ul class="rules-l"><li>Vous en <b>perdez</b> 1 point par attaque, 1 par unité spéciale détruite, 2 de plus si vous rompez un pacte, 1 de plus pour dévaster et 1 de plus par temple rasé. Le Calomniateur adverse peut aussi vous en retirer 2.</li>' +
-      '<li>Vous en <b>gagnez</b> avec le Corbeau messager, l\'Émissaire, le Pèlerin, le Héraut et le Chroniqueur (1 par bataille gagnée).</li>' +
+      '<li>Vous en <b>gagnez</b> avec le Corbeau messager, les Émissaires (à cheval et en nef), le Pèlerin, le Héraut et le Chroniqueur (1 par bataille gagnée).</li>' +
+      '<li>Vous en gagnez aussi <b>1</b> quand un adversaire vous délivre un Corbeau messager ou un Émissaire, quand un Pèlerin visite votre temple, et quand un adversaire rompt le pacte qui vous liait. Si ce gain vous fait atteindre la victoire diplomatique, vous gagnez ; si le joueur actif l\'atteint en même temps, c\'est lui qui l\'emporte. Un Tyran ne gagne rien.</li>' +
       '<li>À <b>0</b>, un joueur qui attaque quand même devient <b>Tyran</b> : il ne gagne plus jamais de diplomatie, tout le monde peut l\'attaquer sans rien payer, et un de ses territoires se révolte à chaque tour.</li>' +
       '<li>Un territoire qui s’est soulevé contre un tyran ne peut plus être conquis par ce dernier tant qu’un autre joueur ne l\'a pas repris.</li></ul>' +
 

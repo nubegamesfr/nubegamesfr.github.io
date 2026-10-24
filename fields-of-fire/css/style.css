@@ -51,9 +51,9 @@ img { max-width: 100%; }
 .star { --sc: var(--star-gold); width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center; background: var(--sc); color: #fff; font-family: var(--f-card); font-weight: 700; font-size: 19.5px; text-shadow: 0 1px 0 rgba(0,0,0,.45);
   clip-path: polygon(50% 0, 63% 17%, 85% 15%, 83% 37%, 100% 50%, 83% 63%, 85% 85%, 63% 83%, 50% 100%, 37% 83%, 15% 85%, 17% 63%, 0 50%, 17% 37%, 15% 15%, 37% 17%); flex: none; }
 .star.hi { --sc: var(--star-red); } .star.lo { --sc: var(--star-blue); } .star.gold { color: #3a2a05; text-shadow: 0 1px 0 rgba(255,255,255,.35); }
-/* v1.9.24 - puissance des unités : du bleu (0) au rouge (6), par les violets */
-.star.v0 { --sc: #2f62d8; } .star.v1 { --sc: #4a4fcf; } .star.v2 { --sc: #6a40c2; } .star.v3 { --sc: #8b35b1; }
-.star.v4 { --sc: #aa2e98; } .star.v5 { --sc: #c52c6a; } .star.v6 { --sc: #d62a2a; }
+/* v1.9.25 - puissance des unités : bleu (0), jaune au milieu (3), rouge (6) (créateur, 24/10/2026) */
+.star.v0 { --sc: #2f62d8; } .star.v1 { --sc: #1f93b0; } .star.v2 { --sc: #5aa63a; } .star.v3 { --sc: #e6bb17; color: #3a2a05; text-shadow: 0 1px 0 rgba(255,255,255,.35); }
+.star.v4 { --sc: #e88a1c; } .star.v5 { --sc: #e05a1f; } .star.v6 { --sc: #d62a2a; }
 .arrow { display: inline-flex; align-items: center; justify-content: center; background: var(--arrow); color: #fff; font-weight: 800; font-size: 16px; height: 24px; min-width: 34px; padding: 0 12px 0 7px; clip-path: polygon(0 0, 72% 0, 100% 50%, 72% 100%, 0 100%, 18% 50%); flex: none; }
 .coins { display: inline-flex; gap: 2px; } .coins i { width: 12px; height: 12px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #ffc84a, #f09a0d); border: 1px solid #c77d06; display: inline-block; }
 .coin { width: 18px; height: 18px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #ffd35c, #ee950b); border: 1px solid #b97308; display: inline-block; flex: none; }
@@ -1636,3 +1636,33 @@ html[data-mapstyle="ancienne"] .legend .chip-P { background: #e6d8a0 !important;
 html[data-mapstyle="ancienne"] .legend .chip-F { background: #96ac6e !important; }
 html[data-mapstyle="ancienne"] .legend .chip-M { background: #c8baa4 !important; }
 html[data-mapstyle="ancienne"] .legend .chip-Ma { background: #9eb2a4 !important; }
+/* v1.9.25 : bouton « ? » et règles des mini-jeux */
+.mj-onglets { grid-template-columns: repeat(7, minmax(0, 1fr)) 30px; }
+.mj-aide-b { font-family: var(--f-display); font-size: 15px; font-weight: 700; }
+.mj-aide { display: grid; gap: 8px; padding: 6px 4px 4px; font-size: 13px; line-height: 1.45; color: var(--t-text, #f1e4c2); }
+.mj-aide p { margin: 0; }
+.mj-aide .btn { justify-self: start; }
+/* v1.9.25 : Solitaire (Klondike), à la place de la Réussite de la Cour */
+.rs-carte.rouge { color: #a3271d; } .rs-carte.noire { color: #1e1810; }
+.rs-carte.dos { background: #2a2119 url(../assets/cardback.jpg) center / cover; border-color: #6b5530; }
+.so-haut { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 3px; margin-bottom: 6px; }
+.so-haut .rs-pioche { width: 100%; }
+.so-haut .rs-pioche.vide { background: transparent; border-style: dashed; color: var(--t-dim, #c9bda2); text-shadow: none; }
+.so-place { aspect-ratio: 32 / 44; border-radius: 4px; }
+.so-place .rs-carte { width: 100%; cursor: pointer; }
+.so-fond { border: 1px dashed rgba(201,189,162,.45); display: grid; place-items: center; }
+.so-vide { opacity: .45; color: var(--t-dim, #c9bda2); }
+.so-cols { min-height: 150px; align-items: start; }
+.so-col { min-height: 60px; border-radius: 4px; }
+.so-col .rs-carte + .rs-carte { margin-top: -97.5%; }
+.so-col .rs-carte.dos + .rs-carte { margin-top: -119.5%; }
+.so-col .rs-carte.vue { cursor: pointer; }
+.so-col .rs-carte b { font-size: 10px; }
+.rs-carte.choisie { box-shadow: 0 0 0 2px #f1d488, 0 2px 6px rgba(0,0,0,.5); }
+.so-col.cible, .so-fond.cible { box-shadow: inset 0 0 0 2px var(--t-acc, #d6ae52); background: rgba(214,174,82,.12); }
+.so-col.cible .rs-carte:last-child { box-shadow: 0 0 0 2px var(--t-acc, #d6ae52); }
+.so-finir { cursor: pointer; border-radius: 6px; padding: 3px 10px; border: 1px solid var(--t-acc2, #c8413a); background: var(--t-acc, #b8463c); color: var(--t-on-acc, #fff); font: inherit; }
+/* v1.9.25 : bascule de langue FR / EN */
+.lang-btn { text-decoration: none; font-weight: 700; letter-spacing: .06em; font-size: 12.5px; }
+.setup-lang { position: absolute; top: 98px; right: 16px; z-index: 5; min-height: 32px; padding: 4px 12px; border-radius: 999px; background: var(--t-surf2, rgba(22,21,24,.85)); border: 1px solid var(--t-btn-line, var(--line)); }
+@media (max-width: 620px) { .setup-lang { top: auto; bottom: 14px; right: auto; left: 14px; } }

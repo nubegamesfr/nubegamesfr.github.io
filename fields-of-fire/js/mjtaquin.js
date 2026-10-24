@@ -6,10 +6,10 @@
   'use strict';
   var NIVEAUX = { ecuyer: { nom: 'Écuyer', n: 3 }, chevalier: { nom: 'Chevalier', n: 4 }, seigneur: { nom: 'Seigneur', n: 5 } };
   var T = 228;   // côté du plateau en pixels
-  FOF.Minijeux.enregistrer({ id: 'taquin', nom: 'Taquin', ic: 'taquin', creer: function (api) {
+  FOF.Minijeux.enregistrer({ id: 'taquin', nom: 'Taquin', regles: '<p>Une illustration est découpée en carreaux mélangés, et un carreau manque.</p><p>Cliquez un carreau sur la même ligne ou la même colonne que la case vide : il glisse vers elle, et les carreaux entre les deux suivent.</p><p>But : reconstituer l’image en un minimum de coups. Le mélange est toujours soluble.</p>', ic: 'taquin', creer: function (api) {
     var niveau = api.lire('taquin-niveau', 'ecuyer'); if (!NIVEAUX[niveau]) niveau = 'ecuyer';
     var n, cases, vide, coups, fini, art, nom, chrono = api.chrono();
-    function toutes() { return Object.keys(FOF.ELITES).concat(Object.keys(FOF.SPECIALS)).filter(function (k) { return FOF.unitArt(k); }); }
+    function toutes() { return FOF.cartesEnJeu().filter(function (k) { return FOF.unitArt(k); }); }
     function nouveau() {
       n = NIVEAUX[niveau].n; cases = []; for (var i = 0; i < n * n; i++) cases.push(i);   // la valeur n*n-1 est la case vide
       vide = n * n - 1; coups = 0; fini = false; chrono.remise();

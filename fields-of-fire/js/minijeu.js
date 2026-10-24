@@ -12,7 +12,7 @@
    le temps de la session ; seuls les records et le dernier jeu choisi vont dans le navigateur. */
 (function (FOF) {
   'use strict';
-  var defs = [], inst = {}, actif = null, root = null, visible = false, tic = null;
+  var defs = [], inst = {}, actif = null, root = null, visible = false, tic = null, aide = false;
   try { actif = localStorage.getItem('fof-mj-actif'); } catch (e) {}
 
   var api = {
@@ -55,30 +55,36 @@
     var onglets = '<div class="mj-onglets" role="tablist" aria-label="Mini-jeux">' + defs.map(function (d) {
       var on = d.id === actif;
       return '<button type="button" role="tab" class="mj-onglet' + (on ? ' on' : '') + '" aria-selected="' + on + '" data-mjtab="' + d.id + '" title="' + d.nom + '">' + FOF.ic(d.ic, 16) + '</button>';
-    }).join('') + '</div>';
-    root.innerHTML = onglets + '<div class="mj-zone" data-jeu="' + actif + '">' + j.html() + '</div>';
+    }).join('') + '<button type="button" class="mj-onglet mj-aide-b' + (aide ? ' on' : '') + '" data-mjaide="1" aria-pressed="' + aide + '" title="Règles du jeu">?</button></div>';
+    var d = defs.filter(function (x) { return x.id === actif; })[0];
+    // v1.9.25 : règles du jeu actif, à la place du plateau tant qu'elles sont ouvertes
+    root.innerHTML = onglets + (aide ? '<div class="mj-aide"><div class="mj-titre">' + d.nom + '</div>' + (d.regles || '') + '<button type="button" class="btn small primary" data-mjaide="1">Jouer</button></div>'
+      : '<div class="mj-zone" data-jeu="' + actif + '">' + j.html() + '</div>');
   }
   function majTemps() {
     var j = inst[actif]; if (!root || !j || !j.temps) return;
     var t = root.querySelector('.mj-temps b'); if (t) t.textContent = api.duree(j.temps());
   }
   function changer(id) {
-    if (id === actif) return;
+    if (id === actif && !aide) return;
+    aide = false;
     var j = inst[actif]; if (j && j.pause) j.pause();
     actif = id; try { localStorage.setItem('fof-mj-actif', id); } catch (e) {}
     j = courant(); if (j && j.reprise) j.reprise();
     rendre();
   }
   function passer(nom, e) {
-    var j = inst[actif]; if (!j || !j[nom]) return;
+    var j = inst[actif]; if (aide || !j || !j[nom]) return;
     if (j[nom](e)) rendre();
   }
   function brancher() {
     root.addEventListener('click', function (e) {
       var t = e.target.closest('[data-mjtab]'); if (t) { changer(t.dataset.mjtab); return; }
+      if (e.target.closest('[data-mjaide]')) { aide = !aide; var ja = inst[actif]; if (ja) { if (aide && ja.pause) ja.pause(); if (!aide && ja.reprise) ja.reprise(); } rendre(); return; }
+      if (aide) return;
       passer('clic', e);
     });
-    root.addEventListener('contextmenu', function (e) { var j = inst[actif]; if (j && j.clicDroit) { e.preventDefault(); if (j.clicDroit(e)) rendre(); } });
+    root.addEventListener('contextmenu', function (e) { var j = inst[actif]; if (!aide && j && j.clicDroit) { e.preventDefault(); if (j.clicDroit(e)) rendre(); } });
     root.addEventListener('change', function (e) { passer('change', e); });
     root.addEventListener('pointerdown', function (e) { passer('appui', e); });
     root.addEventListener('pointerup', function (e) { passer('relache', e); });
