@@ -87,17 +87,17 @@ Voir `js/music.js` pour les adresses exactes.
 - *Prepare Your Swords* - bojidar-bg (v1.9.19)
 
 
-## Sons de victoire (v1.9.24)
+## Sons de victoire (v1.9.25)
 
-Trois sons de 4,9 secondes, montés pour le jeu à partir d'enregistrements publiés sous licence
-**Creative Commons 0** (domaine public) sur Freesound. Aucune attribution n'est exigée ; les sources
-sont notées ici pour la traçabilité.
+Choisis par le créateur le 24/10/2026 sur Pixabay, sous la **licence de contenu Pixabay**
+(https://pixabay.com/service/license-summary/) : usage gratuit, y compris commercial, sans attribution
+obligatoire ; il est interdit de les revendre ou redistribuer seuls. Fichiers raccourcis d'un fondu final
+et ramenés à environ -16 LUFS.
 
-| Fichier | Sources (identifiant Freesound, auteur) |
+| Fichier | Source |
 |---|---|
-| `assets/sons/victoire-militaire.mp3` | 521831 et 521830 « Middle Ages War Cry » (joelcarrsound), 621352 « Male Yelling out a War Cry 3 » (WelvynZPorterSamples), 182112 « Shield / sword hits » (PixelsphereStudios), 376646 « Vikings in battle » (DeadVDI) |
-| `assets/sons/victoire-religieuse.mp3` | 869841 « CHOIR_Serbian_Orthodox_Ambience_9 » (SignatureSoundsOrg) |
-| `assets/sons/victoire-diplomatique.mp3` | 855457 « Real Trumpet Fanfare 1 » (qubodup) |
+| `assets/sons/victoire-militaire.mp3` | « Royal marines drums » (freesound_community), https://pixabay.com/sound-effects/musical-royal-marines-drums-37061/ |
+| `assets/sons/victoire-religieuse.mp3` | « Single Church Bell » (Universfield), https://pixabay.com/sound-effects/musical-single-church-bell-156463/ |
+| `assets/sons/victoire-diplomatique.mp3` | « Ancient Lyre Sound - Short Arpeggio » (Lesiakower), https://pixabay.com/sound-effects/musical-ancient-lyre-sound-short-arpeggio-sound-effect-430628/ |
 
-Montage : extraits, mixage, fondus, sonie ramenée à -15 LUFS. Choisis d'après leur titre, leur
-licence et leur spectrogramme : ils n'ont pas été écoutés avant la mise en ligne.
+Les sons de la v1.9.24 (enregistrements CC0 de Freesound) ne sont plus utilisés.

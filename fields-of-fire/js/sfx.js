@@ -144,7 +144,9 @@
   /* v1.9.24 - sons de victoire (créateur, 08/10/2026), 5 s au plus, enregistrements CC0 de Freesound
      montés pour le jeu (détail dans CREDITS.md) : militaire = cri de guerre et boucliers, religieuse =
      chœur, diplomatique = trompette. Ils remplacent l'ancien arpège de victoire / défaite. Volume : celui
-     des bruitages. */
+     des bruitages.
+     v1.9.25 - remplacés par trois sons Pixabay choisis par le créateur (24/10/2026), 2,5 à 5 s :
+     militaire = tambours, religieuse = cloche, diplomatique = lyre (détail dans CREDITS.md). */
   var VICT = { mil: 'victoire-militaire', rel: 'victoire-religieuse', dip: 'victoire-diplomatique' };
   FOF.sonVictoire = function (type) {
     var f = VICT[type]; if (!f || !on) return;
