@@ -43,7 +43,7 @@
     $('chatBtn').hidden = !net;
     if (!net) { $('chatPanel').hidden = true; if (chat.code) { chat.code = null; chat.msgs = []; chat.last = 0; } return; }
     if (chat.code !== net.code) { chat.code = net.code; chat.msgs = []; chat.last = 0; chat.unread = 0; renderChat(); }
-    FOF.sbReq('GET', 'chat_messages?room_code=eq.' + net.code + '&id=gt.' + chat.last + '&order=id.asc&limit=100&select=id,name,color,msg,cid').then(function (rows) {
+    FOF.chatList(net, chat.last).then(function (rows) {
       if (!rows || !rows.length) return;
       rows.forEach(function (r) { chat.last = Math.max(chat.last, r.id); chat.msgs.push(r); if (!chat.open && r.cid !== net.cid) chat.unread++; });
       if (chat.msgs.length > 200) chat.msgs = chat.msgs.slice(-200);
@@ -61,18 +61,17 @@
   function sendChat() {
     var net = chatRoom(), inp = $('chatInput'); if (!net || !inp) return;
     var msg = inp.value.trim().slice(0, 300); if (!msg) return;
-    var seat = net.row && net.row.seats ? net.row.seats[net.seatIndex()] : null;
     inp.value = '';
-    FOF.sbReq('POST', 'chat_messages', { room_code: net.code, cid: net.cid, name: seat ? seat.name : 'Joueur', color: seat ? seat.color : null, msg: msg }, 'return=minimal').then(chatTick, function (e) { inp.value = msg; alertLine('Message non envoyé : ' + e.message); });
+    FOF.chatSend(net, msg).then(chatTick, function (e) { inp.value = msg; alertLine('Message non envoyé : ' + e.message); });
   }
   function alertLine(t) { var l = $('chatList'); if (l) { l.insertAdjacentHTML('beforeend', '<div class="err">' + esc(t) + '</div>'); l.scrollTop = l.scrollHeight; } }
 
   document.addEventListener('DOMContentLoaded', function () {
     applyAnim();
     document.addEventListener('click', function (e) {
-      var t = e.target.closest && e.target.closest('#animBtn,#bugBtn,#chatBtn,[data-bugclose],[data-bugsend],[data-chatsend],[data-chatclose]'); if (!t) return;
+      var t = e.target.closest && e.target.closest('#animBtn,#bugBtn,#bugBtn2,#chatBtn,[data-bugclose],[data-bugsend],[data-chatsend],[data-chatclose]'); if (!t) return;
       if (t.id === 'animBtn') { FOF.animOn = !FOF.animOn; try { localStorage.setItem('fof-anim', FOF.animOn ? '1' : '0'); } catch (x) {} applyAnim(); if (FOF.rerender) FOF.rerender(); }
-      if (t.id === 'bugBtn') openBug();
+      if (t.id === 'bugBtn' || t.id === 'bugBtn2') openBug();   // v1.9.28 : bugBtn2 n'a plus d'onclick (CSP)
       if (t.dataset.bugclose) { $('bugModal').hidden = true; $('bugModal').innerHTML = ''; }
       if (t.dataset.bugsend) sendBug(t);
       if (t.id === 'chatBtn') { chat.open = !$('chatPanel').hidden ? false : true; $('chatPanel').hidden = !chat.open; if (chat.open) { chat.unread = 0; renderChat(); setTimeout(function () { $('chatInput').focus(); }, 30); } else renderChat(); }

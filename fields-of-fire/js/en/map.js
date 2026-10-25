@@ -304,10 +304,11 @@
     if (seas.some(function (z) { return !z.adjT.length; })) return null;
     /* v1.9.26 - lisibilité (créateur, 25/10/2026 : « une map comme ça ne devrait jamais passer les
        tests ») : une carte est refusée si elle a plus d'une mer pour deux territoires côtiers, plus
-       d'une mer qui ne borde qu'un territoire, ou plus de deux territoires qui donnent sur trois mers. */
+       ou plus de deux territoires qui donnent sur trois mers. */
     var cotiers = terr.filter(function (t) { return t.seas.length; }).length;
     if (nz > Math.ceil(cotiers / 2)) return null;
-    if (seas.filter(function (z) { return z.adjT.length < 2; }).length > 1) return null;
+    // v1.9.28 - chaque mer touche au moins deux territoires (créateur, 25/10/2026)
+    if (seas.some(function (z) { return z.adjT.length < 2; })) return null;
     if (terr.filter(function (t) { return t.seas.length > 2; }).length > 2) return null;
     // v1.9.9 - une mer sans rivage est désormais permise (pleine mer). En revanche, aucune ne doit
     // ouvrir sur plus de MAX_DEBARQUEMENTS territoires. On note le pire chiffre ici ; unePasse()

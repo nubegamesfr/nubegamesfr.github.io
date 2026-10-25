@@ -15,47 +15,76 @@
       });
   }
   FOF.sbReq = req;
+  // v1.9.28 - les salons et le tchat passent par des fonctions serveur (voir securite-1-fonctions.sql)
+  function rpc(fn, args) { return req('POST', 'rpc/' + fn, args); }
 
-  // identifiant de ce joueur (par onglet, pour pouvoir tester à plusieurs onglets)
-  FOF.clientId = function () {
-    var k = 'fof-cid', v = null;
-    try { v = sessionStorage.getItem(k); } catch (e) {}
-    if (!v) { v = Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4); try { sessionStorage.setItem(k, v); } catch (e) {} }
-    return v;
+  /* v1.9.28 - identité de ce joueur (par onglet, pour pouvoir tester à plusieurs onglets).
+     Le secret ne quitte l'onglet que vers les fonctions serveur ; les sièges du salon, lisibles par
+     tous les joueurs, n'en contiennent que l'empreinte (sha256, 32 caractères), calculée aussi par
+     le serveur. Lire un salon ne permet donc plus de jouer à la place de quelqu'un. */
+  function hex(buf) { return Array.prototype.map.call(new Uint8Array(buf), function (b) { return ('0' + b.toString(16)).slice(-2); }).join(''); }
+  function empreinte(sec) {
+    if (!window.crypto || !crypto.subtle) return Promise.reject(new Error('Ce navigateur ne permet pas le jeu en ligne (connexion non sécurisée ou navigateur trop ancien).'));
+    return crypto.subtle.digest('SHA-256', new TextEncoder().encode(sec)).then(function (h) { return hex(h).slice(0, 32); });
+  }
+  FOF.identity = function () {
+    var sec = null, cid = null;
+    try { sec = sessionStorage.getItem('fof-sec'); cid = sessionStorage.getItem('fof-cid'); } catch (e) {}
+    if (sec && cid) return Promise.resolve({ cid: cid, sec: sec });
+    var a = new Uint8Array(16); crypto.getRandomValues(a); sec = hex(a);
+    return empreinte(sec).then(function (c) {
+      try { sessionStorage.setItem('fof-sec', sec); sessionStorage.setItem('fof-cid', c); } catch (e) {}
+      return { cid: c, sec: sec };
+    });
   };
+
+  /* v1.9.28 - tout ce qui vient du serveur est revu avant affichage : un client modifié pourrait y
+     glisser du code HTML (noms, types de bâtiments, journal). Les textes du jeu ne contiennent
+     jamais ces caractères ; on les retire donc partout dans l'état et les sièges. */
+  var INTERDITS = /[<>"`]/g;
+  function nettoie(o) {
+    if (typeof o === 'string') return o.replace(INTERDITS, '');
+    if (Array.isArray(o)) { for (var i = 0; i < o.length; i++) o[i] = nettoie(o[i]); return o; }
+    if (o && typeof o === 'object') { for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) o[k] = nettoie(o[k]); return o; }
+    return o;
+  }
+  FOF.nettoie = nettoie;
+  function ligne(rows) { return rows && rows.length ? nettoie(rows[0]) : null; }
   function newCode() { var s = ''; for (var i = 0; i < 5; i++) s += ALPHA[Math.floor(Math.random() * ALPHA.length)]; return s; }
   FOF.normCode = function (c) { return String(c || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 5); };
 
   /* ---------- Salon ---------- */
-  function Room(code, cid) { this.code = code; this.cid = cid; this.row = null; this.timer = null; this.listeners = []; this.busy = false; }
+  function Room(code, id) { this.code = code; this.cid = id.cid; this.sec = id.sec; this.row = null; this.timer = null; this.listeners = []; this.busy = false; }
   Room.prototype.seatIndex = function () { var s = this.row ? this.row.seats : []; for (var i = 0; i < s.length; i++) if (s[i].cid === this.cid) return i; return -1; };
   Room.prototype.isHost = function () { return this.row && this.row.host_id === this.cid; };
   Room.prototype.on = function (fn) { this.listeners.push(fn); };
   Room.prototype.emit = function () { var self = this; this.listeners.forEach(function (f) { f(self.row); }); };
   Room.prototype.fetch = function () {
     var self = this;
-    return req('GET', 'rooms?code=eq.' + this.code + '&select=*').then(function (rows) {
-      if (!rows || !rows.length) throw new Error('Salon introuvable : ' + self.code);
-      self.row = rows[0]; return self.row;
+    return rpc('fof_room_get', { p_code: this.code }).then(function (rows) {
+      var r = ligne(rows); if (!r) throw new Error('Salon introuvable : ' + self.code);
+      self.row = r; return self.row;
     });
   };
   Room.prototype.poll = function () {
     var self = this;
     if (this.busy) return Promise.resolve();
     var v = this.row ? this.row.version : -1;
-    return req('GET', 'rooms?code=eq.' + this.code + '&version=gt.' + v + '&select=*').then(function (rows) {
-      if (rows && rows.length && (!self.row || rows[0].version > self.row.version)) { self.row = rows[0]; self.emit(); }
+    return rpc('fof_room_get', { p_code: this.code, p_after: v }).then(function (rows) {
+      var r = ligne(rows);
+      if (r && (!self.row || r.version > self.row.version)) { self.row = r; self.emit(); }
     }).catch(function () {});
   };
   Room.prototype.start = function (ms) { var self = this; this.stop(); this.timer = setInterval(function () { self.poll(); }, ms || 1500); };
   Room.prototype.stop = function () { if (this.timer) clearInterval(this.timer); this.timer = null; };
   // écriture optimiste : on n'écrit que si personne n'a modifié le salon entre-temps
   Room.prototype.cas = function (patch) {
-    var self = this, v = this.row.version, body = Object.assign({}, patch, { version: v + 1, updated_at: new Date().toISOString() });
+    var self = this, v = this.row.version;
     this.busy = true;
-    return req('PATCH', 'rooms?code=eq.' + this.code + '&version=eq.' + v, body, 'return=representation').then(function (rows) {
+    return rpc('fof_room_write', { p_code: this.code, p_sec: this.sec, p_version: v, p_patch: patch }).then(function (rows) {
       self.busy = false;
-      if (rows && rows.length) { self.row = rows[0]; return true; }
+      var r = ligne(rows);
+      if (r) { self.row = r; return true; }
       return false;
     }, function (e) { self.busy = false; throw e; });
   };
@@ -82,18 +111,21 @@
   };
 
   FOF.createRoom = function (name) {
-    var cid = FOF.clientId();
-    function attempt(n) {
-      var code = newCode();
-      var row = { code: code, host_id: cid, status: 'lobby', seats: [{ cid: cid, name: name, color: FOF.PLAYER_COLORS[0].id, leader: FOF.randomHumanLeader([]) }], version: 0 };
-      return req('POST', 'rooms', row, 'return=representation').then(function (rows) {
-        var r = new Room(code, cid); r.row = rows[0]; return r;
-      }, function (e) { if (e.status === 409 && n > 0) return attempt(n - 1); throw e; });
-    }
-    return attempt(5);
+    return FOF.identity().then(function (id) {
+      function attempt(n) {
+        var code = newCode();
+        var seat = { cid: id.cid, name: name, color: FOF.PLAYER_COLORS[0].id, leader: FOF.randomHumanLeader([]) };
+        return rpc('fof_room_create', { p_code: code, p_sec: id.sec, p_seat: seat }).then(function (rows) {
+          var r = new Room(code, id); r.row = ligne(rows); return r;
+        }, function (e) { if (e.status === 409 && n > 0) return attempt(n - 1); throw e; });
+      }
+      return attempt(5);
+    });
   };
   FOF.joinRoom = function (code, name) {
-    var r = new Room(FOF.normCode(code), FOF.clientId());
+    return FOF.identity().then(function (id) { return joindre(new Room(FOF.normCode(code), id), name); });
+  };
+  function joindre(r, name) {
     return r.fetch().then(function (row) {
       if (r.seatIndex() >= 0) return checkStale(r); // déjà assis (reconnexion)
       if (row.status !== 'lobby') throw new Error('La partie a déjà commencé.');
@@ -107,7 +139,7 @@
         return { seats: row.seats };
       }).then(function () { if (r.seatIndex() < 0) throw new Error('Impossible de rejoindre ce salon.'); return r; });
     });
-  };
+  }
   // v1.8 : toutes les parties commencées avant cette date sont retirées (remise à zéro du prototype).
   // Les salons restent dans la base, ils ne sont simplement plus jouables.
   FOF.PURGE_BEFORE = Date.parse('2026-09-23T16:47:30Z');
@@ -125,16 +157,21 @@
     FOF.statsAbandon(row.state);
     return r.cas({ status: 'closed' }).catch(function () {}).then(function () { throw new Error('Partie abandonnée : plus aucune action depuis 48 heures.'); });
   }
-  FOF.resumeRoom = function (code, cid) {
-    try { sessionStorage.setItem('fof-cid', cid); } catch (e) {}
-    var r = new Room(code, cid);
+  // sec absent : salon rejoint avec une version antérieure à la 1.9.28 (l'identifiant servait de secret)
+  FOF.resumeRoom = function (code, cid, sec) {
+    sec = sec || cid;
+    try { sessionStorage.setItem('fof-cid', cid); sessionStorage.setItem('fof-sec', sec); } catch (e) {}
+    var r = new Room(code, { cid: cid, sec: sec });
     return r.fetch().then(function () { if (r.seatIndex() < 0) throw new Error('Vous ne faites plus partie de ce salon.'); return checkStale(r); });
   };
   FOF.randomFreeLeader = function (used) {
     var free = Object.keys(FOF.LEADERS).filter(function (k) { return used.indexOf(k) < 0; });
     return free[Math.floor(Math.random() * free.length)];
   };
-  FOF.saveOnline = function (code, cid) { try { localStorage.setItem('fof-online', JSON.stringify({ code: code, cid: cid, at: Date.now() })); } catch (e) {} };
+  FOF.saveOnline = function (code, cid, sec) { try { localStorage.setItem('fof-online', JSON.stringify({ code: code, cid: cid, sec: sec, at: Date.now() })); } catch (e) {} };
+  // tchat (v1.9.28 : fonctions serveur ; le nom et la couleur sont repris du siège par le serveur)
+  FOF.chatList = function (r, after) { return rpc('fof_chat_list', { p_code: r.code, p_after: after }).then(function (rows) { return nettoie(rows || []); }); };
+  FOF.chatSend = function (r, msg) { return rpc('fof_chat_send', { p_code: r.code, p_sec: r.sec, p_msg: msg }); };
   FOF.loadOnline = function () { try { return JSON.parse(localStorage.getItem('fof-online')); } catch (e) { return null; } };
   FOF.clearOnline = function () { try { localStorage.removeItem('fof-online'); } catch (e) {} };
 })(window.FOF = window.FOF || {});

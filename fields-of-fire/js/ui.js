@@ -12,6 +12,9 @@
   var undoStack = [], NON_ANNULABLE = { attack: 1, buy: 1, discardZone: 1, spy: 1, spyDecide: 1, surrender: 1 };
   // taille retenue du plateau (voir renderBoard) : évite que la carte saute à chaque rendu
   var fitBox = null;
+  // v1.9.28 - téléphone : zoom de départ réglé une fois par partie, puis recentrage sur la capitale
+  var zoomAuto = false, centrer = false;
+  function telephone() { return window.matchMedia && window.matchMedia('(max-width: 620px)').matches; }
   var SAVE = 'fof-save-v1';
   var $ = function (id) { return document.getElementById(id); };
   var esc = FOF.esc;
@@ -45,9 +48,9 @@
 
   // net : salon en ligne (null = jeu local sur un seul écran)
   FOF.startUI = function (state, room) {
-    st = state; sel = null; mode = null; pop = null; err = ''; modal = null; lastTurnShown = 0; zoom = 1; marketOpen = true; fitBox = null; undoStack.length = 0; paused = false; document.body.classList.remove("paused");
+    st = state; sel = null; mode = null; pop = null; err = ''; modal = null; lastTurnShown = 0; zoom = 1; marketOpen = true; fitBox = null; zoomAuto = false; centrer = false; undoStack.length = 0; paused = false; document.body.classList.remove("paused");
     if (net) net.stop();
-    net = room || null; combatSig = sig(st.lastCombat);
+    net = room || null; combatSig = sig(st.lastCombat); exclu = false;
     if (!net) FOF.statsInit(st, 'local');
     $('setup').hidden = true; $('game').hidden = false;
     document.body.classList.toggle('online', !!net);
@@ -59,6 +62,8 @@
         // une écriture venue d'ailleurs (autre joueur, Espion) rend la pile d'annulation caduque
         try { if (JSON.stringify(row.state) !== JSON.stringify(st)) undoStack.length = 0; } catch (eU) { undoStack.length = 0; }
         st = row.state;
+        var moi = st.players[net.seatIndex()];
+        if (moi && moi.bot && !exclu) { exclu = true; modal = { kind: 'exclu' }; }
         if (!myTurn()) { mode = null; if (modal && modal.kind === 'attack') modal = null; }
         var s2 = sig(st.lastCombat);
         if (s2 !== combatSig) { combatSig = s2; if (st.lastCombat && !modal) modal = { kind: 'combat' }; }
@@ -68,6 +73,7 @@
     }
     render(); save();
   };
+  var exclu = false;   // v1.9.26 : ce joueur a été exclu par l'hôte (message montré une fois)
   var defSel = null;   // v1.9.19 : pièces sélectionnées dans la fenêtre de trésor à découvert
   function sig(c) { return c ? JSON.stringify([c.loc, c.att, c.def, c.rolls, c.n]) : ''; }
   function actor() { var pd = st.pending[0]; return pd ? pd.pid : st.cur; }
@@ -279,17 +285,20 @@
     return '<small class="rev">' + (n >= 0 ? '+' : '') + n + '/t</small>';
   }
   // FOF.procheVictoire est dans engine.js depuis la v1.9.25
+  function statsJoueur(p) {
+    var terr = FOF.terrOf(st, p.id).length, tem = FOF.countBld(st, p.id, 'T');
+    return '<span title="Or (revenu net par tour entre parenthèses)"><span class="coin" style="width:11px;height:11px;vertical-align:-1px"></span> <b>' + p.gold + '</b>' + revenuNet(p) + '</span>' +
+      '<span title="Diplomatie (victoire à ' + st.victory.dip + ')">' + dipIcon(13) + ' <b>' + (p.tyran ? '-' : p.dip + '/' + st.victory.dip) + '</b></span>' +
+      '<span title="Territoires"><img class="icn" src="assets/icons/terr.png" alt=""> <b>' + terr + '/' + st.victory.mil + '</b></span>' +
+      '<span title="Temples"><img class="icn" src="assets/icons/bld-T.png" alt=""> <b>' + tem + '/' + st.victory.rel + '</b></span>';
+  }
   function renderOpponents() {
     setHTML($('players'), '<div class="section-title">Dirigeants</div>' + st.players.map(function (p) {
-      var terr = FOF.terrOf(st, p.id).length, tem = FOF.countBld(st, p.id, 'T');
       var pills = (p.tyran ? '<span class="pill tyran">Tyran</span>' : '') + (p.pact !== null ? '<span class="pill pact">Pacte</span>' : '') + (!p.alive ? '<span class="pill">Éliminé</span>' : '');
       var busy = p.id === actor() && p.alive && !st.winner && !myTurn();
       return '<div class="opp ' + (p.id === st.cur ? 'active ' : '') + (busy ? 'thinking ' : '') + (!p.alive ? 'dead' : '') + (FOF.procheVictoire(st, p).length ? ' proche' : '') + '" data-heroinfo="' + p.id + '" title="Voir la fiche de ' + esc(FOF.LEADERS[p.leader].name) + '" style="--pc:' + color(p.id) + '">' + FOF.heroImg(p.leader) +
         '<div><div class="nm"><span>' + esc(p.name) + (p.bot ? ' <small title="Ordinateur" class="botmark">' + FOF.ic('helm', 13) + '</small>' : '') + '</span>' + pills + '</div><div class="ld">' + esc(FOF.LEADERS[p.leader].name) + '</div>' +
-        '<div class="st"><span title="Or (revenu net par tour entre parenthèses)"><span class="coin" style="width:11px;height:11px;vertical-align:-1px"></span> <b>' + p.gold + '</b>' + revenuNet(p) + '</span>' +
-        '<span title="Diplomatie (victoire à ' + st.victory.dip + ')">' + dipIcon(13) + ' <b>' + (p.tyran ? '-' : p.dip + '/' + st.victory.dip) + '</b></span>' +
-        '<span title="Territoires"><img class="icn" src="assets/icons/terr.png" alt=""> <b>' + terr + '/' + st.victory.mil + '</b></span>' +
-        '<span title="Temples"><img class="icn" src="assets/icons/bld-T.png" alt=""> <b>' + tem + '/' + st.victory.rel + '</b></span></div>' +
+        '<div class="st">' + statsJoueur(p) + '</div>' +
         espionBtn(p) +
         (busy ? '<div class="thinking-row">' + FOF.ic(p.bot ? 'helm' : 'crown', 13) + ' <span>' + (p.bot ? 'réfléchit' : PHASE_SHORT[st.phase]) + '</span><i class="d"></i><i class="d"></i><i class="d"></i></div>' : '') +
         '</div></div>';
@@ -320,9 +329,17 @@
     }
     var fit = Math.min(fitBox.w / b.w, fitBox.h / b.h);
     if (!(fit > 0)) fit = 1;
+    // v1.9.28 - téléphone en portrait : la carte, deux fois plus large que haute, ne prenait qu'une
+    // bande au milieu de l'écran. Au premier affichage, elle remplit la hauteur disponible et se
+    // centre sur la capitale du joueur ; le pincement ou « − » la montrent en entier.
+    if (!zoomAuto && telephone() && fitBox.w > 0) {
+      zoomAuto = true;
+      var zc = Math.min(2.6, (fitBox.h / b.h) / (fitBox.w / b.w));
+      if (zc > 1.15) { zoom = zc; centrer = true; }
+    }
     var sc = fit * zoom;
     wrap.style.width = Math.round(b.w * sc) + 'px'; wrap.style.height = Math.round(b.h * sc) + 'px';
-    wrap.style.marginTop = zoom === 1 ? Math.max(12, (fitBox.h - b.h * sc) / 2) + 'px' : '12px';
+    wrap.style.marginTop = Math.max(12, (fitBox.h - b.h * sc) / 2) + 'px';   // v1.9.28 : centrée aussi une fois zoomée, si elle reste moins haute que la place
     wrap.dataset.scale = sc;
     var picks = pickTargets();
     FOF.Board.overlay(st, $('ovCv'), { sel: sel, picks: picks }, color);
@@ -335,6 +352,13 @@
     setHTML($('tokens'), tokensSVG());
     renderPopover(sc);
     renderRadial(sc, b);
+    if (centrer) {
+      centrer = false;
+      var cap = st.players[moiPid()] && FOF.Board.anchor('t' + st.players[moiPid()].capital);
+      if (cap) { var wr = wrap.getBoundingClientRect(), brr = board.getBoundingClientRect();
+        board.scrollLeft = board.scrollLeft + wr.left - brr.left + (cap.x - b.x) * sc - board.clientWidth / 2;
+        board.scrollTop = board.scrollTop + wr.top - brr.top + (cap.y - b.y) * sc - board.clientHeight / 2; }
+    }
     var ban = banner();
     $('banner').hidden = !ban; if (ban) $('banner').innerHTML = '<span>' + ban + '</span>' + (mode ? '<button class="btn small" data-cancel="1">Annuler</button>' : '');
   }
@@ -872,6 +896,14 @@
   var fitKey = '', fitTier = '';
   function fitMarket(el) {
     var bd = $('board'); if (!bd) return;
+    // v1.9.28 - téléphone : le marché est un carrousel, chaque carte reste entière
+    if (telephone()) {
+      el.classList.remove('tight', 'tighter', 'row1'); fitKey = ''; fitTier = '';
+      // il recouvre exactement la zone de la carte, et défile s'il le faut sur les petits écrans
+      var rb = bd.getBoundingClientRect();
+      el.style.setProperty('--mk-top', Math.round(rb.top) + 'px'); el.style.setProperty('--mk-h', Math.round(rb.height) + 'px');
+      return;
+    }
     var key = bd.clientWidth + 'x' + bd.clientHeight + ':' + el.querySelectorAll('.ucard').length;
     if (key === fitKey) {                             // rien n'a bougé : on réapplique le palier connu
       var voulu = 'market' + (fitTier ? ' ' + fitTier : '');
@@ -1026,7 +1058,7 @@
         FOF.army(st, p.id).map(function (u) {
           var a = FOF.unitArt(u.key), n = defSel.c[u.uid] || 0, coins = '';
           for (var i = 0; i < u.gold; i++) coins += '<button type="button" class="dcoin' + (i < n ? ' on' : '') + '" data-dcoin="' + u.uid + '|' + i + '" aria-pressed="' + (i < n) + '" title="' + (i < n ? 'Laisser cette pièce' : 'Reprendre cette pièce') + '"></button>';
-          return '<div class="pc-row' + (n ? ' quitte' : '') + '" style="--pc:' + color(p.id) + '">' + (a ? '<img src="' + a + '" alt="">' : '') + '<div class="t"><b>' + esc(FOF.unitDef(u.key).name) + '</b><small>' + (n ? 'désertera' : 'solde ' + FOF.unitDef(u.key).upkeep) + '</small></div><div class="dcoins">' + (coins || '<small class="muted">aucune pièce</small>') + '</div></div>';
+          return '<div class="pc-row' + (n ? ' quitte' : '') + '" data-key="' + u.key + '" style="--pc:' + color(p.id) + '">' + (a ? '<img src="' + a + '" alt="">' : '') + '<div class="t"><b>' + esc(FOF.unitDef(u.key).name) + '</b><small>' + (n ? 'désertera' : 'solde ' + FOF.unitDef(u.key).upkeep) + '</small></div><div class="dcoins">' + (coins || '<small class="muted">aucune pièce</small>') + '</div></div>';
         }).join('') +
         '<p class="deficit-tot">Repris : <b class="num">' + prise + '</b> / ' + pd.left + ' or' + (errDef && prise ? ' · <span class="muted">' + esc(errDef) + '</span>' : '') + '</p>' +
         '<div class="actions"><button class="btn primary" data-defgo="1"' + (errDef ? ' disabled' : '') + '>Valider</button></div></div>';
@@ -1106,8 +1138,25 @@
     else if (modal && modal.kind === 'deck') h = deckHTML();
     else if (modal && modal.kind === 'hero') {
       var hp = modal.pid !== undefined && st.players[modal.pid] ? st.players[modal.pid] : st.players[moiPid()];
-      h = '<div class="modal"><h2 style="color:' + color(hp.id) + '">' + esc(hp.name) + '</h2>' + FOF.heroHTML(hp.leader) +
-        '<div class="actions"><button class="btn primary" data-close="1">Fermer</button></div></div>';
+      // v1.9.26 - en ligne, l'hôte peut exclure un autre joueur humain encore en vie
+      var exclurePossible = net && net.isHost() && hp.id !== net.seatIndex() && !hp.bot && hp.alive && !st.winner;
+      var hpPills = (hp.tyran ? '<span class="pill tyran">Tyran</span>' : '') + (hp.pact !== null ? '<span class="pill pact">Pacte avec ' + esc(st.players[hp.pact].name) + '</span>' : '') + (!hp.alive ? '<span class="pill">Éliminé</span>' : '');
+      var hpArmee = FOF.army(st, hp.id).length;
+      h = '<div class="modal hero-fiche"><h2 style="color:' + color(hp.id) + '">' + esc(hp.name) + '</h2>' +
+        '<div class="fiche-st st">' + statsJoueur(hp) + '<span title="Unités en jeu">' + FOF.ic('swords', 14) + ' <b>' + hpArmee + '</b></span>' + hpPills + '</div>' + FOF.heroHTML(hp.leader) +
+        '<div class="actions">' + (exclurePossible ? '<button class="btn danger" data-kick="' + hp.id + '">Exclure ce joueur</button>' : '') + '<button class="btn primary" data-close="1">Fermer</button></div></div>';
+    }
+    else if (modal && modal.kind === 'exclu') {
+      h = '<div class="modal"><h2>' + FOF.ic('flag', 22) + ' Vous avez été exclu</h2>' +
+        '<p>L’hôte vous a exclu de la partie : l’ordinateur joue à votre place. Vous pouvez continuer à la regarder.</p>' +
+        '<div class="actions"><button class="btn primary" data-close="1">Compris</button></div></div>';
+    }
+    else if (modal && modal.kind === 'kickc') {
+      var kp = st.players[modal.pid];
+      h = '<div class="modal"><h2>' + FOF.ic('flag', 22) + ' Exclure ' + esc(kp.name) + ' ?</h2>' +
+        '<p>L’ordinateur jouera à sa place jusqu’à la fin de la partie. ' + esc(kp.name) + ' pourra encore la regarder, mais plus y jouer.</p>' +
+        '<p class="warn-line">L’exclusion est irréversible.</p>' +
+        '<div class="actions"><button class="btn" data-close="1">Annuler</button><button class="btn danger" data-kickgo="' + kp.id + '">Exclure</button></div></div>';
     }
     else if (modal && modal.kind === 'pause') {
       h = '<div class="modal pause-m"><h2>' + FOF.ic('pause', 22) + ' Partie en pause</h2>' +
@@ -1416,13 +1465,15 @@
     if (!st) return;
     if (radial && !e.target.closest('#radial')) radial = null;
     if (e.target.closest('#boardWrap') && !e.target.closest('#popover') && !e.target.closest('#radial')) { if (!dragMoved) boardClick(e); return; }
-    var el = e.target.closest('[data-capitalgo],[data-replacego],[data-setstyle],[data-setspeed],[data-setanim],[data-pause],[data-resume],[data-surrender],[data-endstats],[data-closestats],[data-closeradial],[data-rpick],[data-rpop],[data-act],[data-buy],[data-discard],[data-move],[data-conquer],[data-pacify],[data-effect],[data-build],[data-replace],[data-capital],[data-cede],[data-attack],[data-close],[data-resolve],[data-dcoin],[data-defgo],[data-tsel],[data-go],[data-next],[data-closepop],[data-cancel],[data-mini],[data-hidemarket],[data-showmarket],[data-heroinfo],[data-collectgo],[data-undo],[data-release],[data-killgo],[data-stack],[data-backphase],[data-spy],[data-spyview],[data-spydecide],[data-reroll],[data-yusuf],[data-yusufgo],[data-closeproche]');
+    var el = e.target.closest('[data-capitalgo],[data-replacego],[data-setstyle],[data-setspeed],[data-setanim],[data-pause],[data-resume],[data-surrender],[data-endstats],[data-closestats],[data-closeradial],[data-rpick],[data-rpop],[data-act],[data-buy],[data-discard],[data-move],[data-conquer],[data-pacify],[data-effect],[data-build],[data-replace],[data-capital],[data-cede],[data-attack],[data-close],[data-resolve],[data-dcoin],[data-defgo],[data-tsel],[data-go],[data-next],[data-closepop],[data-cancel],[data-mini],[data-hidemarket],[data-showmarket],[data-heroinfo],[data-collectgo],[data-undo],[data-release],[data-killgo],[data-stack],[data-backphase],[data-spy],[data-spyview],[data-spydecide],[data-reroll],[data-yusuf],[data-yusufgo],[data-closeproche],[data-kick],[data-kickgo]');
     if (!el) return;
     var ds = el.dataset, p = FOF.cur(st);
     if (ds.closeproche) { if (procheT) { clearTimeout(procheT); procheT = null; } modal = null; return render(); }
     if (ds.reroll) { var frR = st.lastCombat && combatFrames(st.lastCombat)[modal && modal.f || 0]; if (frR && frR.wait && peutCliquer(frR.wait.pid)) relancer(); return; }
     var VIEW = ds.undo || ds.release || ds.stack || ds.capital || ds.capitalgo || ds.setstyle !== undefined || ds.setspeed !== undefined || ds.setanim !== undefined || ds.pause || ds.resume || ds.surrender || ds.closeradial || ds.closepop || ds.cancel || ds.hidemarket || ds.showmarket || ds.close || ds.heroinfo || ds.endstats || ds.closestats || ds.act === 'newgame';
     if (FOF.sfx) FOF.sfx(clickSound(ds));
+    if (ds.kick !== undefined) { modal = { kind: 'kickc', pid: +ds.kick }; return render(); }
+    if (ds.kickgo !== undefined) { modal = null; if (net && net.isHost()) espionEnLigne({ type: 'exclure', pid: +ds.kickgo }); return render(); }
     if (ds.surrender) {
       var sid = net ? net.seatIndex() : st.cur;
       modal = null;
@@ -1543,6 +1594,14 @@
     function setLog(o) { g.classList.toggle('no-right', !o); lb.setAttribute('aria-pressed', String(o)); try { localStorage.setItem('fof-log2', o ? '1' : '0'); } catch (e) {} if (st) render(); }
     setLog(open);
     lb.addEventListener('click', function () { setLog(g.classList.contains('no-right')); });
+    // v1.9.28 - téléphone : les commandes de l'en-tête sont rangées derrière un bouton de menu
+    var bar = document.querySelector('#game header.bar'), mb = $('menuBtn');
+    function setMenu(o) { bar.classList.toggle('menu-open', o); mb.setAttribute('aria-expanded', String(o)); }
+    if (mb) mb.addEventListener('click', function (e) { e.stopPropagation(); setMenu(!bar.classList.contains('menu-open')); });
+    document.addEventListener('click', function (e) {
+      if (mb && bar.classList.contains('menu-open') && !mb.contains(e.target)) setMenu(false);
+      if (e.target.closest && e.target.closest('[data-closelog]')) setLog(false);
+    });
     $('helpBtn').addEventListener('click', function () { if (!st) return; modal = { kind: 'help' }; render(); });
     $('pauseBtn').addEventListener('click', function () { if (!st || st.winner || net) return; setPause(!paused); });
     $('flagBtn').addEventListener('click', function () { if (!st || st.winner) return; modal = { kind: 'surrender' }; render(); });

@@ -45,19 +45,20 @@
         var h = '<div class="mj-tete"><div class="mj-titre">Blasons</div><select class="mj-niveau bl-choix" aria-label="Grille">' +
           GRILLES.map(function (x, k) { var ok = faits.indexOf(k) >= 0; return '<option value="' + k + '"' + (k === num ? ' selected' : '') + '>' + (k + 1) + '. ' + (ok ? x.nom + ' ✓' : 'Blason ' + x.n + '×' + x.n) + '</option>'; }).join('') + '</select></div>';
         h += '<div class="mj-barre"><span class="mj-temps" title="Temps">' + FOF.ic('hourglass', 13) + ' <b>' + api.duree(chrono.ms()) + '</b></span><span title="Grilles résolues">' + FOF.ic('check', 13) + ' <b>' + faits.length + '/' + GRILLES.length + '</b></span>' +
-          '<button type="button" class="mj-mode' + (croix ? ' on' : '') + '" aria-pressed="' + croix + '" title="Mode croix : un clic marque une case vide">' + FOF.ic('close', 13) + '</button>' +
+          '<button type="button" class="mj-mode' + (croix ? ' on' : '') + '" aria-pressed="' + croix + '" title="Mode croix : un clic marque une case vide">' + FOF.ic('close', 13) + ' <span>Croix</span></button>' +
           '<button type="button" class="mj-neuf" title="Effacer la grille">' + FOF.ic('restart', 13) + '</button></div>';
-        h += '<div class="bl-jeu' + (fini ? ' fini' : '') + '" style="--n:' + n + ';--lc:' + maxL + ';--cc:' + maxC + '"><div class="bl-coin">' + (fini ? '<img src="assets/icons/' + P.src + '.png" alt="">' : '') + '</div><div class="bl-cols">';
-        colonnes.forEach(function (cl, c) { h += '<div class="bl-ci' + (colonneOk(c) ? ' ok' : '') + '">' + cl.map(function (x) { return '<i>' + x + '</i>'; }).join('') + '</div>'; });
-        h += '</div><div class="bl-lignes">';
-        lignes.forEach(function (cl, r) { h += '<div class="bl-li' + (ligneOk(r) ? ' ok' : '') + '">' + cl.map(function (x) { return '<i>' + x + '</i>'; }).join('') + '</div>'; });
-        h += '</div><div class="bl-grille">';
-        g.forEach(function (v, i) {
-          var x = i % n, y = Math.floor(i / n);
-          h += '<button type="button" class="bl-c' + (v === 1 ? ' plein' : v === 2 ? ' croix' : '') + (x % 5 === 4 && x < n - 1 ? ' bd' : '') + (y % 5 === 4 && y < n - 1 ? ' bb' : '') + '" data-bl="' + i + '" aria-label="case ' + (y + 1) + ', ' + (x + 1) + '"></button>';
-        });
-        h += '</div></div><div class="mj-pied">' + (fini ? '<b>' + P.nom + '</b>, en ' + api.duree(chrono.ms()) + '.' + (fini.record ? ' Record.' : '') + ' <button type="button" class="mj-neuf mj-suivant">Suivant</button>'
-          : 'Clic : noircir (glisser pour peindre). Clic droit : croix.') + '</div>';
+        // v1.9.28 : une seule grille CSS pour les indices et les cases, pour que chaque chiffre tombe en face de sa ligne
+        h += '<div class="bl-jeu' + (fini ? ' fini' : '') + '" style="--n:' + n + '"><div class="bl-coin">' + (fini ? '<img src="assets/icons/' + P.src + '.png" alt="">' : '') + '</div>';
+        colonnes.forEach(function (cl, c) { h += '<div class="bl-ci' + (colonneOk(c) ? ' ok' : '') + (c % 2 ? ' imp' : '') + (c % 5 === 4 && c < n - 1 ? ' bd' : '') + '" data-blc="' + c + '">' + cl.map(function (x) { return '<span' + (x ? '' : ' class="z"') + '>' + x + '</span>'; }).join('') + '</div>'; });
+        for (var r = 0; r < n; r++) {
+          h += '<div class="bl-li' + (ligneOk(r) ? ' ok' : '') + (r % 2 ? ' imp' : '') + (r % 5 === 4 && r < n - 1 ? ' bb' : '') + '" data-bll="' + r + '">' + lignes[r].map(function (x) { return '<span' + (x ? '' : ' class="z"') + '>' + x + '</span>'; }).join('') + '</div>';
+          for (var x = 0; x < n; x++) {
+            var i = r * n + x, v = g[i];
+            h += '<button type="button" class="bl-c' + (v === 1 ? ' plein' : v === 2 ? ' croix' : '') + (x % 5 === 4 && x < n - 1 ? ' bd' : '') + (r % 5 === 4 && r < n - 1 ? ' bb' : '') + '" data-bl="' + i + '" aria-label="case ' + (r + 1) + ', ' + (x + 1) + '"></button>';
+          }
+        }
+        h += '</div><div class="mj-pied">' + (fini ? '<b>' + P.nom + '</b>, en ' + api.duree(chrono.ms()) + '.' + (fini.record ? ' Record.' : '') + ' <button type="button" class="mj-neuf mj-suivant">Suivant</button>'
+          : (croix ? 'Mode croix : chaque appui marque une case vide.' : 'Appui : noircir (glisser pour peindre). Clic droit ou « Croix » : case vide.')) + '</div>';
         return h;
       },
       appui: function (e) {
@@ -66,7 +67,15 @@
         peinture = { v: g[i] === mode ? 0 : mode };
         return peindre(i, peinture.v);
       },
-      survol: function (e) { if (!peinture || !(e.buttons & 3)) { peinture = null; return false; } var b = e.target.closest('[data-bl]'); return b ? peindre(+b.dataset.bl, peinture.v) : false; },
+      survol: function (e) {
+        var b = e.target.closest('[data-bl]'), jeu = e.target.closest('.bl-jeu');
+        if (jeu) {
+          jeu.querySelectorAll('.vise').forEach(function (v) { v.classList.remove('vise'); });
+          if (b) { var n = GRILLES[num].n, k = +b.dataset.bl, a = jeu.querySelector('[data-bll="' + Math.floor(k / n) + '"]'), c = jeu.querySelector('[data-blc="' + (k % n) + '"]'); if (a) a.classList.add('vise'); if (c) c.classList.add('vise'); }
+        }
+        if (!peinture || !(e.buttons & 3)) { peinture = null; return false; }
+        return b ? peindre(+b.dataset.bl, peinture.v) : false;
+      },
       relache: function () { peinture = null; return false; },
       clicDroit: function () { return false; },
       clic: function (e) {

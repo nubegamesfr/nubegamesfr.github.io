@@ -11,6 +11,8 @@
 <link rel="canonical" href="https://nubegames.fr/en/">
 <link rel="alternate" hreflang="fr" href="https://nubegames.fr/">
 <link rel="alternate" hreflang="en" href="https://nubegames.fr/en/">
+<link rel="alternate" hreflang="x-default" href="https://nubegames.fr/en/">
+<script src="/js/lang.js?v=1" data-alt="/"></script>
 
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Nube Games">
@@ -33,7 +35,7 @@
 <link rel="preload" href="../assets/fonts/manrope.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" as="image" href="/assets/images/fof-couronne.webp" fetchpriority="high">
 <link rel="preload" as="image" href="/assets/images/fof-cover.webp" imagesrcset="/assets/images/fof-cover-960.webp 960w, /assets/images/fof-cover.webp 1920w" imagesizes="100vw" fetchpriority="high">
-<link rel="stylesheet" href="../css/style.css?v=3.2">
+<link rel="stylesheet" href="../css/style.css?v=3.4">
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
@@ -51,8 +53,8 @@
     <a href="#play">Play</a>
   </nav>
   <div class="nav-end">
-    <a class="lang" href="/" hreflang="fr" lang="fr">FR</a>
-    <a class="btn btn-sm" href="/fields-of-fire/">Play</a>
+    <a class="lang" href="/" hreflang="fr" lang="fr" data-lang="fr" title="Français" aria-label="Français"><svg class="flag" viewBox="0 0 3 2" width="24" height="16" aria-hidden="true" focusable="false"><rect width="1" height="2" fill="#002654"/><rect x="1" width="1" height="2" fill="#fff"/><rect x="2" width="1" height="2" fill="#ce1126"/></svg></a>
+    <a class="btn btn-sm" href="/fields-of-fire/en/">Play</a>
   </div>
 </header>
 
@@ -72,7 +74,7 @@
     <div class="jeu-filet" aria-hidden="true"></div>
     <p class="jeu-accroche">The sword, the faith or diplomacy. Three ways to win, one game to choose.</p>
     <div class="jeu-cta">
-      <a class="btn" href="/fields-of-fire/">Play for free</a>
+      <a class="btn" href="/fields-of-fire/en/">Play for free</a>
       <a class="btn btn-ghost" href="#the-game">See the game</a>
     </div>
   </div>
@@ -88,13 +90,13 @@
       <div class="fait"><b>3 to 6</b><span>players</span></div>
       <div class="fait"><b>7</b><span>territories per player on the map</span></div>
       <div class="fait"><b>10</b><span>lords with distinct powers</span></div>
-      <div class="fait"><b>95</b><span>unit cards in the deck</span></div>
+      <div class="fait"><b>94</b><span>unit cards in the deck</span></div>
       <div class="fait"><b>Free</b><span>and no sign-up</span></div>
     </div>
 
     <figure class="fig reveal" style="margin-top:clamp(34px,4.4vw,60px)">
-      <img src="../assets/images/fof-partie.webp" srcset="../assets/images/fof-partie-800.webp 800w, ../assets/images/fof-partie.webp 1600w" sizes="(max-width: 1260px) 92vw, 1200px" width="1600" height="950" loading="lazy" decoding="async"
-           alt="A four-player game of Fields of Fire: the archipelago map in the centre, the lords on the left, the five-card recruitment row below.">
+      <img src="../assets/images/fof-partie-en.webp" srcset="../assets/images/fof-partie-en-800.webp 800w, ../assets/images/fof-partie-en.webp 1600w" sizes="(max-width: 1260px) 92vw, 1200px" width="1600" height="950" loading="lazy" decoding="async"
+           alt="A four-player game of Fields of Fire: the archipelago map in the centre, the lords on the left, the five-card market in the centre.">
     </figure>
     <p class="fig-cap">A four-lord game, running in the browser.</p>
   </div>
@@ -137,7 +139,7 @@
       <div class="etape"><b>Collect</b><p>1 gold per territory, 1 more per city, minus your units’ pay. The breakdown is shown line by line.</p></div>
       <div class="etape"><b>Recruit</b><p>Five cards sit face up. You may buy one and discard one, in whichever order you like.</p></div>
       <div class="etape"><b>Military</b><p>Move your pieces, claim a neutral territory, or attack - at the price of one diplomacy point.</p></div>
-      <div class="etape"><b>Build</b><p>Camp, fort, port, city, temple, embassy. Two buildings per tile, and as many builds as your gold allows.</p></div>
+      <div class="etape"><b>Build</b><p>Camp, fort, port, city, temple, embassy. Three slots on your capital, two on other territories, and the same building only once per territory, except camps.</p></div>
     </div>
   </div>
 </section>
@@ -147,10 +149,11 @@
     <div class="sec-head">
       <h2 id="t-map">A different archipelago every game</h2>
       <p class="lead">The map is drawn anew for each game: seven territories per player, four terrains - plains, forest, mountains, marsh - and sea zones parting the continents. Terrain matters: every elite unit has a different strength depending on where it fights.</p>
+      <p class="lead">A random map holds one or two more islands than there are players, and capitals always stand at least three spaces apart. The historical map covers the English Channel.</p>
     </div>
     <div class="duo">
       <figure class="fig">
-        <img src="../assets/images/fof-carte.webp" width="1200" height="830" loading="lazy" decoding="async"
+        <img src="../assets/images/fof-carte-en.webp" width="1200" height="830" loading="lazy" decoding="async"
              alt="The archipelago map in the military phase: one token per player per space, and on hover, the cards of the units standing there.">
       </figure>
       <div>
@@ -162,12 +165,12 @@
 
     <div class="styles" style="margin-top:clamp(30px,4vw,54px)">
       <figure class="style-fig">
-        <img src="../assets/images/fof-carte-enluminure.webp" width="1300" height="630" loading="lazy" decoding="async"
+        <img src="../assets/images/fof-carte-enluminure-en.webp" width="1300" height="630" loading="lazy" decoding="async"
              alt="The game map in the Illumination style: deep lapis sea, jewel-toned lands, a gold rule around the board.">
         <figcaption><b>Illumination</b> - lapis sea, gold rule, manuscript tones. The default look.</figcaption>
       </figure>
       <figure class="style-fig">
-        <img src="../assets/images/fof-carte-ancienne.webp" width="1300" height="630" loading="lazy" decoding="async"
+        <img src="../assets/images/fof-carte-ancienne-en.webp" width="1300" height="630" loading="lazy" decoding="async"
              alt="The same map in the Old map style: watercolour terrains, ink motifs, grey-blue sea.">
         <figcaption><b>Old map</b> - watercolour and ink. Switchable in the settings.</figcaption>
       </figure>
@@ -179,10 +182,10 @@
   <div class="wrap">
     <div class="sec-head">
       <h2 id="t-units">You don’t recruit what you want, you recruit what turns up</h2>
-      <p class="lead">Five cards face up, one buy and one discard per turn. Elite units fight - their strength shifts with the terrain. Special units never fight: they convert a temple, carry word to a foreign court, scout the map or shore up a defence. Every card requires a building before it can be recruited, and draws pay at each collection.</p>
+      <p class="lead">Five cards face up, one buy and one discard per turn. Elite units fight - their strength shifts with the terrain. Special units never fight: they convert a temple, carry word to a foreign court, scout the map or shore up a defence. Every card requires a building before it can be recruited, and costs pay at each collection.</p>
     </div>
     <figure class="fig reveal">
-      <img src="../assets/images/fof-cartes.webp" width="1200" height="400" loading="lazy" decoding="async"
+      <img src="../assets/images/fof-cartes-en.webp" width="1200" height="308" loading="lazy" decoding="async"
            alt="Five unit cards with artwork, strength per terrain, pay, recruitment requirement and number of copies in the deck.">
     </figure>
     <p class="fig-cap">A few cards from the deck. The number in the top corner is how many copies it holds.</p>
@@ -214,7 +217,7 @@
   <div class="wrap split">
     <div class="sec-head">
       <h2 id="t-tyr">A reputation you spend</h2>
-      <p class="lead">Diplomacy is not only a road to victory, it is the currency of war. Every attack costs a point, including retaking land that was taken from you. An envoy sent to a foreign capital earns one; a slanderer can make a rival lose some.</p>
+      <p class="lead">Diplomacy is not only a road to victory, it is the currency of war. Every attack costs a point, and one more for each special unit destroyed. An envoy sent to a foreign capital earns its master two, and one for the player who receives it. An ambassador posted with a rival seals a non-aggression pact, and breaking it costs dearly. A slanderer makes its target lose diplomacy.</p>
     </div>
     <ol class="chute">
       <li><h3>Down to zero</h3><p>Out of diplomacy, a player who still wants to attack must become a <b>Tyrant</b>. They gain the right to strike without counting the cost.</p></li>
@@ -238,7 +241,7 @@
           <li>Everyone takes a lord and a colour.</li>
           <li>Empty seats are played by bots.</li>
         </ol>
-        <a class="btn" href="/fields-of-fire/">Start a local game</a>
+        <a class="btn" href="/fields-of-fire/en/">Start a local game</a>
       </article>
       <article class="jouer-carte">
         <h3>Everyone at home</h3>
@@ -246,11 +249,12 @@
           <li>Create a room: you get a five-character code.</li>
           <li>Share the code or the link; your friends join from their own computer.</li>
           <li>Everyone marks ready, the host starts the game.</li>
+          <li>If someone drops out, the host can remove them: the computer takes their seat.</li>
         </ol>
-        <a class="btn btn-ghost" href="/fields-of-fire/">Create a room</a>
+        <a class="btn btn-ghost" href="/fields-of-fire/en/">Create a room</a>
       </article>
     </div>
-    <p class="tiny" style="margin-top:20px">A game set aside can be paused for 48 hours, then resumed with the same code.</p>
+    <p class="tiny" style="margin-top:20px">A game set aside can be paused for 48 hours, then resumed with the same code. The game is available in English and French, and seven mini-games (Solitaire, Minesweeper, sliding puzzle…) fill the wait during other players’ turns.</p>
   </div>
 </section>
 
@@ -280,14 +284,14 @@
       </div>
       <div class="champ">
         <label for="f-msg">Message (optional)</label>
-        <textarea id="f-msg" name="message"></textarea>
+        <textarea id="f-msg" name="message" maxlength="3000"></textarea>
       </div>
       <input class="hp" type="text" name="_honey" tabindex="-1" autocomplete="off" aria-hidden="true">
       <div>
         <button class="btn" type="submit">Send</button>
       </div>
       <p class="form-msg" id="form-msg" role="status" aria-live="polite"></p>
-      <p class="form-note">Your details are used only to reply to you. No tracking, no resale. See our <a href="/confidentialite.html" hreflang="fr" lang="fr">privacy policy</a> (in French).</p>
+      <p class="form-note">Your details are used only to reply to you. No tracking, no resale. See our <a href="/en/privacy.html">privacy policy</a>.</p>
     </form>
   </div>
 </section>
@@ -299,17 +303,17 @@
     <div class="pied-haut">
       <img class="pied-logo" src="../assets/images/nube-games-logo-light.svg" alt="Nube Games" width="120" height="122" loading="lazy">
       <nav class="pied-liens" aria-label="Footer">
-        <a href="/fields-of-fire/">Play</a>
+        <a href="/fields-of-fire/en/">Play</a>
         <a href="#playtests">Playtests</a>
         <a href="#contact">Contact</a>
-        <a href="/" hreflang="fr" lang="fr">Français</a>
-              <a href="/mentions-legales.html" hreflang="fr" lang="fr">Legal notice</a>
-        <a href="/confidentialite.html" hreflang="fr" lang="fr">Privacy</a>
-        <a href="/conditions.html" hreflang="fr" lang="fr">Terms</a>
+        <a href="/" hreflang="fr" lang="fr" data-lang="fr">Français</a>
+        <a href="/en/legal-notice.html">Legal notice</a>
+        <a href="/en/privacy.html">Privacy</a>
+        <a href="/en/terms.html">Terms</a>
       </nav>
     </div>
     <p>© 2026 Nube Games · Independent board games</p>
-    <small>The illustrations, portraits and icons of Fields of Fire belong to Nube Games. In-game music: public-domain (CC0) tracks from OpenGameArt, listed in the CREDITS file.</small>
+    <small>The illustrations, portraits and icons of Fields of Fire belong to Nube Games. In-game music: public-domain (CC0) tracks from OpenGameArt. Victory sounds: Pixabay, under the Pixabay Content License. Full list in the CREDITS file.</small>
   </div>
 </footer>
 

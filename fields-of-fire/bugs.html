@@ -61,7 +61,7 @@
           { headers: { apikey: C.supabaseKey } })
       .then(function (r) {
         if (r.status === 401 || r.status === 403)
-          throw new Error('lecture refusée par la base. Il faut autoriser la lecture de la table bug_reports (policy SELECT) dans Supabase, ou consulter la table depuis le tableau de bord.');
+          throw new Error('lecture refusée par la base, et c’est voulu : les signalements contiennent des adresses de contact. Consultez la table bug_reports dans le tableau de bord Supabase (Table Editor). N’ouvrez pas sa lecture au public.');
         if (!r.ok) throw new Error('erreur ' + r.status);
         return r.json();
       })

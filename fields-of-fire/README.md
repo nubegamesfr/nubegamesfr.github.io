@@ -1,12 +1,24 @@
-# Fields of Fire - version web (beta 1.9.26, prototype)
+# Fields of Fire - version web (beta 1.9.28, prototype)
 
 Jeu 100 % statique (HTML/CSS/JS, sans build). Servi par GitHub Pages sur https://nubegames.fr/fields-of-fire/ (dossier `fields-of-fire/` du repo `nubegamesfr.github.io`).
+
+## v1.9.28 - chaque mer touche deux territoires (25/10/2026)
+
+Cartes aléatoires : une mer qui ne borde qu’un seul territoire fait rejeter la carte (règle du créateur du 25/10/2026). Avant, une seule était tolérée. Mesuré sur 160 cartes : aucune mer à un seul rivage, temps de génération inchangé, nombre de continents inchangé. La carte historique de la Manche n’est pas concernée.
+
+Téléphone (sous 620 px) : mise en page en colonne à hauteur d’écran (bloc « v1.9.28 : téléphone façon application » à la fin de css/style.css). Commandes de l’en-tête dans un menu (#menuBtn), pastilles de joueurs qui ouvrent la fiche, carte zoomée au départ et centrée sur la capitale (ui.js, zoomAuto), marché en carrousel posé sur la zone de la carte (fitMarket), chronique en panneau (bouton .sheet-x). Didacticiel revu (étape « Traverser la mer »). Correctifs du fil sécurité intégrés (appliquer-securite.py) : l’étape SQL 1 doit être passée avant la mise en ligne.
+
+## v1.9.27 - anglais par défaut, drapeaux (25/10/2026)
+- Langue : sans choix enregistré (`fof-lang` ou `ng-lang`), la page française renvoie vers `en/`. Les robots d'indexation ne sont pas redirigés ; `hreflang="x-default"` pointe sur l'anglais. Le site racine fait de même avec `/js/lang.js`.
+- Drapeaux SVG (France, Royaume-Uni) à la place de FR / EN ; un clic enregistre le choix pour le site et le jeu.
+- Trésor à découvert : chaque ligne d'unité porte `data-key`, le survol affiche la carte complète (`#cardTip`).
 
 ## v1.9.26 - cartes générées lisibles (25/10/2026)
 - Continents : de joueurs + 1 à joueurs + 2 (`FOF.maxContinents`), taille minimale `FOF.minContinent(n, k)` = moyenne - 1, jamais sous 4.
 - Mers : `mersCotieres` (map.js) remplace la découpe par rayons (gardée derrière `FOF.MERS_RAYONS`). Chaque morceau d'eau va au rivage le plus proche, puis les eaux voisines sont réunies sans dépasser 4 débarquements.
 - `tryGenerate` refuse une carte avec plus d'une mer pour deux territoires côtiers, plus d'une mer à un seul rivage, ou plus de deux territoires sur trois mers.
 - Solitaire : glisser-déposer (pointeur, souris et doigt).
+- Exclusion par l'hôte : en salon, bouton « exclure » (retire la place) ; en partie, action moteur `exclure` (le joueur passe en bot, écrite par `net.mutate`), bouton dans la fiche du joueur, fenêtre d'information chez l'exclu.
 
 ## v1.9.25 - retours du créateur du 24/10/2026 (25/10/2026)
 

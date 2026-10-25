@@ -64,6 +64,9 @@ p{margin:0 0 1em}
 .nav-end{display:flex;align-items:center;gap:14px;flex:0 0 auto}
 .lang{color:var(--dim);text-decoration:none;font-size:13px;letter-spacing:.14em;text-transform:uppercase}
 .lang:hover{color:var(--text)}
+.lang{display:inline-grid;place-items:center;min-width:40px;min-height:40px}
+.lang .flag{display:block;width:24px;height:16px;border-radius:2px;box-shadow:0 0 0 1px rgba(0,0,0,.35);opacity:.85;transition:opacity .15s}
+.lang:hover .flag,.lang:focus-visible .flag{opacity:1}
 @media (max-width:980px){.nav-links{display:none}}
 
 /* ================= EN-TÊTE PLEIN ÉCRAN - FIELDS OF FIRE ================= */
@@ -72,12 +75,20 @@ p{margin:0 0 1em}
 .jaquette-fond{position:absolute;inset:0;z-index:-2;background:#090510}
 .jaquette-fond img{width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .9s ease}
 .jaquette-fond img.vu{opacity:.46}
-/* lavis violet et rouge : c'est lui qui donne sa couleur à toute la page */
+/* v3.4 : plus de lavis violet. La carte du jeu reste lisible sous un voile d'encre,
+   avec une lueur de braise sur l'horizon (« Fields of Fire ») et un grain d'impression. */
 .jaquette-teinte{position:absolute;inset:0;z-index:-1;
   background:
-    radial-gradient(120% 78% at 18% 8%, rgba(124,58,237,.52), transparent 62%),
-    radial-gradient(110% 70% at 86% 22%, rgba(224,34,52,.40), transparent 60%),
-    linear-gradient(180deg, rgba(12,7,16,.62) 0%, rgba(12,7,16,.34) 38%, rgba(12,7,16,.92) 84%, var(--ink) 100%)}
+    radial-gradient(70% 30% at 50% 78%, rgba(226,96,38,.30), rgba(160,40,24,.12) 55%, transparent 75%),
+    radial-gradient(130% 95% at 50% 42%, transparent 40%, rgba(8,5,9,.78) 100%),
+    linear-gradient(180deg, rgba(12,7,16,.74) 0%, rgba(14,9,12,.44) 36%, rgba(12,7,16,.86) 82%, var(--ink) 100%)}
+.jaquette-teinte::after{content:"";position:absolute;inset:0;opacity:.13;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 .9 0 0 0 0 .75 0 0 0 .9 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23g)'/%3E%3C/svg%3E")}
+.jaquette-fond img.vu{filter:sepia(.35) saturate(.8)}
+.legal .maj:has(+ .trad){margin-bottom:10px}
+.legal .trad{font-size:14.5px;margin:0 0 36px}
+.err-acts{margin-top:26px;display:flex;gap:12px;flex-wrap:wrap}
+.err-fr{margin-top:56px}
 .jaquette-inner{max-width:780px}
 .couronne{width:clamp(126px,15vw,196px);margin:0 auto clamp(18px,2.4vw,30px);
   filter:drop-shadow(0 6px 26px rgba(217,189,116,.28))}

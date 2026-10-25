@@ -2,6 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-QzvqF6++A4E+wUvbo8K87KVIv03jqTgOv2ZXYuUVAzk=' 'sha256-/PDjTIk7/bamU+bwrfS18vabDUQAxoj2685z09UYDD0=' 'sha256-D99p2n18vmEJXYN+MRoKN1oPPtzq53eUMGAtmg5MuVM='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; media-src 'self' https://opengameart.org; connect-src 'self' https://wucrnsmogswphekitodw.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Fields of Fire · jeu de société de conquête, 3 à 6 joueurs</title>
 <meta name="description" content="Prototype jouable de Fields of Fire : conquérez, bâtissez et choisissez votre voie - l’épée, la foi ou la diplomatie. De 3 à 6 joueurs, sur un même écran ou en ligne.">
@@ -11,6 +12,7 @@
 <link rel="canonical" href="https://nubegames.fr/fields-of-fire/">
 <link rel="alternate" hreflang="fr" href="https://nubegames.fr/fields-of-fire/">
 <link rel="alternate" hreflang="en" href="https://nubegames.fr/fields-of-fire/en/">
+<link rel="alternate" hreflang="x-default" href="https://nubegames.fr/fields-of-fire/en/">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Nube Games">
 <meta property="og:url" content="https://nubegames.fr/fields-of-fire/">
@@ -23,16 +25,17 @@
 <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
 <link rel="preload" href="assets/fonts/cinzel-700.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="assets/fonts/alegreya-sans-400.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="css/style.css?v=beta-1.9.26">
-<script>try{if(localStorage.getItem('fof-lang')==='en')location.replace('en/'+location.search+location.hash)}catch(e){}</script>
+<link rel="stylesheet" href="css/style.css?v=beta-1.9.28">
+<!-- v1.9.27 : l'anglais est la langue par défaut (créateur, 25/10/2026) ; le français seulement si on l'a choisi. Les robots d'indexation restent ici. -->
+<script>try{if((localStorage.getItem('fof-lang')||localStorage.getItem('ng-lang'))!=='fr'&&!/bot|crawl|spider|slurp|lighthouse|preview/i.test(navigator.userAgent))location.replace('en/'+location.search+location.hash)}catch(e){}</script>
 <script>try{document.documentElement.dataset.theme=localStorage.getItem('fof-theme')==='feutre'?'feutre':'braise'}catch(e){document.documentElement.dataset.theme='braise'}</script>
 </head>
 <body>
 <section id="setup" hidden>
   <div class="setup-music" data-music-slot></div>
   <button class="btn ghost theme-btn setup-theme" type="button" data-theme-toggle aria-label="Changer d’habillage"></button>
-  <a class="btn ghost lang-btn setup-lang" href="en/" data-lang="en" hreflang="en" lang="en" title="Play in English">EN</a>
-  <button class="btn ghost icon-btn setup-bug" type="button" id="bugBtn2" onclick="document.getElementById('bugBtn').click()" title="Signaler un bug" data-ic="bug"></button>
+  <div class="setup-lang" role="group" aria-label="Langue / Language"><span class="lang-flag on" aria-current="true" title="Français"><svg class="flag" viewBox="0 0 3 2" width="24" height="16" aria-hidden="true" focusable="false"><rect width="1" height="2" fill="#002654"/><rect x="1" width="1" height="2" fill="#fff"/><rect x="2" width="1" height="2" fill="#ce1126"/></svg><span class="sr-only">Français</span></span><a class="lang-flag" href="en/" data-lang="en" hreflang="en" lang="en" title="English"><svg class="flag" viewBox="0 0 60 30" width="24" height="16" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false"><clipPath id="uk1"><path d="M30,15h30v15zv15h-30zh-30v-15zv-15h30z"/></clipPath><path d="M0,0v30h60v-30z" fill="#012169"/><path d="M0,0L60,30M60,0L0,30" stroke="#fff" stroke-width="6"/><path d="M0,0L60,30M60,0L0,30" clip-path="url(#uk1)" stroke="#C8102E" stroke-width="4"/><path d="M30,0v30M0,15h60" stroke="#fff" stroke-width="10"/><path d="M30,0v30M0,15h60" stroke="#C8102E" stroke-width="6"/></svg><span class="sr-only">English</span></a></div>
+  <button class="btn ghost icon-btn setup-bug" type="button" id="bugBtn2" title="Signaler un bug" data-ic="bug"></button>
   <div class="setup-inner">
     <div class="cover" aria-hidden="true">
       <h1>Fields<br>of Fire</h1>
@@ -65,7 +68,7 @@
         <p class="note" id="onlineNote" hidden>Le jeu en ligne n’est pas encore activé sur ce site.</p>
         <div class="setup-actions" id="resumeBox"></div>
         <footer class="setup-foot">
-          <p><b>Version beta 1.9.26</b> · prototype. Les parties sont enregistrées de façon anonyme (durée, tours, dirigeants, type de victoire) pour équilibrer le jeu. Hugues le Bâtisseur, Alinor l’Amirale, Yusuf le Marchand et Zaynab la Vagabonde se débloquent en laissant votre adresse e-mail.</p>
+          <p><b>Version beta 1.9.28</b> · prototype. Les parties sont enregistrées de façon anonyme (durée, tours, dirigeants, type de victoire) pour équilibrer le jeu. Hugues le Bâtisseur, Alinor l’Amirale, Yusuf le Marchand et Zaynab la Vagabonde se débloquent en laissant votre adresse e-mail.</p>
           <p>Illustrations, portraits et icônes : Nube Games. Musique : domaine public (CC0) d’OpenGameArt, détail dans CREDITS. Polices sous licence SIL OFL 1.1, hébergées sur notre serveur.</p>
           <p class="setup-legal"><a href="/">Nube Games</a> · <a href="/mentions-legales.html">Mentions légales</a> · <a href="/confidentialite.html">Confidentialité</a> · <a href="/conditions.html">CGU</a> · <a href="notes.html">Note de mise à jour</a></p>
         </footer>
@@ -105,13 +108,14 @@
     <button class="btn ghost" id="deckBtn" type="button" title="Voir le deck"><span data-ic="cards"></span> Deck</button>
     <button class="btn ghost" id="glossBtn" type="button" title="Glossaire"><span data-ic="book"></span> Glossaire</button>
     <button class="btn ghost icon-btn theme-btn" id="themeBtn" type="button" data-theme-toggle aria-label="Changer d’habillage"></button>
-    <a class="btn ghost icon-btn lang-btn" href="en/" data-lang="en" hreflang="en" lang="en" title="Play in English">EN</a>
+    <a class="btn ghost icon-btn lang-btn" href="en/" data-lang="en" hreflang="en" lang="en" title="Play in English" aria-label="Play in English"><svg class="flag" viewBox="0 0 60 30" width="24" height="16" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false"><clipPath id="uk2"><path d="M30,15h30v15zv15h-30zh-30v-15zv-15h30z"/></clipPath><path d="M0,0v30h60v-30z" fill="#012169"/><path d="M0,0L60,30M60,0L0,30" stroke="#fff" stroke-width="6"/><path d="M0,0L60,30M60,0L0,30" clip-path="url(#uk2)" stroke="#C8102E" stroke-width="4"/><path d="M30,0v30M0,15h60" stroke="#fff" stroke-width="10"/><path d="M30,0v30M0,15h60" stroke="#C8102E" stroke-width="6"/></svg></a>
     <button class="btn ghost icon-btn" id="setBtn" type="button" title="Réglages" aria-label="Réglages" data-ic="gear"></button>
     <span class="pause-wrap"><button class="btn ghost icon-btn" id="pauseBtn" type="button" title="Mettre la partie en pause" aria-label="Mettre la partie en pause" data-ic="pause" hidden></button><span id="pauseLbl" class="pause-lbl" hidden>Jeu en pause</span></span>
     <button class="btn ghost icon-btn hdr-flag" id="flagBtn" type="button" title="Quitter la partie (pause 48 h ou abandon)" aria-label="Quitter la partie" data-ic="flag"></button>
     <button class="btn ghost" id="helpBtn" type="button" title="Règles"><span data-ic="help"></span> Règles</button>
     <button class="btn ghost icon-btn" id="bugBtn" type="button" title="Signaler un bug" aria-label="Signaler un bug" data-ic="bug"></button>
     <button class="btn ghost" id="newBtn" type="button" title="Nouvelle partie"><span data-ic="restart"></span> Nouvelle partie</button>
+    <button class="btn ghost icon-btn" id="menuBtn" type="button" aria-label="Menu" aria-expanded="false" data-ic="menu"></button>
   </header>
   <aside class="left" id="players"></aside>
   <main id="board">
@@ -121,7 +125,7 @@
     <div class="board-tools"><button class="btn small" id="zoomOut" type="button" aria-label="Dézoomer">−</button><button class="btn small" id="zoomIn" type="button" aria-label="Zoomer">+</button></div>
     <div class="market" id="market" hidden></div>
   </main>
-  <aside class="right" id="right"><div id="rightLog"></div><section class="minijeu" id="minijeu" hidden aria-label="Mini-jeu pendant le tour des autres"></section></aside>
+  <aside class="right" id="right"><button class="btn small ghost sheet-x" type="button" data-closelog="1" aria-label="Fermer">✕</button><div id="rightLog"></div><section class="minijeu" id="minijeu" hidden aria-label="Mini-jeu pendant le tour des autres"></section></aside>
   <section class="mat" id="mat"></section>
 </div>
 <div id="modal" hidden></div>
@@ -131,33 +135,33 @@
 <div id="bugModal" hidden></div>
 <div id="chatPanel" hidden><div class="chat-head"><b><span data-ic="chat"></span> Tchat de la partie</b><button class="btn small ghost" data-chatclose="1" aria-label="Fermer">✕</button></div><div id="chatList"></div><div class="chat-in"><input id="chatInput" maxlength="300" placeholder="Votre message…" autocomplete="off"><button class="btn small primary" data-chatsend="1">Envoyer</button></div></div>
 
-<script>document.addEventListener('click',function(e){var a=e.target.closest('[data-lang]');if(!a)return;e.preventDefault();try{localStorage.setItem('fof-lang',a.dataset.lang)}catch(x){}location.href=a.getAttribute('href')+location.search+location.hash;});</script>
-<script src="js/config.js?v=beta-1.9.26"></script>
-<script src="js/icons.js?v=beta-1.9.26"></script>
-<script src="js/data.js?v=beta-1.9.26"></script>
-<script src="js/map.js?v=beta-1.9.26"></script>
-<script src="js/cartes.js?v=beta-1.9.26"></script>
-<script src="js/engine.js?v=beta-1.9.26"></script>
-<script src="js/cards.js?v=beta-1.9.26"></script>
-<script src="js/board.js?v=beta-1.9.26"></script>
-<script src="js/net.js?v=beta-1.9.26"></script>
-<script src="js/stats.js?v=beta-1.9.26"></script>
-<script src="js/sfx.js?v=beta-1.9.26"></script>
-<script src="js/fx.js?v=beta-1.9.26"></script>
-<script src="js/music.js?v=beta-1.9.26"></script>
-<script src="js/bot.js?v=beta-1.9.26"></script>
-<script src="js/tutorial.js?v=beta-1.9.26"></script>
-<script src="js/extras.js?v=beta-1.9.26"></script>
-<script src="js/minijeu.js?v=beta-1.9.26"></script>
-<script src="js/mjchausse.js?v=beta-1.9.26"></script>
-<script src="js/mjmoulin.js?v=beta-1.9.26"></script>
-<script src="js/mjtresor.js?v=beta-1.9.26"></script>
-<script src="js/mjblasons.js?v=beta-1.9.26"></script>
-<script src="js/mjmemoire.js?v=beta-1.9.26"></script>
-<script src="js/mjtaquin.js?v=beta-1.9.26"></script>
-<script src="js/mjreussite.js?v=beta-1.9.26"></script>
-<script src="js/ui.js?v=beta-1.9.26"></script>
-<script src="js/main.js?v=beta-1.9.26"></script>
+<script>document.addEventListener('click',function(e){var a=e.target.closest('[data-lang]');if(!a)return;e.preventDefault();try{localStorage.setItem('fof-lang',a.dataset.lang);localStorage.setItem('ng-lang',a.dataset.lang)}catch(x){}location.href=a.getAttribute('href')+location.search+location.hash;});</script>
+<script src="js/config.js?v=beta-1.9.28"></script>
+<script src="js/icons.js?v=beta-1.9.28"></script>
+<script src="js/data.js?v=beta-1.9.28"></script>
+<script src="js/map.js?v=beta-1.9.28"></script>
+<script src="js/cartes.js?v=beta-1.9.28"></script>
+<script src="js/engine.js?v=beta-1.9.28"></script>
+<script src="js/cards.js?v=beta-1.9.28"></script>
+<script src="js/board.js?v=beta-1.9.28"></script>
+<script src="js/net.js?v=beta-1.9.28"></script>
+<script src="js/stats.js?v=beta-1.9.28"></script>
+<script src="js/sfx.js?v=beta-1.9.28"></script>
+<script src="js/fx.js?v=beta-1.9.28"></script>
+<script src="js/music.js?v=beta-1.9.28"></script>
+<script src="js/bot.js?v=beta-1.9.28"></script>
+<script src="js/tutorial.js?v=beta-1.9.28"></script>
+<script src="js/extras.js?v=beta-1.9.28"></script>
+<script src="js/minijeu.js?v=beta-1.9.28"></script>
+<script src="js/mjchausse.js?v=beta-1.9.28"></script>
+<script src="js/mjmoulin.js?v=beta-1.9.28"></script>
+<script src="js/mjtresor.js?v=beta-1.9.28"></script>
+<script src="js/mjblasons.js?v=beta-1.9.28"></script>
+<script src="js/mjmemoire.js?v=beta-1.9.28"></script>
+<script src="js/mjtaquin.js?v=beta-1.9.28"></script>
+<script src="js/mjreussite.js?v=beta-1.9.28"></script>
+<script src="js/ui.js?v=beta-1.9.28"></script>
+<script src="js/main.js?v=beta-1.9.28"></script>
 
 </body>
 </html>

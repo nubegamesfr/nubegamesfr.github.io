@@ -1,19 +1,21 @@
 <!doctype html>
-<html lang="fr">
+<html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Page introuvable · Nube Games</title>
+<title>Page not found · Nube Games</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="description" content="La page demandée n’existe pas.">
+<meta name="description" content="This page does not exist. La page demandée n’existe pas.">
 <meta name="theme-color" content="#0b0712">
 <meta name="color-scheme" content="dark">
 <meta name="robots" content="noindex">
 <link rel="canonical" href="https://nubegames.fr/404.html">
+<script src="/js/lang.js?v=1" defer></script>
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Nube Games">
+<meta property="og:locale" content="en_GB">
 <meta property="og:url" content="https://nubegames.fr/404.html">
-<meta property="og:title" content="Page introuvable · Nube Games">
-<meta property="og:description" content="La page demandée n’existe pas.">
+<meta property="og:title" content="Page not found · Nube Games">
+<meta property="og:description" content="This page does not exist. La page demandée n’existe pas.">
 <meta property="og:image" content="https://nubegames.fr/assets/images/og-image.jpg">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="/assets/icons/favicon.svg" type="image/svg+xml">
@@ -22,56 +24,64 @@
 <link rel="manifest" href="/site.webmanifest">
 <link rel="preload" href="/assets/fonts/unbounded.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/assets/fonts/manrope.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="/css/style.css?v=3.2">
-
+<link rel="stylesheet" href="/css/style.css?v=3.4">
 </head>
 <body id="top">
 <header class="nav" id="nav">
-  <a class="nav-brand" href="/" aria-label="Nube Games, accueil">
+  <a class="nav-brand" href="/en/" aria-label="Nube Games, home">
     <img src="/assets/images/nube-games-lockup.svg" alt="Nube Games" width="132" height="32">
   </a>
   <nav class="nav-links" aria-label="Sections">
-    <a href="/#le-jeu">Principe de jeu</a>
-    <a href="/#victoires">Conditions de victoire</a>
-    <a href="/#tour">Déroulement d’un tour</a>
-    <a href="/#carte">Carte</a>
-    <a href="/#dirigeants">Dirigeants</a>
-    <a href="/#jouer">Jouer</a>
+    <a href="/en/#the-game">The game</a>
+    <a href="/en/#victory">Victory</a>
+    <a href="/en/#turn">The turn</a>
+    <a href="/en/#map">The map</a>
+    <a href="/en/#lords">Lords</a>
+    <a href="/en/#play">Play</a>
   </nav>
   <div class="nav-end">
-    <a class="lang" href="/en/" hreflang="en" lang="en">EN</a>
-    <a class="btn btn-sm" href="/fields-of-fire/">Jouer</a>
+    <a class="lang" href="/" hreflang="fr" lang="fr" data-lang="fr" title="Français" aria-label="Français"><svg class="flag" viewBox="0 0 3 2" width="24" height="16" aria-hidden="true" focusable="false"><rect width="1" height="2" fill="#002654"/><rect x="1" width="1" height="2" fill="#fff"/><rect x="2" width="1" height="2" fill="#ce1126"/></svg></a>
+    <a class="btn btn-sm" href="/fields-of-fire/en/">Play</a>
   </div>
 </header>
 <main class="legal">
   <div class="wrap">
-    <h1>Cette page n’existe pas</h1>
-    <p class="maj">Erreur 404</p>
-    <p>Le lien que vous avez suivi ne mène nulle part : la page a peut-être été renommée, ou l’adresse
-    comporte une coquille. Rien n’est perdu, le jeu est toujours là.</p>
-    <p style="margin-top:26px;display:flex;gap:12px;flex-wrap:wrap">
-      <a class="btn" href="/fields-of-fire/">Jouer à Fields of Fire</a>
-      <a class="btn btn-ghost" href="/">Retour à l’accueil</a>
+    <h1>This page does not exist</h1>
+    <p class="maj">Error 404</p>
+    <p>The link you followed leads nowhere: the page may have been renamed, or the address
+    has a typo. Nothing is lost, the game is still here.</p>
+    <p class="err-acts">
+      <a class="btn" href="/fields-of-fire/en/">Play Fields of Fire</a>
+      <a class="btn btn-ghost" href="/en/">Back to home</a>
     </p>
 
+    <div lang="fr" class="err-fr">
+      <h2>Cette page n’existe pas</h2>
+      <p>Le lien que vous avez suivi ne mène nulle part : la page a peut-être été renommée, ou l’adresse
+      comporte une coquille. Rien n’est perdu, le jeu est toujours là.</p>
+      <p class="err-acts">
+        <a class="btn btn-sm" href="/fields-of-fire/" data-lang="fr">Jouer à Fields of Fire</a>
+        <a class="btn btn-sm btn-ghost" href="/" data-lang="fr">Retour à l’accueil</a>
+      </p>
+    </div>
   </div>
 </main>
 <footer class="pied">
   <div class="wrap">
     <div class="pied-haut">
       <img class="pied-logo" src="/assets/images/nube-games-logo-light.svg" alt="Nube Games" width="92" height="94" loading="lazy">
-      <nav class="pied-liens" aria-label="Pied de page">
-        <a href="/fields-of-fire/">Jouer</a>
-        <a href="/#playtests">Playtests</a>
-        <a href="/#contact">Contact</a>
-        <a href="/mentions-legales.html">Mentions légales</a>
-        <a href="/confidentialite.html">Confidentialité</a>
-        <a href="/conditions.html">CGU</a>
-        <a href="/en/" hreflang="en" lang="en">English</a>
+      <nav class="pied-liens" aria-label="Footer">
+        <a href="/fields-of-fire/en/">Play</a>
+        <a href="/en/#playtests">Playtests</a>
+        <a href="/en/#contact">Contact</a>
+        <a href="/en/legal-notice.html">Legal notice</a>
+        <a href="/en/privacy.html">Privacy</a>
+        <a href="/en/terms.html">Terms</a>
+        <a href="/" hreflang="fr" lang="fr" data-lang="fr">Français</a>
       </nav>
     </div>
-    <p>© 2026 Nube Games · Jeux de société indépendants</p>
-    <small>Les illustrations, portraits et icônes de Fields of Fire appartiennent à Nube Games. Musiques du jeu : pistes du domaine public (CC0) publiées sur OpenGameArt, détail dans le fichier CREDITS. Polices Unbounded, Manrope et Cinzel sous licence SIL Open Font License 1.1.</small>
+    <p>© 2026 Nube Games · Independent board games</p>
+    <small>The illustrations, portraits and icons of Fields of Fire belong to Nube Games. In-game music: public-domain (CC0) tracks from OpenGameArt. Victory sounds: Pixabay, under the Pixabay Content License. Full list in the CREDITS file. Fonts Unbounded, Manrope and Cinzel under the SIL Open Font License 1.1.</small>
   </div>
 </footer>
 <script src="/js/main.js?v=3.2" defer></script>

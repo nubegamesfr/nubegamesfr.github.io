@@ -162,7 +162,7 @@
       if (mine && !host) badge = '<button type="button" class="rdy btn-rdy' + (rdy ? ' on' : '') + '" data-oready="' + (rdy ? '0' : '1') + '">' + FOF.ic(rdy ? 'check' : 'hourglass', 13) + ' ' + (rdy ? 'pr\u00eat' : 'se d\u00e9clarer pr\u00eat') + '</button>';
       h.push('<div class="prow seat' + (mine ? ' mine' : '') + '" style="border-left:4px solid ' + hex + '">' +
         (mine ? '<button type="button" class="swatch" data-oswatch="1" style="background:' + hex + '" aria-label="Changer de couleur"></button>' : '<span class="swatch" style="background:' + hex + '"></span>') +
-        (mine ? '<input id="seatName" value="' + esc(s.name) + '" maxlength="16" aria-label="Votre nom">' : '<div class="seat-name"><b>' + esc(s.name) + '</b>' + (s.cid === row.host_id ? '<small>hôte</small>' : s.bot ? '<small>' + FOF.ic('helm', 12) + ' ordinateur' + (host ? ' · <button type="button" class="linkbtn" data-rmbot="' + esc(s.cid) + '">retirer</button>' : '') + '</small>' : '') + '</div>') +
+        (mine ? '<input id="seatName" value="' + esc(s.name) + '" maxlength="16" aria-label="Votre nom">' : '<div class="seat-name"><b>' + esc(s.name) + '</b>' + (s.cid === row.host_id ? '<small>hôte</small>' : s.bot ? '<small>' + FOF.ic('helm', 12) + ' ordinateur' + (host ? ' · <button type="button" class="linkbtn" data-rmbot="' + esc(s.cid) + '">retirer</button>' : '') + '</small>' : host ? '<small><button type="button" class="linkbtn" data-rmbot="' + esc(s.cid) + '" title="Retirer ce joueur du salon">exclure</button></small>' : '') + '</div>') +
         badge +
         (mine ? FOF.heroHTML(s.leader, { button: true, attrs: 'type="button" data-opick="1" title="Changer de dirigeant"', note: 'vous · changer ▾' }) : FOF.heroHTML(s.leader, { note: 'joueur ' + (i + 1) })) + '</div>');
     });
@@ -182,14 +182,14 @@
     $('lobby').innerHTML = h.join('');
   }
   function enterRoom(r) {
-    room = r; FOF.saveOnline(r.code, r.cid);
+    room = r; FOF.saveOnline(r.code, r.cid, r.sec);
     try { history.replaceState(null, '', location.pathname + '?salon=' + r.code); } catch (e) {}
     r.on(onRoom); r.start(1500);
     onRoom(r.row);
   }
   function onRoom(row) {
     if (!room) return;
-    if (room.seatIndex() < 0) { var c = room.code; leaveLocal(); setErr('Vous avez quitté le salon ' + c + '.'); return; }
+    if (room.seatIndex() < 0) { var c = room.code; leaveLocal(); setErr('L’hôte vous a retiré du salon ' + c + '.'); return; }   // v1.9.26 : un départ volontaire passe par leaveLocal avant
     if (row.status !== 'lobby' && row.state) {
       var r = room; room = null; r.listeners = []; r.stop();
       picking = null; renderPicker();
@@ -322,7 +322,7 @@
       if (d.resume === 'local') { var s = FOF.loadSaved(); if (s) FOF.startUI(s); return; }
       if (d.resume === 'online') {
         var so = FOF.loadOnline(); if (!so) return;
-        FOF.resumeRoom(so.code, so.cid).then(enterRoom, function (err) { FOF.clearOnline(); setErr(err.message); renderMode(); });
+        FOF.resumeRoom(so.code, so.cid, so.sec).then(enterRoom, function (err) { FOF.clearOnline(); setErr(err.message); renderMode(); });
         return;
       }
       if (d.bot !== undefined) { var rb = rows[+d.bot]; rb.bot = !rb.bot; if (rb.bot && (/^(Joueur|Player|Eudes|Félicie|Bot )/.test(rb.name) || DEFAULT_NAMES.indexOf(rb.name) >= 0)) rb.name = 'Bot ' + FOF.LEADERS[rb.leader].name.split(' ')[0]; return renderLocal(); }
@@ -377,6 +377,7 @@
       }
       if (d.oleave) {
         var r = room;
+        r.listeners = []; r.stop();   // v1.9.26 : sans quoi notre propre départ s'afficherait comme une exclusion
         r.mutate(function (row) {
           var seats = row.seats.filter(function (s) { return s.cid !== r.cid; });
           if (row.status !== 'lobby') return null;
@@ -433,6 +434,6 @@
     // reprise automatique seulement dans l'onglet qui était déjà assis dans ce salon (après un rechargement)
     var q = new URLSearchParams(location.search).get('salon'), so = FOF.loadOnline(), mine = null;
     try { mine = sessionStorage.getItem('fof-cid'); } catch (e) {}
-    if (q && so && so.code === FOF.normCode(q) && so.cid === mine && FOF.onlineEnabled()) FOF.resumeRoom(so.code, so.cid).then(enterRoom, function () {});
+    if (q && so && so.code === FOF.normCode(q) && so.cid === mine && FOF.onlineEnabled()) FOF.resumeRoom(so.code, so.cid, so.sec).then(enterRoom, function () {});
   });
 })(window.FOF = window.FOF || {});

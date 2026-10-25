@@ -776,7 +776,7 @@
     var p = FOF.cur(st);
     var pend = st.pending[0];
     // v1.9.11 - l'Espion se joue à tout moment, y compris au tour d'un autre et pendant une décision en attente
-    var horsTour = a.type === 'spy' || a.type === 'spyDecide';
+    var horsTour = a.type === 'spy' || a.type === 'spyDecide' || a.type === 'exclure';   // v1.9.26 : l'hôte exclut à tout moment
     if (pend && a.type !== 'resolve' && a.type !== 'deficitTake' && a.type !== 'surrender' && !horsTour) throw new Error('Une décision est en attente.');
     // v1.9.2 - anti-mauvais-clic : tant qu'aucune action n'a été jouée dans la phase en cours, on
     // peut revenir à la précédente. Toute action qui change l'état salit la phase.
@@ -971,6 +971,14 @@
         log(st, sp.name + ' quitte la guerre.', sp.id, 'elim');
         eliminate(st, sp);
         if (!st.winner && sp.id === st.cur) nextPlayer(st);   // on passe au joueur suivant
+        break;
+      }
+      // v1.9.26 - en ligne, l'hôte exclut un joueur : l'ordinateur prend sa place (créateur, 25/10/2026)
+      case 'exclure': {
+        var ep = st.players[a.pid];
+        if (!ep || !ep.alive || ep.bot) throw new Error('Exclusion impossible.');
+        ep.bot = true;
+        log(st, ep.name + ' est exclu par l’hôte : l’ordinateur joue à sa place.', ep.id, 'elim');
         break;
       }
       default: throw new Error('Action inconnue : ' + a.type);

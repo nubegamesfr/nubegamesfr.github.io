@@ -96,7 +96,7 @@ const SITE = {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', apikey: SITE.supabaseKey, Prefer: 'return=minimal' },
         body: JSON.stringify({
-          message: (d.message || '').slice(0, 4000),
+          message: (d.message || '').slice(0, 3000),   // la base refuse au-delà de 3000 caractères
           contact: [d.name, d.email].filter(Boolean).join(' · ').slice(0, 200),
           context: { source: 'site', motif: d.motif || null, lang: doc.lang || 'fr', ua: navigator.userAgent.slice(0, 200) }
         })

@@ -11,6 +11,8 @@
 <link rel="canonical" href="https://nubegames.fr/">
 <link rel="alternate" hreflang="fr" href="https://nubegames.fr/">
 <link rel="alternate" hreflang="en" href="https://nubegames.fr/en/">
+<link rel="alternate" hreflang="x-default" href="https://nubegames.fr/en/">
+<script src="/js/lang.js?v=1" data-alt="/en/"></script>
 
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Nube Games">
@@ -34,7 +36,7 @@
 <link rel="preload" href="assets/fonts/cinzel-700.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" as="image" href="/assets/images/fof-couronne.webp" fetchpriority="high">
 <link rel="preload" as="image" href="/assets/images/fof-cover.webp" imagesrcset="/assets/images/fof-cover-960.webp 960w, /assets/images/fof-cover.webp 1920w" imagesizes="100vw" fetchpriority="high">
-<link rel="stylesheet" href="css/style.css?v=3.2">
+<link rel="stylesheet" href="css/style.css?v=3.4">
 
 <script type="application/ld+json">
 {
@@ -69,7 +71,7 @@
     <a href="#jouer">Jouer</a>
   </nav>
   <div class="nav-end">
-    <a class="lang" href="/en/" hreflang="en" lang="en">EN</a>
+    <a class="lang" href="/en/" hreflang="en" lang="en" data-lang="en" title="English" aria-label="English"><svg class="flag" viewBox="0 0 60 30" width="24" height="16" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false"><clipPath id="ukf"><path d="M30,15h30v15zv15h-30zh-30v-15zv-15h30z"/></clipPath><path d="M0,0v30h60v-30z" fill="#012169"/><path d="M0,0L60,30M60,0L0,30" stroke="#fff" stroke-width="6"/><path d="M0,0L60,30M60,0L0,30" clip-path="url(#ukf)" stroke="#C8102E" stroke-width="4"/><path d="M30,0v30M0,15h60" stroke="#fff" stroke-width="10"/><path d="M30,0v30M0,15h60" stroke="#C8102E" stroke-width="6"/></svg></a>
     <a class="btn btn-sm" href="/fields-of-fire/">Jouer</a>
   </div>
 </header>
@@ -106,7 +108,7 @@
       <div class="fait"><b>3 à 6</b><span>joueurs</span></div>
       <div class="fait"><b>7</b><span>territoires par joueur sur la carte</span></div>
       <div class="fait"><b>10</b><span>dirigeants aux pouvoirs distincts</span></div>
-      <div class="fait"><b>95</b><span>cartes d’unités dans le deck</span></div>
+      <div class="fait"><b>94</b><span>cartes d’unités dans le deck</span></div>
       <div class="fait"><b>0 €</b><span>et sans inscription</span></div>
     </div>
 
@@ -165,6 +167,7 @@
     <div class="sec-head">
       <h2 id="t-carte">Carte</h2>
       <p class="lead">Deux types de cartes sont jouables : les cartes aléatoires et les cartes historiques. Les cartes aléatoires sont générées automatiquement, contrairement aux cartes historiques. Quatre types de terrain existent (plaine, forêt, montagne, marécage), et chacun modifie la force des unités d’élite.</p>
+      <p class="lead">Une carte aléatoire compte une à deux îles de plus qu’il n’y a de joueurs, et les capitales sont toujours séparées d’au moins trois cases. La carte historique, elle, reprend la Manche.</p>
     </div>
     <div class="duo">
       <figure class="fig reveal">
@@ -200,10 +203,10 @@
       <p class="lead">Lors du marché, cinq cartes sont face visible. Vous pouvez réaliser un achat et une défausse par tour. Les unités d’élite se battent - leur puissance change selon le terrain. Les unités spéciales ne combattent pas : elles convertissent un temple, portent un message à une cour étrangère, éclairent la carte ou rasent un aménagement. Chaque carte exige un aménagement pour être recrutée, et coûte une solde à chaque collecte. Le marché est partagé par tous les joueurs : gardez un œil sur la stratégie de chacun pour la contrer. Vous pouvez consulter le deck et la défausse pendant la partie.</p>
     </div>
     <figure class="fig reveal">
-      <img src="assets/images/fof-cartes.webp" width="1200" height="400" loading="lazy" decoding="async"
+      <img src="assets/images/fof-cartes.webp" width="1200" height="312" loading="lazy" decoding="async"
            alt="Cinq cartes d’unités avec leur illustration peinte, leur puissance par terrain, leur solde, leur condition de recrutement et leur nombre d’exemplaires dans le deck.">
     </figure>
-    <p class="fig-cap">Quelques cartes du deck. Le liseré indique le type de carte (jaune : spéciale, rouge : élite). Le chiffre dans le cadre vert indique la vitesse de déplacement. La solde est en bas à gauche, la condition d’aménagement en bas à droite.</p>
+    <p class="fig-cap">Quelques cartes du deck. Le liseré indique le type de carte (jaune : spéciale, rouge : élite). Le chiffre dans le cadre vert indique la vitesse de déplacement. La solde est en bas à gauche, la condition d’aménagement en bas à droite, et le nombre d’exemplaires dans le deck en haut à droite.</p>
   </div>
 </section>
 
@@ -232,7 +235,7 @@
   <div class="wrap split">
     <div class="sec-head">
       <h2 id="t-tyr">Focus sur la diplomatie</h2>
-      <p class="lead">La diplomatie n’est pas qu’une voie de victoire, c’est la monnaie de la guerre. Chaque assaut en coûte un point, et un de plus par unité spéciale détruite. Un émissaire envoyé dans une capitale étrangère en rapporte, un calomniateur peut en faire perdre à un rival.</p>
+      <p class="lead">La diplomatie n’est pas qu’une voie de victoire, c’est la monnaie de la guerre. Chaque assaut en coûte un point, et un de plus par unité spéciale détruite. Un émissaire envoyé dans une capitale étrangère en rapporte deux à son maître, et un au joueur qui le reçoit. Un ambassadeur posté chez un rival scelle un pacte de non-agression, et celui qui le rompt le paie cher. Un calomniateur, lui, fait perdre de la diplomatie à sa cible.</p>
     </div>
     <ol class="chute">
       <li><h3>Tomber à zéro</h3><p>À court de diplomatie, un joueur qui lance un assaut devient un <b>Tyran</b>.</p></li>
@@ -264,11 +267,12 @@
           <li>Créez un salon : vous recevez un code de cinq caractères.</li>
           <li>Partagez le code ou le lien ; vos amis rejoignent depuis leur ordinateur.</li>
           <li>Tout le monde se déclare prêt, l’hôte lance la partie.</li>
+          <li>Si quelqu’un s’absente, l’hôte peut le retirer : l’ordinateur joue à sa place.</li>
         </ol>
         <a class="btn" href="/fields-of-fire/">Créer un salon</a>
       </article>
     </div>
-    <p class="tiny" style="margin-top:20px">Une partie laissée de côté peut être mise en pause 48 heures, puis reprise avec le même code.</p>
+    <p class="tiny" style="margin-top:20px">Une partie laissée de côté peut être mise en pause 48 heures, puis reprise avec le même code. Le jeu existe en français et en anglais, et sept mini-jeux (Solitaire, démineur, taquin…) occupent l’attente pendant le tour des autres.</p>
   </div>
 </section>
 
@@ -298,7 +302,7 @@
       </div>
       <div class="champ">
         <label for="f-msg">Message</label>
-        <textarea id="f-msg" name="message"></textarea>
+        <textarea id="f-msg" name="message" maxlength="3000"></textarea>
       </div>
       <input class="hp" type="text" name="_honey" tabindex="-1" autocomplete="off" aria-hidden="true">
       <div>
@@ -323,11 +327,11 @@
         <a href="/mentions-legales.html">Mentions légales</a>
         <a href="/confidentialite.html">Confidentialité</a>
         <a href="/conditions.html">CGU</a>
-        <a href="/en/" hreflang="en" lang="en">English</a>
+        <a href="/en/" hreflang="en" lang="en" data-lang="en">English</a>
       </nav>
     </div>
     <p>© 2026 Nube Games · Jeux de société indépendants</p>
-    <small>Les illustrations, portraits et icônes de Fields of Fire appartiennent à Nube Games. Musiques du jeu : pistes du domaine public (CC0) publiées sur OpenGameArt, détail dans le fichier CREDITS. Polices Unbounded, Manrope et Cinzel sous licence SIL Open Font License 1.1.</small>
+    <small>Les illustrations, portraits et icônes de Fields of Fire appartiennent à Nube Games. Musiques du jeu : pistes du domaine public (CC0) publiées sur OpenGameArt. Sons de victoire : Pixabay, sous licence Pixabay. Détail dans le fichier CREDITS. Polices Unbounded, Manrope et Cinzel sous licence SIL Open Font License 1.1.</small>
   </div>
 </footer>
 
