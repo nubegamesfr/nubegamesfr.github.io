@@ -33,6 +33,15 @@
   function fxLayer() {
     var el = document.getElementById('fx');
     if (!el) { el = document.createElement('div'); el.id = 'fx'; el.setAttribute('aria-hidden', 'true'); board().appendChild(el); }
+    // v1.9.28 : quand la carte est zoomée et déplacée, le bandeau et les messages suivent la partie visible
+    // (ils partaient hors de l'écran avec le défilement de la carte)
+    var bd = board();
+    if (bd && !bd._fxSuivi) {
+      bd._fxSuivi = true;
+      var suivre = function () { var f = document.getElementById('fx'); if (!f) return; f.style.setProperty('--sx', bd.scrollLeft + 'px'); f.style.setProperty('--sy', bd.scrollTop + 'px'); f.style.setProperty('--bw', bd.clientWidth + 'px'); };
+      bd.addEventListener('scroll', suivre, { passive: true }); window.addEventListener('resize', suivre);
+    }
+    if (bd) { el.style.setProperty('--sx', bd.scrollLeft + 'px'); el.style.setProperty('--sy', bd.scrollTop + 'px'); el.style.setProperty('--bw', bd.clientWidth + 'px'); }
     return el;
   }
   function banner(html, col) {

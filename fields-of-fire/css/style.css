@@ -410,7 +410,7 @@ button.hero:disabled { cursor: not-allowed; }
 .fx-banner small { font-family: var(--f-display); letter-spacing: .3em; text-transform: uppercase; color: var(--bone-dim); font-size: 14px; }
 .fx-banner span { color: var(--bone-dim); font-size: 17px; }
 .fx-banner .ico { font-size: 26px; line-height: 1; }
-@keyframes fxBanner { 0% { opacity: 0; transform: translateX(-12%) scaleY(.6); } 16% { opacity: 1; transform: none; } 78% { opacity: 1; transform: none; } 100% { opacity: 0; transform: translateX(10%); } }
+@keyframes fxBanner { 0% { opacity: 0; transform: scaleY(.6); } 16% { opacity: 1; transform: none; } 78% { opacity: 1; transform: none; } 100% { opacity: 0; transform: scaleY(.85); } }
 .fx-float { position: fixed; transform: translate(-50%, 0); font-family: var(--f-num); font-weight: 700; font-size: 16px; pointer-events: none; z-index: 80; animation: fxFloat 1.5s ease-out forwards; text-shadow: 0 1px 4px #000; }
 .fx-float.gain { color: #f1d488; } .fx-float.loss { color: #f2a79c; } .fx-float.dip.gain { color: #9bd58f; }
 .fx-float.big { font-size: 24px; }
@@ -1295,7 +1295,7 @@ aside.right { border-left: 0; box-shadow: inset 1px 0 0 var(--leather-edge), ins
 .cat-filters { display: flex; gap: 6px; margin: 0 0 14px; }
 .cat-filters .chip { border: 1px solid rgba(232,196,128,.35); background: rgba(0,0,0,.25); color: #e9dcc0; padding: 4px 12px; border-radius: 999px; font-size: 14px; }
 .cat-filters .chip.on { background: rgba(201,154,66,.25); border-color: var(--brass-1); color: #fff2cf; }
-.cat-grid.heroes { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 14px; }
+.cat-grid.heroes { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(290px, 100%), 1fr)); gap: 14px; }
 .cat-grid.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px; }
 .cat-grid .ucard, .cat-grid .hero { transition: transform .18s ease, box-shadow .18s ease; }
 .cat-grid .ucard:hover, .cat-grid .hero:hover { transform: translateY(-4px) rotate(-.4deg); box-shadow: 0 18px 30px -14px #000; }
@@ -1681,7 +1681,7 @@ html[data-mapstyle="ancienne"] .legend .chip-Ma { background: #9eb2a4 !important
 a.lang-flag:hover, a.lang-flag:focus-visible { opacity: 1; }
 .lang-btn .flag { margin: auto; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
-@media (max-width: 620px) { .setup-lang { top: 72px; right: auto; left: 12px; } .setup-lang .lang-flag { min-width: 34px; min-height: 30px; } }
+@media (max-width: 620px) { .setup-music { left: 12px; right: 12px; max-width: calc(100vw - 24px); overflow: hidden; } .setup-music .music { max-width: 100%; } .setup-music .music input[type=range] { width: 64px; min-width: 0; } .setup-lang { top: 72px; right: auto; left: 12px; } .setup-lang .lang-flag { min-width: 34px; min-height: 30px; } }
 
 /* v1.9.25 - Solitaire : glisser-déposer */
 .so-cols .rs-carte.vue, .so-place .rs-carte { touch-action: none; cursor: grab; }
@@ -1738,7 +1738,12 @@ a.lang-flag:hover, a.lang-flag:focus-visible { opacity: 1; }
   #game aside.left { flex: none; display: flex; flex-direction: row; gap: 6px; padding: 6px 8px; overflow-x: auto; border: 0; border-bottom: 1px solid var(--line); scrollbar-width: none; }
   #game aside.left::-webkit-scrollbar { display: none; }
   #game aside.left .section-title { display: none; }
-  #game aside.left .opp { flex: 1 0 84px; min-width: 84px; margin: 0; padding: 5px 6px; gap: 6px; display: flex; align-items: center; border-radius: 10px; min-height: 46px; }
+  #game aside.left .opp { flex: 1 1 0; min-width: 0; margin: 0; padding: 5px 6px; gap: 6px; display: flex; align-items: center; border-radius: 10px; min-height: 46px; }
+  /* toutes les pastilles tiennent dans la largeur ; à 5 ou 6 joueurs, portrait et or l'un sous l'autre, sans le nom */
+  #game aside.left:has(.opp:nth-of-type(5)) { gap: 4px; padding: 6px; }
+  #game aside.left:has(.opp:nth-of-type(5)) .opp { flex-direction: column; justify-content: center; gap: 2px; padding: 4px 2px; border-left-width: 3px; }
+  #game aside.left:has(.opp:nth-of-type(5)) .opp .nm { display: none; }
+  #game aside.left:has(.opp:nth-of-type(5)) .opp .st { text-align: center; }
   #game aside.left .opp .portrait { width: 30px; height: 30px; flex: none; }
   #game aside.left .opp > div { min-width: 0; }
   #game aside.left .opp .nm { font-size: 13px; line-height: 1.15; }
@@ -1754,25 +1759,25 @@ a.lang-flag:hover, a.lang-flag:focus-visible { opacity: 1; }
   #game .board-tools { position: sticky; top: auto; bottom: 8px; left: calc(100vw - 104px); float: none; width: max-content; margin: -48px 0 0; z-index: 6; }
   #game .board-tools .btn { min-width: 40px; min-height: 40px; background: rgba(22,21,24,.9); }
 
-  /* marché : un carrousel, une carte lisible à la fois, les autres à faire glisser */
+  /* marché : les cinq cartes en entier, deux par ligne ; le panneau défile vers le bas s'il le faut.
+     (v1.9.28 : plus de carrousel, les cartes voisines sortaient de l'écran) */
   #game .market { left: 0; padding: 10px 0 8px; max-height: none; overflow: visible; }
   #game .market h3 { padding: 0 10px; }
-  #game .market .market-inner { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 10px; padding: 4px 18vw 6px; scrollbar-width: none; align-items: flex-end; }
-  #game .market .market-inner::-webkit-scrollbar { display: none; }
+  #game .market .market-inner { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; padding: 4px 10px 10px; overflow: visible; align-items: start; }
   /* la carte entière doit tenir en hauteur : sa largeur suit la place disponible */
   #game .market:not(.compact) { position: fixed; top: var(--mk-top, 104px); height: var(--mk-h, 50vh); left: 0; right: 0; width: auto; bottom: auto; margin: 0;
     overflow-y: auto; overscroll-behavior: contain; background: rgba(18,17,20,.97); z-index: 30; }
-  #game .market .market-inner > * { flex: 0 0 min(62vw, 250px); scroll-snap-align: center; }
+  #game .market .market-inner > * { min-width: 0; }
   #game .market h3 { font-size: 12.5px; margin-bottom: 4px; display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap; }
   #game .market h3 .btn { font-size: 12.5px; min-height: 32px; padding: 4px 10px; }
   #game .market h3 .mk-t { display: none; }
   #board:has(> .market:not([hidden])) .board-tools { display: none; }
   #game .market .deckpile { display: none; }
   #game .market .ucard .art { height: auto; max-height: none; }
-  #game .market .ucard .txt { font-size: 13.5px; max-height: none; }
-  #game .market .ucard .acts { flex-direction: row; }
-  #game .market .ucard .acts .btn { font-size: 14px; min-height: 40px; }
-  #game .market.compact .market-inner > * { flex-basis: 28vw; }
+  #game .market .ucard .txt { font-size: 12.5px; line-height: 1.3; max-height: none; }
+  #game .market .ucard .acts { flex-direction: column; gap: 5px; }
+  #game .market .ucard .acts .btn { font-size: 13px; min-height: 38px; width: 100%; padding: 4px 6px; }
+  #game .market.compact .market-inner { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; padding: 2px 6px 6px; }
 
   /* chronique et mini-jeux : un panneau qui s'ouvre depuis le menu */
   #game aside.right { position: fixed; inset: 48px 0 0 0; z-index: 90; background: #1c1b1f; overflow: auto; padding: 10px 12px 20px; border: 0; border-top: 1px solid var(--gold); }
@@ -1814,5 +1819,37 @@ a.lang-flag:hover, a.lang-flag:focus-visible { opacity: 1; }
   /* écrans bas : l'illustration rapetisse pour que la carte du marché tienne avec ses boutons */
   #game .market:not(.compact) .ucard .art { height: 84px; max-height: 84px; object-fit: cover; }
   #game .market:not(.compact) .ucard .txt { font-size: 12.5px; line-height: 1.3; }
-  #game .market:not(.compact) .market-inner > * { flex-basis: min(58vw, 230px); }
+}
+
+/* v1.9.28 - tablettes et téléphones à l'horizontale (621 à 1279 px) : les fiches des joueurs passent
+   à la ligne au lieu de sortir de l'écran */
+@media (min-width: 621px) and (max-width: 1279px) {
+  #game aside.left { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 6px; overflow: visible; scroll-snap-type: none; }
+  #game aside.left .section-title { grid-column: 1 / -1; }
+  #game aside.left .opp { flex: none; min-width: 0; margin: 0; }
+  #game aside.left .opp .st { gap: 2px 8px; flex-wrap: wrap; }
+}
+/* v1.9.28 - très petits écrans (320 px) : l'accueil ne déborde plus */
+@media (max-width: 360px) {
+  .setup-inner, .setup-form, #stepMode, .mode-grid, #catalog, .setup-foot { min-width: 0; max-width: 100%; }
+  .mode-grid { grid-template-columns: 1fr; }
+  .setup .cat-tabs { flex-wrap: wrap; }
+}
+/* v1.9.28 - téléphone tenu à l'horizontale : trop peu de hauteur pour jouer sans que rien ne dépasse,
+   on demande de le tourner */
+.tourner { display: none; }
+@media (orientation: landscape) and (max-height: 500px) and (pointer: coarse) {
+  .tourner { display: flex; position: fixed; inset: 0; z-index: 10000; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
+    background: #121114; color: var(--bone, #efe6d2); text-align: center; padding: 24px; }
+  .tourner b { font-family: var(--f-display); font-size: 22px; letter-spacing: .04em; }
+  .tourner span { font-size: 15px; opacity: .8; }
+}
+/* v1.9.28 - bandeau de phase et messages : toujours dans la partie visible de la carte */
+.fx-banner { left: var(--sx, 0px); right: auto; width: 100%; margin-top: var(--sy, 0px); }
+.fx-toasts { left: calc(12px + var(--sx, 0px)); top: calc(12px + var(--sy, 0px)); }
+/* v1.9.28 - réglages sur téléphone : la musique passe à la ligne au lieu de sortir de la fenêtre */
+@media (max-width: 620px) {
+  .set-audio, .set-audio .music { flex-wrap: wrap; max-width: 100%; min-width: 0; }
+  .set-audio .music .mtitle { max-width: 100%; flex: 1 1 100%; }
+  .set-audio .music input[type=range] { width: 80px; min-width: 0; }
 }
