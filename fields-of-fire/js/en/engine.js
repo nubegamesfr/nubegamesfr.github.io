@@ -333,7 +333,7 @@
     var net = inc.total - inc.upkeep;
     p.gold += net; if (net > 0) p.tally.gold += net;
     st.collect = { inc: inc, net: net, deficit: p.gold < 0 ? -p.gold : 0, taken: 0 };
-    log(st, p.name + ' collects taxes: ' + inc.total + ' gold raised, ' + inc.upkeep + ' for the troops’ upkeep, ' + (net >= 0 ? '+' : '−') + Math.abs(net) + ' to the treasury (' + p.gold + ').', p.id, net >= 0 ? 'gold' : 'deficit');
+    log(st, p.name + ' collects taxes: ' + inc.total + ' gold raised, ' + inc.upkeep + ' for the troops’ upkeep, ' + (net >= 0 ? '+' : '-') + Math.abs(net) + ' to the treasury (' + p.gold + ').', p.id, net >= 0 ? 'gold' : 'deficit');
     if (p.gold < 0) {
       var reserve = FOF.army(st, p.id).reduce(function (a, u) { return a + u.gold; }, 0);
       if (reserve <= -p.gold) {

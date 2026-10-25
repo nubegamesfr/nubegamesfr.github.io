@@ -331,7 +331,7 @@
     if (!(fit > 0)) fit = 1;
     // v1.9.28 - téléphone en portrait : la carte, deux fois plus large que haute, ne prenait qu'une
     // bande au milieu de l'écran. Au premier affichage, elle remplit la hauteur disponible et se
-    // centre sur la capitale du joueur ; le pincement ou « − » la montrent en entier.
+    // centre sur la capitale du joueur ; le pincement ou « - » la montrent en entier.
     if (!zoomAuto && telephone() && fitBox.w > 0) {
       zoomAuto = true;
       var zc = Math.min(2.6, (fitBox.h / b.h) / (fitBox.w / b.w));
@@ -937,7 +937,7 @@
     var p = FOF.cur(st), v = st.victory, army = FOF.army(st, p.id), inc = st.collect ? st.collect.inc : FOF.income(st, p);
     var h = ['<div class="me' + (p.tyran ? ' tyran' : '') + (FOF.procheVictoire(st, p).length ? ' proche' : '') + '" style="--pc:' + color(p.id) + '"><div class="pwrap">' + FOF.heroImg(p.leader) + (p.tyran ? '<div class="flames" aria-hidden="true">' + '<i></i>'.repeat(14) + '</div>' : '') + '</div>' + '<div class="who"><div class="ribbon" style="background:' + color(p.id) + ';color:#fff;border-color:#1b1a1d">' + esc(p.name) + '</div>' +
       '<div class="line"><span class="star gold" style="width:24px;height:24px;font-size:13px">' + p.mod + '</span><span>' + esc(FOF.LEADERS[p.leader].name) + '</span>' + (p.tyran ? '<span class="pill tyran">Tyrant</span>' : '') + (p.pact !== null ? '<span class="pill pact">Pact with ' + esc(st.players[p.pact].name) + '</span>' : '') + '</div>' +
-      '<div class="purse" data-gold="' + p.id + ':' + p.gold + '" title="Income: ' + inc.total + ' − upkeep ' + inc.upkeep + '"><span class="coin"></span><b>' + p.gold + '</b><span class="muted" style="font-size:12.5px">gold · income ' + (inc.total - inc.upkeep >= 0 ? '+' : '') + (inc.total - inc.upkeep) + '/turn</span></div></div></div>'];
+      '<div class="purse" data-gold="' + p.id + ':' + p.gold + '" title="Income: ' + inc.total + ' - upkeep ' + inc.upkeep + '"><span class="coin"></span><b>' + p.gold + '</b><span class="muted" style="font-size:12.5px">gold · income ' + (inc.total - inc.upkeep >= 0 ? '+' : '') + (inc.total - inc.upkeep) + '/turn</span></div></div></div>'];
     h[0] = h[0].replace('<div class="me', '<div data-heroinfo="' + moiPid() + '" title="See the leader’s card" class="me');
     h.push('<div style="display:flex;gap:18px;align-items:center;min-width:0;flex-wrap:wrap"><div class="tracks" style="--pc:' + color(p.id) + '">' +
       track('Territories', '<img class="icn" src="assets/icons/terr.png" alt="">', FOF.terrOf(st, p.id).length, v.mil) +
@@ -1046,7 +1046,7 @@
       var t = st.map.terr[pd.tid], d = st.players[pd.def];
       h = '<div class="modal">' + passHTML(pd.pid) + '<h2>' + esc(t.name) + ' has fallen</h2><p>What do you do with the territory?</p><div class="choice-grid">' +
         '<button class="btn primary" data-resolve="conquer"><b>Conquer</b><br><small>The territory becomes yours. Its buildings stay with their owner (pacify them next turn).</small></button>' +
-        '<button class="btn danger" data-resolve="devastate"><b>Pillage</b><br><small>It’s yours, but all its buildings are destroyed.' + (d.tyran ? '' : ' −1 Diplomacy (and −1 per temple destroyed).') + '</small></button></div></div>';
+        '<button class="btn danger" data-resolve="devastate"><b>Pillage</b><br><small>It’s yours, but all its buildings are destroyed.' + (d.tyran ? '' : ' -1 Diplomacy (and -1 per temple destroyed).') + '</small></button></div></div>';
     } else if (pd && pd.type === 'deficit') {
       var p = st.players[pd.pid];
       // v1.9.19 - les pièces de chaque unité sont affichées : on clique celles qu'on reprend (et on peut
@@ -1054,7 +1054,7 @@
       if (!defSel || defSel.pid !== pd.pid || defSel.left !== pd.left) defSel = { pid: pd.pid, left: pd.left, c: {} };
       var prise = Object.keys(defSel.c).reduce(function (a, k) { return a + defSel.c[k]; }, 0);
       var errDef = FOF.deficitValide(st, p.id, defSel.c, pd.left);
-      h = '<div class="modal deficit">' + passHTML(pd.pid) + '<h2>Treasury in the red</h2><p>After upkeep, your treasury is at <b class="num">−' + pd.left + '</b> gold. Take coins back from your units until it’s back to 0. <b>Any unit you take a coin from deserts</b>; you can take back all its coins.</p>' +
+      h = '<div class="modal deficit">' + passHTML(pd.pid) + '<h2>Treasury in the red</h2><p>After upkeep, your treasury is at <b class="num">-' + pd.left + '</b> gold. Take coins back from your units until it’s back to 0. <b>Any unit you take a coin from deserts</b>; you can take back all its coins.</p>' +
         FOF.army(st, p.id).map(function (u) {
           var a = FOF.unitArt(u.key), n = defSel.c[u.uid] || 0, coins = '';
           for (var i = 0; i < u.gold; i++) coins += '<button type="button" class="dcoin' + (i < n ? ' on' : '') + '" data-dcoin="' + u.uid + '|' + i + '" aria-pressed="' + (i < n) + '" title="' + (i < n ? 'Leave this coin' : 'Take this coin back') + '"></button>';
@@ -1208,7 +1208,7 @@
   /* ---------- début de tour = collecte : bilan détaillé de l'or ---------- */
   function collectHTML() {
     var cp = FOF.cur(st), c = st.collect, inc = c ? c.inc : FOF.income(st, cp), rows = [];
-    function row(lbl, v, cls) { rows.push('<div class="lg ' + (cls || '') + '"><span>' + lbl + '</span><b>' + (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v) + '</b></div>'); }
+    function row(lbl, v, cls) { rows.push('<div class="lg ' + (cls || '') + '"><span>' + lbl + '</span><b>' + (v > 0 ? '+' : v < 0 ? '-' : '') + Math.abs(v) + '</b></div>'); }
     row('<img class="icn" src="assets/icons/terr.png" alt=""> Territories × ' + inc.terr, inc.terr, 'plus');
     if (inc.cities) row('<img class="icn" src="assets/icons/bld-Ci.png" alt=""> Cities × ' + inc.cities, inc.cities, 'plus');
     if (inc.ports) row('<img class="icn" src="assets/icons/bld-P.png" alt=""> Alinor’s ports × ' + inc.ports, inc.ports, 'plus');
@@ -1227,7 +1227,7 @@
     if (cp.leader === 'edouard') acts.push('<button class="btn gold" data-act="edouard" ' + (cp.edouardUsed || cp.dip > FOF.EDOUARD_MAX || cp.gold < FOF.EDOUARD_COUT || cp.tyran || cp.attackedLast || cp.raidedLast ? 'disabled' : '') + '>Édouard: ' + FOF.EDOUARD_COUT + ' gold → +1 Diplomacy</button>');
     return '<div class="modal collect"><div class="pass" style="background:' + color(cp.id) + '33;border:1px solid ' + color(cp.id) + '">' + (net ? 'Your turn, <b>' + esc(cp.name) + '</b>!' : 'Pass the screen to <b>' + esc(cp.name) + '</b>') + '</div>' +
       '<div class="collect-top">' + FOF.heroImg(cp.leader) + '<div><div class="ribbon" style="background:' + color(cp.id) + ';color:#fff">' + esc(cp.name) + '</div><div class="muted">' + esc(FOF.LEADERS[cp.leader].name) + ' · round ' + st.round + '</div></div></div>' +
-      '<div class="gold-big ' + (net < 0 ? 'neg' : '') + '"><i class="coin"></i><span>' + (net >= 0 ? '+' : '−') + Math.abs(net) + '</span><small>gold this turn</small></div>' +
+      '<div class="gold-big ' + (net < 0 ? 'neg' : '') + '"><i class="coin"></i><span>' + (net >= 0 ? '+' : '-') + Math.abs(net) + '</span><small>gold this turn</small></div>' +
       '<div class="ledger">' + rows.join('') + '<div class="lg tot"><span>Treasury</span><b>' + cp.gold + ' <i class="coin"></i></b></div></div>' +
       (c && c.taken ? '<p class="warn-line">' + c.taken + ' gold taken back from your units, which deserted.</p>' : '') +
       (cp.gold < 0 ? '<p class="warn-line danger">Negative treasury: no recruiting or building.</p>' : '') +
@@ -1269,12 +1269,12 @@
     h.push('<div class="duel">' + sideHTML(p, pv.detA, pv.A, 0, pv.att.map(function (u) { return u.key; }), pv.lead) + '<div class="vs">' + FOF.ic('swords', 22) + '</div>' + sideHTML(d, pv.detD, pv.D, 0, pv.du.map(function (u) { return u.key; }), pv.dl) + '</div>');
     // v1.9.19 - le coût en diplomatie est détaillé : attaque, rupture de pacte, unités spéciales détruites
     var couts = [];
-    if (!d.tyran) couts.push('−1 attack');
-    if (p.pact === d.id) couts.push('−2 for breaking the pact (' + esc(d.name) + ' gains +1)');
-    if (pv.nSpe) couts.push('−' + pv.nSpe + ' for ' + (pv.nSpe > 1 ? 'the ' + pv.nSpe + ' special units destroyed' : 'the special unit destroyed') + (pv.auto ? '' : ' if you win'));
+    if (!d.tyran) couts.push('-1 attack');
+    if (p.pact === d.id) couts.push('-2 for breaking the pact (' + esc(d.name) + ' gains +1)');
+    if (pv.nSpe) couts.push('-' + pv.nSpe + ' for ' + (pv.nSpe > 1 ? 'the ' + pv.nSpe + ' special units destroyed' : 'the special unit destroyed') + (pv.auto ? '' : ' if you win'));
     var total = pv.cost + (pv.auto ? pv.nSpe : 0);
     if (pv.auto) h.push('<p class="warn-line">Special units on their own don’t fight: they’re <b>automatically destroyed</b>.</p>');
-    h.push('<p>Odds of winning: <b class="num">' + prob + '%</b> · Diplomacy: <b class="num">' + (couts.length ? '−' + total + (pv.auto || !pv.nSpe ? '' : ' (−' + (total + pv.nSpe) + ' if you win)') : 'no cost (target is a Tyrant)') + '</b></p>' +
+    h.push('<p>Odds of winning: <b class="num">' + prob + '%</b> · Diplomacy: <b class="num">' + (couts.length ? '-' + total + (pv.auto || !pv.nSpe ? '' : ' (-' + (total + pv.nSpe) + ' if you win)') : 'no cost (target is a Tyrant)') + '</b></p>' +
       (couts.length ? '<p class="muted">' + couts.join(' · ') + '</p>' : ''));
     h.push('<p class="muted">If you lose, all your units in the assault are discarded.</p><div class="actions"><button class="btn" data-close="1">Cancel</button><button class="btn attack-go" data-go="1">' + FOF.ic('swords', 17) + ' Launch the assault</button></div></div>');
     return h.join('');
