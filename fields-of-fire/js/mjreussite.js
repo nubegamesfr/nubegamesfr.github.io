@@ -28,8 +28,9 @@
   R.gagne = function (s) { return COUL.every(function (c) { return s.fond[c].length === 13; }); };
   FOF.SolitaireRegles = R;
 
-  FOF.Minijeux.enregistrer({ id: 'solitaire', nom: 'Solitaire', regles: '<p>But : ranger les 52 cartes sur les quatre cases du haut à droite (les fondations), une par couleur, du 1 au Roi.</p><p>Les cartes sont rouges (coupes, deniers) ou noires (épées, bâtons). Leur ordre : 1, 2… 10, Valet, Cavalier, Roi.</p><p>Dans les sept colonnes, on pose une carte sur une carte d’une valeur juste au-dessus et de l’autre couleur (un 6 noir sur un 7 rouge). On peut déplacer une carte avec toutes celles posées dessus. Une carte cachée se retourne quand elle se retrouve au bout de sa colonne. Une colonne vide n’accepte qu’un Roi.</p><p>La pioche (en haut à gauche) retourne une carte à la fois ; une fois vide, cliquez-la pour la reprendre.</p><p>Cliquez une carte pour la choisir, puis cliquez où la poser (les places possibles s’éclairent). Cliquez-la une seconde fois pour l’envoyer seule au meilleur endroit.</p>', ic: 'reussite', creer: function (api) {
+  FOF.Minijeux.enregistrer({ id: 'solitaire', nom: 'Solitaire', regles: '<p>But : ranger les 52 cartes sur les quatre cases du haut à droite (les fondations), une par couleur, du 1 au Roi.</p><p>Les cartes sont rouges (coupes, deniers) ou noires (épées, bâtons). Leur ordre : 1, 2… 10, Valet, Cavalier, Roi.</p><p>Dans les sept colonnes, on pose une carte sur une carte d’une valeur juste au-dessus et de l’autre couleur (un 6 noir sur un 7 rouge). On peut déplacer une carte avec toutes celles posées dessus. Une carte cachée se retourne quand elle se retrouve au bout de sa colonne. Une colonne vide n’accepte qu’un Roi.</p><p>La pioche (en haut à gauche) retourne une carte à la fois ; une fois vide, cliquez-la pour la reprendre.</p><p>Faites glisser une carte (ou une pile) jusqu’à sa place. Vous pouvez aussi la cliquer, puis cliquer où la poser : les places possibles s’éclairent. Cliquez-la une seconde fois pour l’envoyer seule au meilleur endroit.</p>', ic: 'reussite', creer: function (api) {
     var s, fini, histo, sel, coups, chrono = api.chrono();
+    var tire = null, finTire = 0;   // v1.9.25 : glisser-déposer (souris et doigt)
     function nouveau() { s = R.donne(); fini = false; histo = []; sel = null; coups = 0; chrono.remise(); }
     function memo() { histo.push(JSON.stringify(s)); if (histo.length > 80) histo.shift(); }
     function demarrer() { if (!chrono.marche) chrono.demarrer(); }
@@ -99,6 +100,35 @@
       if (!pile(x).length) { sel = null; return true; }
       sel = x; return true;
     }
+    // glisser : la carte (et celles posées dessus) suit le pointeur dans un fantôme ; au lâcher,
+    // la place sous le pointeur reçoit la pile si la règle le permet, sinon rien ne bouge
+    function lacher(e) {
+      document.removeEventListener('pointermove', bouger); document.removeEventListener('pointerup', lacher); document.removeEventListener('pointercancel', lacher);
+      var t = tire; tire = null; if (!t || !t.fantome) return;
+      t.fantome.remove(); finTire = Date.now();
+      var cible = null;
+      if (e.type === 'pointerup') {
+        var sous = document.elementFromPoint(e.clientX, e.clientY), b = sous && sous.closest('[data-so]');
+        if (b && b.dataset.so === 'col') cible = ['col', +b.dataset.i]; else if (b && b.dataset.so === 'fond') cible = ['fond', b.dataset.i];
+      }
+      var ok = cible && destinations(t.x).filter(function (y) { return y[0] === cible[0] && y[1] === cible[1]; })[0];
+      if (ok) deplacer(t.x, ok); else sel = null;
+      api.rendre();
+    }
+    function bouger(e) {
+      var t = tire; if (!t) return;
+      if (!t.fantome) {
+        if (Math.abs(e.clientX - t.px) + Math.abs(e.clientY - t.py) < 7) return;
+        var r = t.el.getBoundingClientRect(), f = document.createElement('div');
+        f.className = 'so-fantome'; f.style.width = r.width + 'px';
+        t.els.forEach(function (n) { f.appendChild(n.cloneNode(true)); });
+        document.body.appendChild(f);
+        t.fantome = f; t.dx = e.clientX - r.left; t.dy = e.clientY - r.top;
+        sel = t.x; api.rendre();   // les places possibles s'éclairent
+      }
+      e.preventDefault();
+      t.fantome.style.transform = 'translate(' + (e.clientX - t.dx) + 'px,' + (e.clientY - t.dy) + 'px)';
+    }
     function carte(c, cls, attrs) {
       if (!c.v) return '<span class="rs-carte dos' + (cls ? ' ' + cls : '') + '"' + (attrs || '') + ' aria-label="carte cachée"></span>';
       return '<span class="rs-carte ' + c.c + (R.rouge(c) ? ' rouge' : ' noire') + (cls ? ' ' + cls : '') + '"' + (attrs || '') + ' aria-label="' + NOMR[c.r] + ' de ' + NOMC[c.c] + '"><b>' + RANG[c.r] + '</b>' + FOF.ic(c.c, 15) + '</span>';
@@ -136,7 +166,20 @@
           : rec !== undefined ? 'Record : ' + api.duree(rec * 1000) + '.' : 'Rangez toutes les cartes sur les fondations.') + '</div>';
         return h;
       },
+      appui: function (e) {
+        if (fini || e.button > 0) return false;
+        var b = e.target.closest('[data-so]'); if (!b) return false;
+        var x = { de: b.dataset.so, i: b.dataset.so === 'fond' ? b.dataset.i : +b.dataset.i, k: +b.dataset.k };
+        if (x.de === 'col' && (x.k < 0 || !s.cols[x.i][x.k] || !s.cols[x.i][x.k].v)) return false;
+        if (!pile(x).length) return false;
+        var el = x.de === 'fond' ? b.querySelector('.rs-carte') : b, els = [el];
+        if (x.de === 'col') for (var n = el.nextElementSibling; n; n = n.nextElementSibling) els.push(n);
+        tire = { x: x, el: el, els: els, px: e.clientX, py: e.clientY };
+        document.addEventListener('pointermove', bouger, { passive: false }); document.addEventListener('pointerup', lacher); document.addEventListener('pointercancel', lacher);
+        return false;
+      },
       clic: function (e) {
+        if (Date.now() - finTire < 350) return false;   // le clic qui suit un glisser
         if (e.target.closest('.mj-neuf')) { nouveau(); return true; }
         if (e.target.closest('.rs-annuler')) { if (!histo.length || fini) return false; s = JSON.parse(histo.pop()); sel = null; return true; }
         if (e.target.closest('.so-pioche')) return piocher();

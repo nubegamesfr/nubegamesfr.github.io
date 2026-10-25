@@ -1,6 +1,12 @@
-# Fields of Fire - version web (beta 1.9.25, prototype)
+# Fields of Fire - version web (beta 1.9.26, prototype)
 
 Jeu 100 % statique (HTML/CSS/JS, sans build). Servi par GitHub Pages sur https://nubegames.fr/fields-of-fire/ (dossier `fields-of-fire/` du repo `nubegamesfr.github.io`).
+
+## v1.9.26 - cartes générées lisibles (25/10/2026)
+- Continents : de joueurs + 1 à joueurs + 2 (`FOF.maxContinents`), taille minimale `FOF.minContinent(n, k)` = moyenne - 1, jamais sous 4.
+- Mers : `mersCotieres` (map.js) remplace la découpe par rayons (gardée derrière `FOF.MERS_RAYONS`). Chaque morceau d'eau va au rivage le plus proche, puis les eaux voisines sont réunies sans dépasser 4 débarquements.
+- `tryGenerate` refuse une carte avec plus d'une mer pour deux territoires côtiers, plus d'une mer à un seul rivage, ou plus de deux territoires sur trois mers.
+- Solitaire : glisser-déposer (pointeur, souris et doigt).
 
 ## v1.9.25 - retours du créateur du 24/10/2026 (25/10/2026)
 

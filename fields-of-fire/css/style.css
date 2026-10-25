@@ -1666,3 +1666,11 @@ html[data-mapstyle="ancienne"] .legend .chip-Ma { background: #9eb2a4 !important
 .lang-btn { text-decoration: none; font-weight: 700; letter-spacing: .06em; font-size: 12.5px; }
 .setup-lang { position: absolute; top: 98px; right: 16px; z-index: 5; min-height: 32px; padding: 4px 12px; border-radius: 999px; background: var(--t-surf2, rgba(22,21,24,.85)); border: 1px solid var(--t-btn-line, var(--line)); }
 @media (max-width: 620px) { .setup-lang { top: auto; bottom: 14px; right: auto; left: 14px; } }
+
+/* v1.9.25 - Solitaire : glisser-déposer */
+.so-cols .rs-carte.vue, .so-place .rs-carte { touch-action: none; cursor: grab; }
+.so-fantome { position: fixed; left: 0; top: 0; z-index: 100000; pointer-events: none; display: flex; flex-direction: column; filter: drop-shadow(0 6px 10px rgba(0,0,0,.45)); }
+.so-fantome .rs-carte { width: 100%; }
+.so-fantome .rs-carte + .rs-carte { margin-top: -97.5%; }
+.so-fantome .rs-carte b { font-size: 10px; }
+.so-haut, .so-cols { user-select: none; -webkit-user-select: none; }
